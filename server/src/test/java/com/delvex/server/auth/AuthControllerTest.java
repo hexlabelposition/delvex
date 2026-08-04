@@ -111,7 +111,8 @@ class AuthControllerTest {
                         "john@example.com",
                         "John",
                         "Doe",
-                        "access-token"));
+                        "access-token",
+                        "refresh-token"));
 
         mockMvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -126,7 +127,8 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.email").value("john@example.com"))
                 .andExpect(jsonPath("$.firstName").value("John"))
                 .andExpect(jsonPath("$.lastName").value("Doe"))
-                .andExpect(jsonPath("$.accessToken").value("access-token"));
+                .andExpect(jsonPath("$.accessToken").value("access-token"))
+                .andExpect(jsonPath("$.refreshToken").value("refresh-token"));
     }
 
     @Test
@@ -162,6 +164,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.message")
                         .value("Invalid email or password"));
     }
+
     @Test
     void shouldRefreshTokens() throws Exception {
         given(authService.refresh(any(RefreshRequest.class)))

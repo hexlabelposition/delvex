@@ -31,6 +31,9 @@ class AuthServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private TokenService tokenService;
+
     @InjectMocks
     private AuthService authService;
 
@@ -57,12 +60,16 @@ class AuthServiceTest {
         given(savedUser.getFirstName()).willReturn("John");
         given(savedUser.getLastName()).willReturn("Doe");
 
+        given(tokenService.createAccessToken(userId))
+                .willReturn("access-token");
+
         RegisterResponse response = authService.register(request);
 
         assertThat(response.id()).isEqualTo(userId);
         assertThat(response.email()).isEqualTo("john@example.com");
         assertThat(response.firstName()).isEqualTo("John");
         assertThat(response.lastName()).isEqualTo("Doe");
+        assertThat(response.accessToken()).isEqualTo("access-token");
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         then(userRepository).should().save(userCaptor.capture());
@@ -93,5 +100,7 @@ class AuthServiceTest {
 
         verifyNoInteractions(passwordEncoder);
         then(userRepository).should(never()).save(any(User.class));
+
+        verifyNoInteractions(tokenService);
     }
 }

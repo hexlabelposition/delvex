@@ -35,7 +35,8 @@ class AuthControllerTest {
                         userId,
                         "john@example.com",
                         "John",
-                        "Doe"));
+                        "Doe",
+                        "access-token"));
 
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -51,7 +52,8 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.id").value(userId.toString()))
                 .andExpect(jsonPath("$.email").value("john@example.com"))
                 .andExpect(jsonPath("$.firstName").value("John"))
-                .andExpect(jsonPath("$.lastName").value("Doe"));
+                .andExpect(jsonPath("$.lastName").value("Doe"))
+                .andExpect(jsonPath("$.accessToken").value("access-token"));
     }
 
     @Test

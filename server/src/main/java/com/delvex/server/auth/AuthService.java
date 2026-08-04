@@ -16,10 +16,12 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final TokenService tokenService;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, TokenService tokenService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.tokenService = tokenService;
     }
 
     @Transactional
@@ -42,11 +44,15 @@ public class AuthService {
 
         User savedUser = userRepository.save(user);
 
+        String accessToken = tokenService.createAccessToken(
+                savedUser.getId());
+
         return new RegisterResponse(
                 savedUser.getId(),
                 savedUser.getEmail(),
                 savedUser.getFirstName(),
-                savedUser.getLastName());
+                savedUser.getLastName(),
+                accessToken);
     }
 
 }

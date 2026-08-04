@@ -11,3 +11,8 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+
+auth:
+  issuer: delvex
+  access-token-secret: ${ACCESS_TOKEN_SECRET}
+  access-token-ttl: 15m

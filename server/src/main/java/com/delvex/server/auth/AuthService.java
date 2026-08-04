@@ -9,6 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.delvex.server.auth.dto.LoginRequest;
 import com.delvex.server.auth.dto.LoginResponse;
+import com.delvex.server.auth.dto.RefreshRequest;
+import com.delvex.server.auth.dto.RefreshResponse;
 import com.delvex.server.auth.dto.RegisterRequest;
 import com.delvex.server.auth.dto.RegisterResponse;
 import com.delvex.server.user.User;
@@ -20,11 +22,17 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
+    private final RefreshTokenService refreshTokenService;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, TokenService tokenService) {
+    public AuthService(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            TokenService tokenService,
+            RefreshTokenService refreshTokenService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenService = tokenService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @Transactional
@@ -55,16 +63,19 @@ public class AuthService {
 
         String accessToken = tokenService.createAccessToken(
                 savedUser.getId());
+        String refreshToken = refreshTokenService.issue(
+                savedUser.getId());
 
         return new RegisterResponse(
                 savedUser.getId(),
                 savedUser.getEmail(),
                 savedUser.getFirstName(),
                 savedUser.getLastName(),
-                accessToken);
+                accessToken,
+                refreshToken);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public LoginResponse login(LoginRequest request) {
         String email = request.email()
                 .strip()
@@ -81,13 +92,29 @@ public class AuthService {
 
         String accessToken = tokenService.createAccessToken(
                 user.getId());
+        String refreshToken = refreshTokenService.issue(
+                user.getId());
 
         return new LoginResponse(
                 user.getId(),
                 user.getEmail(),
                 user.getFirstName(),
                 user.getLastName(),
-                accessToken);
+                accessToken,
+                refreshToken);
+    }
+
+    @Transactional
+    public RefreshResponse refresh(RefreshRequest request) {
+        RefreshTokenService.RotatedRefreshToken rotatedToken = refreshTokenService
+                .rotate(request.refreshToken());
+
+        String accessToken = tokenService.createAccessToken(
+                rotatedToken.userId());
+
+        return new RefreshResponse(
+                accessToken,
+                rotatedToken.refreshToken());
     }
 
 }

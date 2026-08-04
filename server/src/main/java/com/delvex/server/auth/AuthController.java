@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.delvex.server.auth.dto.LoginRequest;
 import com.delvex.server.auth.dto.LoginResponse;
+import com.delvex.server.auth.dto.RefreshRequest;
+import com.delvex.server.auth.dto.RefreshResponse;
 import com.delvex.server.auth.dto.RegisterRequest;
 import com.delvex.server.auth.dto.RegisterResponse;
 
@@ -34,6 +36,12 @@ public class AuthController {
     public LoginResponse login(
             @Valid @RequestBody LoginRequest request) {
         return authService.login(request);
+    }
+
+    @PostMapping("/refresh")
+    public RefreshResponse refresh(
+            @Valid @RequestBody RefreshRequest request) {
+        return authService.refresh(request);
     }
 
 }

@@ -1,5 +1,7 @@
 package com.delvex.server.auth;
 
+import com.delvex.server.auth.dto.LoginRequest;
+import com.delvex.server.auth.dto.LoginResponse;
 import com.delvex.server.auth.dto.RegisterRequest;
 import com.delvex.server.auth.dto.RegisterResponse;
 import org.junit.jupiter.api.Test;
@@ -93,5 +95,67 @@ class AuthControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message")
                         .value("Email is already registered"));
+    }
+
+    @Test
+    void shouldLoginUser() throws Exception {
+        UUID userId = UUID.randomUUID();
+
+        given(authService.login(any(LoginRequest.class)))
+                .willReturn(new LoginResponse(
+                        userId,
+                        "john@example.com",
+                        "John",
+                        "Doe",
+                        "access-token"));
+
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                          "email": "john@example.com",
+                          "password": "strong-password"
+                        }
+                        """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(userId.toString()))
+                .andExpect(jsonPath("$.email").value("john@example.com"))
+                .andExpect(jsonPath("$.firstName").value("John"))
+                .andExpect(jsonPath("$.lastName").value("Doe"))
+                .andExpect(jsonPath("$.accessToken").value("access-token"));
+    }
+
+    @Test
+    void shouldRejectInvalidLoginRequest() throws Exception {
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                          "email": "invalid-email",
+                          "password": "short"
+                        }
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Validation failed"))
+                .andExpect(jsonPath("$.fieldErrors.email").exists())
+                .andExpect(jsonPath("$.fieldErrors.password").exists());
+    }
+
+    @Test
+    void shouldReturnUnauthorizedWhenCredentialsAreInvalid() throws Exception {
+        given(authService.login(any(LoginRequest.class)))
+                .willThrow(new InvalidCredentialsException());
+
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                          "email": "john@example.com",
+                          "password": "wrong-password"
+                        }
+                        """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message")
+                        .value("Invalid email or password"));
     }
 }

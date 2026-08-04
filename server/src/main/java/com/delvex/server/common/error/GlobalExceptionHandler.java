@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.delvex.server.auth.EmailAlreadyExistsException;
+import com.delvex.server.auth.InvalidCredentialsException;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -22,6 +23,23 @@ public class GlobalExceptionHandler {
             EmailAlreadyExistsException exception,
             HttpServletRequest request) {
         HttpStatus status = HttpStatus.CONFLICT;
+
+        ApiError error = new ApiError(
+                Instant.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                exception.getMessage(),
+                request.getRequestURI(),
+                Map.of());
+
+        return ResponseEntity.status(status).body(error);
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ApiError> handleInvalidCredentials(
+            InvalidCredentialsException exception,
+            HttpServletRequest request) {
+        HttpStatus status = HttpStatus.UNAUTHORIZED;
 
         ApiError error = new ApiError(
                 Instant.now(),

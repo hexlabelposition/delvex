@@ -17,7 +17,9 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -216,6 +218,40 @@ class AuthControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message")
                         .value("Refresh token is invalid or expired"));
+    }
+
+    @Test
+    void shouldLogoutUser() throws Exception {
+        mockMvc.perform(post("/api/auth/logout")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                          "refreshToken": "refresh-token"
+                        }
+                        """))
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+
+        then(authService)
+                .should()
+                .logout(any(RefreshRequest.class));
+    }
+
+    @Test
+    void shouldRejectInvalidLogoutRequest() throws Exception {
+        mockMvc.perform(post("/api/auth/logout")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                          "refreshToken": ""
+                        }
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message")
+                        .value("Validation failed"))
+                .andExpect(jsonPath("$.fieldErrors.refreshToken").exists());
+
+        then(authService).shouldHaveNoInteractions();
     }
 
 }

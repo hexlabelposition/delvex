@@ -5,10 +5,10 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -25,10 +25,14 @@ class RefreshTokenServiceTest {
     @Mock
     private RefreshSessionRepository refreshSessionRepository;
 
-    @InjectMocks
-    private RefreshTokenService refreshTokenService = new RefreshTokenService(
-            refreshSessionRepository,
-            Duration.ofDays(30));
+    private RefreshTokenService refreshTokenService;
+
+    @BeforeEach
+    void setUp() {
+        refreshTokenService = new RefreshTokenService(
+                refreshSessionRepository,
+                Duration.ofDays(30));
+    }
 
     @Test
     void shouldIssueRefreshToken() {

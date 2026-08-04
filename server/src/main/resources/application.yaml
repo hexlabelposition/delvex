@@ -17,3 +17,4 @@ auth:
   access-token-secret: ${ACCESS_TOKEN_SECRET}
   access-token-ttl: 15m
   refresh-token-ttl: 30d
+  refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:false}

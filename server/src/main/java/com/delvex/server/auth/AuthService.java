@@ -117,4 +117,9 @@ public class AuthService {
                 rotatedToken.refreshToken());
     }
 
+    @Transactional
+    public void logout(RefreshRequest request) {
+        refreshTokenService.revoke(request.refreshToken());
+    }
+
 }

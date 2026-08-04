@@ -122,4 +122,52 @@ class RefreshTokenServiceTest {
                 .should(never())
                 .save(any(RefreshSession.class));
     }
+    @Test
+    void shouldRevokeActiveRefreshSession() {
+        String refreshToken = "refresh-token";
+        RefreshSession session = new RefreshSession(
+                UUID.randomUUID(),
+                RefreshTokenService.hash(refreshToken),
+                Instant.now().plus(Duration.ofDays(1)),
+                Instant.now());
+
+        given(refreshSessionRepository.findByRefreshTokenHash(
+                RefreshTokenService.hash(refreshToken)))
+                .willReturn(Optional.of(session));
+
+        refreshTokenService.revoke(refreshToken);
+
+        assertThat(session.getRevokedAt()).isNotNull();
+    }
+
+    @Test
+    void shouldIgnoreUnknownRefreshSessionOnLogout() {
+        given(refreshSessionRepository.findByRefreshTokenHash(any(String.class)))
+                .willReturn(Optional.empty());
+
+        refreshTokenService.revoke("unknown-token");
+
+        then(refreshSessionRepository)
+                .should()
+                .findByRefreshTokenHash(RefreshTokenService.hash("unknown-token"));
+    }
+
+    @Test
+    void shouldIgnoreExpiredRefreshSessionOnLogout() {
+        String refreshToken = "expired-refresh-token";
+        RefreshSession session = new RefreshSession(
+                UUID.randomUUID(),
+                RefreshTokenService.hash(refreshToken),
+                Instant.now().minus(Duration.ofDays(1)),
+                Instant.now().minus(Duration.ofDays(2)));
+
+        given(refreshSessionRepository.findByRefreshTokenHash(
+                RefreshTokenService.hash(refreshToken)))
+                .willReturn(Optional.of(session));
+
+        refreshTokenService.revoke(refreshToken);
+
+        assertThat(session.getRevokedAt()).isNull();
+    }
+
 }

@@ -62,6 +62,16 @@ public class RefreshTokenService {
                 issue(currentSession.getUserId()));
     }
 
+    @Transactional
+    public void revoke(String refreshToken) {
+        Instant now = Instant.now();
+
+        refreshSessionRepository
+                .findByRefreshTokenHash(hash(refreshToken))
+                .filter(session -> session.isActive(now))
+                .ifPresent(session -> session.revoke(now));
+    }
+
     static String hash(String token) {
         try {
             byte[] digest = MessageDigest

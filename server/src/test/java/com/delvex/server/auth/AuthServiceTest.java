@@ -256,4 +256,15 @@ class AuthServiceTest {
         verifyNoInteractions(tokenService);
     }
 
+    @Test
+    void shouldLogoutUser() {
+        RefreshRequest request = new RefreshRequest("refresh-token");
+
+        authService.logout(request);
+
+        then(refreshTokenService)
+                .should()
+                .revoke("refresh-token");
+    }
+
 }

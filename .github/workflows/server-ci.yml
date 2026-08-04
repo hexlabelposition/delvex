@@ -1,0 +1,78 @@
+name: Server CI
+
+on:
+  pull_request:
+    branches:
+      - dev
+    paths:
+      - "server/**"
+      - ".github/workflows/server-ci.yml"
+  push:
+    branches:
+      - dev
+    paths:
+      - "server/**"
+      - ".github/workflows/server-ci.yml"
+
+concurrency:
+  group: server-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Maven tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: server
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: delvex_test
+          POSTGRES_USER: delvex
+          POSTGRES_PASSWORD: test-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U delvex -d delvex_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      POSTGRES_DB: delvex_test
+      POSTGRES_USER: delvex
+      POSTGRES_PASSWORD: test-password
+      ACCESS_TOKEN_SECRET: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: server/pom.xml
+
+      - name: Make Maven Wrapper executable
+        run: chmod +x mvnw
+
+      - name: Run server tests
+        run: ./mvnw --batch-mode --no-transfer-progress test
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-test-reports
+          path: server/target/surefire-reports/
+          if-no-files-found: ignore

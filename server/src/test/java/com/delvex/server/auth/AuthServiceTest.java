@@ -1,5 +1,7 @@
 package com.delvex.server.auth;
 
+import com.delvex.server.auth.dto.LoginRequest;
+import com.delvex.server.auth.dto.LoginResponse;
 import com.delvex.server.auth.dto.RegisterRequest;
 import com.delvex.server.auth.dto.RegisterResponse;
 import com.delvex.server.user.User;
@@ -13,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -135,6 +138,78 @@ class AuthServiceTest {
                 .isInstanceOf(EmailAlreadyExistsException.class)
                 .hasMessage("Email is already registered")
                 .hasCauseInstanceOf(DataIntegrityViolationException.class);
+
+        verifyNoInteractions(tokenService);
+    }
+
+    @Test
+    void shouldLoginUser() {
+        LoginRequest request = new LoginRequest(
+                " John@Example.COM ",
+                "strong-password");
+        UUID userId = UUID.randomUUID();
+        User user = org.mockito.Mockito.mock(User.class);
+
+        given(userRepository.findByEmailIgnoreCase("john@example.com"))
+                .willReturn(Optional.of(user));
+        given(user.getPasswordHash())
+                .willReturn("{bcrypt}encoded-password");
+        given(passwordEncoder.matches(
+                "strong-password",
+                "{bcrypt}encoded-password"))
+                .willReturn(true);
+        given(user.getId()).willReturn(userId);
+        given(user.getEmail()).willReturn("john@example.com");
+        given(user.getFirstName()).willReturn("John");
+        given(user.getLastName()).willReturn("Doe");
+        given(tokenService.createAccessToken(userId))
+                .willReturn("access-token");
+
+        LoginResponse response = authService.login(request);
+
+        assertThat(response.id()).isEqualTo(userId);
+        assertThat(response.email()).isEqualTo("john@example.com");
+        assertThat(response.firstName()).isEqualTo("John");
+        assertThat(response.lastName()).isEqualTo("Doe");
+        assertThat(response.accessToken()).isEqualTo("access-token");
+    }
+
+    @Test
+    void shouldRejectUnknownEmail() {
+        LoginRequest request = new LoginRequest(
+                "john@example.com",
+                "strong-password");
+
+        given(userRepository.findByEmailIgnoreCase("john@example.com"))
+                .willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.login(request))
+                .isInstanceOf(InvalidCredentialsException.class)
+                .hasMessage("Invalid email or password");
+
+        verifyNoInteractions(passwordEncoder);
+        verifyNoInteractions(tokenService);
+    }
+
+    @Test
+    void shouldRejectInvalidPassword() {
+        LoginRequest request = new LoginRequest(
+                "john@example.com",
+                "wrong-password");
+        User user = org.mockito.Mockito.mock(User.class);
+
+        given(userRepository.findByEmailIgnoreCase("john@example.com"))
+                .willReturn(Optional.of(user));
+        given(user.getPasswordHash())
+                .willReturn("{bcrypt}encoded-password");
+        given(passwordEncoder.matches(
+                "wrong-password",
+                "{bcrypt}encoded-password"))
+                .willReturn(false);
+
+        assertThatThrownBy(() -> authService.login(request))
+                .isInstanceOf(InvalidCredentialsException.class)
+                .hasMessage("Invalid email or password");
 
         verifyNoInteractions(tokenService);
     }

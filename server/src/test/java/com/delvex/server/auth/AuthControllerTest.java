@@ -1,25 +1,29 @@
 package com.delvex.server.auth;
 
-import com.delvex.server.auth.dto.LoginRequest;
-import com.delvex.server.auth.dto.LoginResponse;
-import com.delvex.server.auth.dto.RefreshRequest;
-import com.delvex.server.auth.dto.RefreshResponse;
-import com.delvex.server.auth.dto.RegisterRequest;
-import com.delvex.server.auth.dto.RegisterResponse;
+import java.util.UUID;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.UUID;
+import com.delvex.server.auth.dto.LoginRequest;
+import com.delvex.server.auth.dto.LoginResponse;
+import com.delvex.server.auth.dto.RefreshResponse;
+import com.delvex.server.auth.dto.RegisterRequest;
+import com.delvex.server.auth.dto.RegisterResponse;
+
+import jakarta.servlet.http.Cookie;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -32,8 +36,11 @@ class AuthControllerTest {
     @MockitoBean
     private AuthService authService;
 
+    @MockitoBean
+    private RefreshCookieService refreshCookieService;
+
     @Test
-    void shouldRegisterUser() throws Exception {
+    void shouldRegisterUserAndSetRefreshCookie() throws Exception {
         UUID userId = UUID.randomUUID();
 
         given(authService.register(any(RegisterRequest.class)))
@@ -44,6 +51,8 @@ class AuthControllerTest {
                         "Doe",
                         "access-token",
                         "refresh-token"));
+        given(refreshCookieService.create("refresh-token"))
+                .willReturn("refresh-cookie");
 
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -56,12 +65,15 @@ class AuthControllerTest {
                         }
                         """))
                 .andExpect(status().isCreated())
+                .andExpect(header().string(
+                        HttpHeaders.SET_COOKIE,
+                        "refresh-cookie"))
                 .andExpect(jsonPath("$.id").value(userId.toString()))
                 .andExpect(jsonPath("$.email").value("john@example.com"))
                 .andExpect(jsonPath("$.firstName").value("John"))
                 .andExpect(jsonPath("$.lastName").value("Doe"))
                 .andExpect(jsonPath("$.accessToken").value("access-token"))
-                .andExpect(jsonPath("$.refreshToken").value("refresh-token"));
+                .andExpect(jsonPath("$.refreshToken").doesNotExist());
     }
 
     @Test
@@ -104,7 +116,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void shouldLoginUser() throws Exception {
+    void shouldLoginUserAndSetRefreshCookie() throws Exception {
         UUID userId = UUID.randomUUID();
 
         given(authService.login(any(LoginRequest.class)))
@@ -115,6 +127,8 @@ class AuthControllerTest {
                         "Doe",
                         "access-token",
                         "refresh-token"));
+        given(refreshCookieService.create("refresh-token"))
+                .willReturn("refresh-cookie");
 
         mockMvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -125,12 +139,15 @@ class AuthControllerTest {
                         }
                         """))
                 .andExpect(status().isOk())
+                .andExpect(header().string(
+                        HttpHeaders.SET_COOKIE,
+                        "refresh-cookie"))
                 .andExpect(jsonPath("$.id").value(userId.toString()))
                 .andExpect(jsonPath("$.email").value("john@example.com"))
                 .andExpect(jsonPath("$.firstName").value("John"))
                 .andExpect(jsonPath("$.lastName").value("Doe"))
                 .andExpect(jsonPath("$.accessToken").value("access-token"))
-                .andExpect(jsonPath("$.refreshToken").value("refresh-token"));
+                .andExpect(jsonPath("$.refreshToken").doesNotExist());
     }
 
     @Test
@@ -168,90 +185,86 @@ class AuthControllerTest {
     }
 
     @Test
-    void shouldRefreshTokens() throws Exception {
-        given(authService.refresh(any(RefreshRequest.class)))
+    void shouldRefreshTokensUsingCookie() throws Exception {
+        given(authService.refresh("refresh-token"))
                 .willReturn(new RefreshResponse(
                         "new-access-token",
                         "new-refresh-token"));
+        given(refreshCookieService.create("new-refresh-token"))
+                .willReturn("new-refresh-cookie");
 
         mockMvc.perform(post("/api/auth/refresh")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {
-                          "refreshToken": "refresh-token"
-                        }
-                        """))
+                .cookie(new Cookie(
+                        RefreshCookieService.COOKIE_NAME,
+                        "refresh-token")))
                 .andExpect(status().isOk())
+                .andExpect(header().string(
+                        HttpHeaders.SET_COOKIE,
+                        "new-refresh-cookie"))
                 .andExpect(jsonPath("$.accessToken")
                         .value("new-access-token"))
-                .andExpect(jsonPath("$.refreshToken")
-                        .value("new-refresh-token"));
+                .andExpect(jsonPath("$.refreshToken").doesNotExist());
     }
 
     @Test
-    void shouldRejectInvalidRefreshRequest() throws Exception {
-        mockMvc.perform(post("/api/auth/refresh")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {
-                          "refreshToken": ""
-                        }
-                        """))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message")
-                        .value("Validation failed"))
-                .andExpect(jsonPath("$.fieldErrors.refreshToken").exists());
-    }
-
-    @Test
-    void shouldReturnUnauthorizedWhenRefreshTokenIsInvalid() throws Exception {
-        given(authService.refresh(any(RefreshRequest.class)))
+    void shouldReturnUnauthorizedWhenRefreshCookieIsMissing() throws Exception {
+        given(authService.refresh(null))
                 .willThrow(new InvalidRefreshTokenException());
 
-        mockMvc.perform(post("/api/auth/refresh")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {
-                          "refreshToken": "invalid-refresh-token"
-                        }
-                        """))
+        mockMvc.perform(post("/api/auth/refresh"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message")
                         .value("Refresh token is invalid or expired"));
     }
 
     @Test
-    void shouldLogoutUser() throws Exception {
+    void shouldReturnUnauthorizedWhenRefreshCookieIsInvalid() throws Exception {
+        given(authService.refresh("invalid-refresh-token"))
+                .willThrow(new InvalidRefreshTokenException());
+
+        mockMvc.perform(post("/api/auth/refresh")
+                .cookie(new Cookie(
+                        RefreshCookieService.COOKIE_NAME,
+                        "invalid-refresh-token")))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message")
+                        .value("Refresh token is invalid or expired"));
+    }
+
+    @Test
+    void shouldLogoutUserAndClearRefreshCookie() throws Exception {
+        given(refreshCookieService.clear())
+                .willReturn("cleared-refresh-cookie");
+
         mockMvc.perform(post("/api/auth/logout")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {
-                          "refreshToken": "refresh-token"
-                        }
-                        """))
+                .cookie(new Cookie(
+                        RefreshCookieService.COOKIE_NAME,
+                        "refresh-token")))
                 .andExpect(status().isNoContent())
+                .andExpect(header().string(
+                        HttpHeaders.SET_COOKIE,
+                        "cleared-refresh-cookie"))
                 .andExpect(content().string(""));
 
         then(authService)
                 .should()
-                .logout(any(RefreshRequest.class));
+                .logout("refresh-token");
     }
 
     @Test
-    void shouldRejectInvalidLogoutRequest() throws Exception {
-        mockMvc.perform(post("/api/auth/logout")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {
-                          "refreshToken": ""
-                        }
-                        """))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message")
-                        .value("Validation failed"))
-                .andExpect(jsonPath("$.fieldErrors.refreshToken").exists());
+    void shouldClearRefreshCookieWhenSessionIsMissing() throws Exception {
+        given(refreshCookieService.clear())
+                .willReturn("cleared-refresh-cookie");
 
-        then(authService).shouldHaveNoInteractions();
+        mockMvc.perform(post("/api/auth/logout"))
+                .andExpect(status().isNoContent())
+                .andExpect(header().string(
+                        HttpHeaders.SET_COOKIE,
+                        "cleared-refresh-cookie"));
+
+        then(authService)
+                .should()
+                .logout(null);
     }
 
 }

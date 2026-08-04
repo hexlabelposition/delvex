@@ -2,6 +2,8 @@ package com.delvex.server.auth;
 
 import com.delvex.server.auth.dto.LoginRequest;
 import com.delvex.server.auth.dto.LoginResponse;
+import com.delvex.server.auth.dto.RefreshRequest;
+import com.delvex.server.auth.dto.RefreshResponse;
 import com.delvex.server.auth.dto.RegisterRequest;
 import com.delvex.server.auth.dto.RegisterResponse;
 import org.junit.jupiter.api.Test;
@@ -38,7 +40,8 @@ class AuthControllerTest {
                         "john@example.com",
                         "John",
                         "Doe",
-                        "access-token"));
+                        "access-token",
+                        "refresh-token"));
 
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -55,7 +58,8 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.email").value("john@example.com"))
                 .andExpect(jsonPath("$.firstName").value("John"))
                 .andExpect(jsonPath("$.lastName").value("Doe"))
-                .andExpect(jsonPath("$.accessToken").value("access-token"));
+                .andExpect(jsonPath("$.accessToken").value("access-token"))
+                .andExpect(jsonPath("$.refreshToken").value("refresh-token"));
     }
 
     @Test
@@ -107,7 +111,8 @@ class AuthControllerTest {
                         "john@example.com",
                         "John",
                         "Doe",
-                        "access-token"));
+                        "access-token",
+                        "refresh-token"));
 
         mockMvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -122,7 +127,8 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.email").value("john@example.com"))
                 .andExpect(jsonPath("$.firstName").value("John"))
                 .andExpect(jsonPath("$.lastName").value("Doe"))
-                .andExpect(jsonPath("$.accessToken").value("access-token"));
+                .andExpect(jsonPath("$.accessToken").value("access-token"))
+                .andExpect(jsonPath("$.refreshToken").value("refresh-token"));
     }
 
     @Test
@@ -158,4 +164,58 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.message")
                         .value("Invalid email or password"));
     }
+
+    @Test
+    void shouldRefreshTokens() throws Exception {
+        given(authService.refresh(any(RefreshRequest.class)))
+                .willReturn(new RefreshResponse(
+                        "new-access-token",
+                        "new-refresh-token"));
+
+        mockMvc.perform(post("/api/auth/refresh")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                          "refreshToken": "refresh-token"
+                        }
+                        """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken")
+                        .value("new-access-token"))
+                .andExpect(jsonPath("$.refreshToken")
+                        .value("new-refresh-token"));
+    }
+
+    @Test
+    void shouldRejectInvalidRefreshRequest() throws Exception {
+        mockMvc.perform(post("/api/auth/refresh")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                          "refreshToken": ""
+                        }
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message")
+                        .value("Validation failed"))
+                .andExpect(jsonPath("$.fieldErrors.refreshToken").exists());
+    }
+
+    @Test
+    void shouldReturnUnauthorizedWhenRefreshTokenIsInvalid() throws Exception {
+        given(authService.refresh(any(RefreshRequest.class)))
+                .willThrow(new InvalidRefreshTokenException());
+
+        mockMvc.perform(post("/api/auth/refresh")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                          "refreshToken": "invalid-refresh-token"
+                        }
+                        """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message")
+                        .value("Refresh token is invalid or expired"));
+    }
+
 }

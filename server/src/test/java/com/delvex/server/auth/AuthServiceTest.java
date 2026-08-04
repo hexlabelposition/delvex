@@ -2,6 +2,8 @@ package com.delvex.server.auth;
 
 import com.delvex.server.auth.dto.LoginRequest;
 import com.delvex.server.auth.dto.LoginResponse;
+import com.delvex.server.auth.dto.RefreshRequest;
+import com.delvex.server.auth.dto.RefreshResponse;
 import com.delvex.server.auth.dto.RegisterRequest;
 import com.delvex.server.auth.dto.RegisterResponse;
 import com.delvex.server.user.User;
@@ -38,6 +40,9 @@ class AuthServiceTest {
     @Mock
     private TokenService tokenService;
 
+    @Mock
+    private RefreshTokenService refreshTokenService;
+
     @InjectMocks
     private AuthService authService;
 
@@ -66,6 +71,8 @@ class AuthServiceTest {
 
         given(tokenService.createAccessToken(userId))
                 .willReturn("access-token");
+        given(refreshTokenService.issue(userId))
+                .willReturn("refresh-token");
 
         RegisterResponse response = authService.register(request);
 
@@ -74,6 +81,7 @@ class AuthServiceTest {
         assertThat(response.firstName()).isEqualTo("John");
         assertThat(response.lastName()).isEqualTo("Doe");
         assertThat(response.accessToken()).isEqualTo("access-token");
+        assertThat(response.refreshToken()).isEqualTo("refresh-token");
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
 
@@ -164,6 +172,8 @@ class AuthServiceTest {
         given(user.getLastName()).willReturn("Doe");
         given(tokenService.createAccessToken(userId))
                 .willReturn("access-token");
+        given(refreshTokenService.issue(userId))
+                .willReturn("refresh-token");
 
         LoginResponse response = authService.login(request);
 
@@ -172,6 +182,7 @@ class AuthServiceTest {
         assertThat(response.firstName()).isEqualTo("John");
         assertThat(response.lastName()).isEqualTo("Doe");
         assertThat(response.accessToken()).isEqualTo("access-token");
+        assertThat(response.refreshToken()).isEqualTo("refresh-token");
     }
 
     @Test
@@ -213,4 +224,36 @@ class AuthServiceTest {
 
         verifyNoInteractions(tokenService);
     }
+    @Test
+    void shouldRefreshTokens() {
+        RefreshRequest request = new RefreshRequest("refresh-token");
+        UUID userId = UUID.randomUUID();
+
+        given(refreshTokenService.rotate("refresh-token"))
+                .willReturn(new RefreshTokenService.RotatedRefreshToken(
+                        userId,
+                        "new-refresh-token"));
+        given(tokenService.createAccessToken(userId))
+                .willReturn("new-access-token");
+
+        RefreshResponse response = authService.refresh(request);
+
+        assertThat(response.accessToken()).isEqualTo("new-access-token");
+        assertThat(response.refreshToken()).isEqualTo("new-refresh-token");
+    }
+
+    @Test
+    void shouldRejectInvalidRefreshToken() {
+        RefreshRequest request = new RefreshRequest("invalid-refresh-token");
+
+        given(refreshTokenService.rotate("invalid-refresh-token"))
+                .willThrow(new InvalidRefreshTokenException());
+
+        assertThatThrownBy(() -> authService.refresh(request))
+                .isInstanceOf(InvalidRefreshTokenException.class)
+                .hasMessage("Refresh token is invalid or expired");
+
+        verifyNoInteractions(tokenService);
+    }
+
 }

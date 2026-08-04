@@ -2,7 +2,6 @@ package com.delvex.server.auth;
 
 import com.delvex.server.auth.dto.LoginRequest;
 import com.delvex.server.auth.dto.LoginResponse;
-import com.delvex.server.auth.dto.RefreshRequest;
 import com.delvex.server.auth.dto.RefreshResponse;
 import com.delvex.server.auth.dto.RegisterRequest;
 import com.delvex.server.auth.dto.RegisterResponse;
@@ -226,7 +225,6 @@ class AuthServiceTest {
     }
     @Test
     void shouldRefreshTokens() {
-        RefreshRequest request = new RefreshRequest("refresh-token");
         UUID userId = UUID.randomUUID();
 
         given(refreshTokenService.rotate("refresh-token"))
@@ -236,7 +234,7 @@ class AuthServiceTest {
         given(tokenService.createAccessToken(userId))
                 .willReturn("new-access-token");
 
-        RefreshResponse response = authService.refresh(request);
+        RefreshResponse response = authService.refresh("refresh-token");
 
         assertThat(response.accessToken()).isEqualTo("new-access-token");
         assertThat(response.refreshToken()).isEqualTo("new-refresh-token");
@@ -244,12 +242,10 @@ class AuthServiceTest {
 
     @Test
     void shouldRejectInvalidRefreshToken() {
-        RefreshRequest request = new RefreshRequest("invalid-refresh-token");
-
         given(refreshTokenService.rotate("invalid-refresh-token"))
                 .willThrow(new InvalidRefreshTokenException());
 
-        assertThatThrownBy(() -> authService.refresh(request))
+        assertThatThrownBy(() -> authService.refresh("invalid-refresh-token"))
                 .isInstanceOf(InvalidRefreshTokenException.class)
                 .hasMessage("Refresh token is invalid or expired");
 
@@ -258,13 +254,28 @@ class AuthServiceTest {
 
     @Test
     void shouldLogoutUser() {
-        RefreshRequest request = new RefreshRequest("refresh-token");
-
-        authService.logout(request);
+        authService.logout("refresh-token");
 
         then(refreshTokenService)
                 .should()
                 .revoke("refresh-token");
+    }
+
+    @Test
+    void shouldRejectMissingRefreshCookie() {
+        assertThatThrownBy(() -> authService.refresh(null))
+                .isInstanceOf(InvalidRefreshTokenException.class)
+                .hasMessage("Refresh token is invalid or expired");
+
+        verifyNoInteractions(refreshTokenService);
+        verifyNoInteractions(tokenService);
+    }
+
+    @Test
+    void shouldIgnoreMissingRefreshCookieOnLogout() {
+        authService.logout(null);
+
+        verifyNoInteractions(refreshTokenService);
     }
 
 }

@@ -9,7 +9,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.delvex.server.auth.dto.LoginRequest;
 import com.delvex.server.auth.dto.LoginResponse;
-import com.delvex.server.auth.dto.RefreshRequest;
 import com.delvex.server.auth.dto.RefreshResponse;
 import com.delvex.server.auth.dto.RegisterRequest;
 import com.delvex.server.auth.dto.RegisterResponse;
@@ -105,9 +104,15 @@ public class AuthService {
     }
 
     @Transactional
-    public RefreshResponse refresh(RefreshRequest request) {
+    public RefreshResponse refresh(String refreshToken) {
+        if (refreshToken == null
+                || refreshToken.isBlank()
+                || refreshToken.length() > 512) {
+            throw new InvalidRefreshTokenException();
+        }
+
         RefreshTokenService.RotatedRefreshToken rotatedToken = refreshTokenService
-                .rotate(request.refreshToken());
+                .rotate(refreshToken);
 
         String accessToken = tokenService.createAccessToken(
                 rotatedToken.userId());
@@ -118,8 +123,14 @@ public class AuthService {
     }
 
     @Transactional
-    public void logout(RefreshRequest request) {
-        refreshTokenService.revoke(request.refreshToken());
+    public void logout(String refreshToken) {
+        if (refreshToken == null
+                || refreshToken.isBlank()
+                || refreshToken.length() > 512) {
+            return;
+        }
+
+        refreshTokenService.revoke(refreshToken);
     }
 
 }

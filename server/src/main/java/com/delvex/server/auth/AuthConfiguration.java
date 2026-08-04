@@ -10,7 +10,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtClaimValidator;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
@@ -34,14 +38,25 @@ public class AuthConfiguration {
     }
 
     @Bean
-    public JwtDecoder jwtDecoder(SecretKey accessTokenSecretKey, @Value("${auth.issuer}") String issuer) {
+    public JwtDecoder jwtDecoder(
+            SecretKey accessTokenSecretKey,
+            @Value("${auth.issuer}") String issuer) {
         NimbusJwtDecoder decoder = NimbusJwtDecoder
                 .withSecretKey(accessTokenSecretKey)
                 .macAlgorithm(MacAlgorithm.HS256)
                 .build();
 
+        OAuth2TokenValidator<Jwt> issuerValidator =
+                JwtValidators.createDefaultWithIssuer(issuer);
+        OAuth2TokenValidator<Jwt> tokenTypeValidator =
+                new JwtClaimValidator<String>(
+                        "type",
+                        "access"::equals);
+
         decoder.setJwtValidator(
-                JwtValidators.createDefaultWithIssuer(issuer));
+                new DelegatingOAuth2TokenValidator<>(
+                        issuerValidator,
+                        tokenTypeValidator));
 
         return decoder;
     }
@@ -66,5 +81,4 @@ public class AuthConfiguration {
 
         return new SecretKeySpec(secretBytes, "HmacSHA256");
     }
-
 }

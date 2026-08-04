@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.delvex.server.auth.EmailAlreadyExistsException;
 import com.delvex.server.auth.InvalidCredentialsException;
 import com.delvex.server.auth.InvalidRefreshTokenException;
+import com.delvex.server.user.UserNotFoundException;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -70,6 +71,23 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(error);
     }
 
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ApiError> handleUserNotFound(
+            UserNotFoundException exception,
+            HttpServletRequest request) {
+        HttpStatus status = HttpStatus.NOT_FOUND;
+
+        ApiError error = new ApiError(
+                Instant.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                exception.getMessage(),
+                request.getRequestURI(),
+                Map.of());
+
+        return ResponseEntity.status(status).body(error);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleValidation(
             MethodArgumentNotValidException exception,
@@ -93,5 +111,4 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(status).body(error);
     }
-
 }

@@ -23,12 +23,20 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AuthController.class)
 class AuthControllerTest {
+
+    private static final String REFRESH_COOKIE =
+            "refresh_token=refresh-token; Path=/api/auth; HttpOnly; SameSite=Lax";
+    private static final String NEW_REFRESH_COOKIE =
+            "refresh_token=new-refresh-token; Path=/api/auth; HttpOnly; SameSite=Lax";
+    private static final String CLEARED_REFRESH_COOKIE =
+            "refresh_token=; Path=/api/auth; Max-Age=0; HttpOnly; SameSite=Lax";
 
     @Autowired
     private MockMvc mockMvc;
@@ -52,7 +60,7 @@ class AuthControllerTest {
                         "access-token",
                         "refresh-token"));
         given(refreshCookieService.create("refresh-token"))
-                .willReturn("refresh-cookie");
+                .willReturn(REFRESH_COOKIE);
 
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -67,7 +75,7 @@ class AuthControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(header().string(
                         HttpHeaders.SET_COOKIE,
-                        "refresh-cookie"))
+                        REFRESH_COOKIE))
                 .andExpect(jsonPath("$.id").value(userId.toString()))
                 .andExpect(jsonPath("$.email").value("john@example.com"))
                 .andExpect(jsonPath("$.firstName").value("John"))
@@ -128,7 +136,7 @@ class AuthControllerTest {
                         "access-token",
                         "refresh-token"));
         given(refreshCookieService.create("refresh-token"))
-                .willReturn("refresh-cookie");
+                .willReturn(REFRESH_COOKIE);
 
         mockMvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -141,7 +149,7 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string(
                         HttpHeaders.SET_COOKIE,
-                        "refresh-cookie"))
+                        REFRESH_COOKIE))
                 .andExpect(jsonPath("$.id").value(userId.toString()))
                 .andExpect(jsonPath("$.email").value("john@example.com"))
                 .andExpect(jsonPath("$.firstName").value("John"))
@@ -191,7 +199,7 @@ class AuthControllerTest {
                         "new-access-token",
                         "new-refresh-token"));
         given(refreshCookieService.create("new-refresh-token"))
-                .willReturn("new-refresh-cookie");
+                .willReturn(NEW_REFRESH_COOKIE);
 
         mockMvc.perform(post("/api/auth/refresh")
                 .cookie(new Cookie(
@@ -200,7 +208,7 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string(
                         HttpHeaders.SET_COOKIE,
-                        "new-refresh-cookie"))
+                        NEW_REFRESH_COOKIE))
                 .andExpect(jsonPath("$.accessToken")
                         .value("new-access-token"))
                 .andExpect(jsonPath("$.refreshToken").doesNotExist());
@@ -234,16 +242,25 @@ class AuthControllerTest {
     @Test
     void shouldLogoutUserAndClearRefreshCookie() throws Exception {
         given(refreshCookieService.clear())
-                .willReturn("cleared-refresh-cookie");
+                .willReturn(CLEARED_REFRESH_COOKIE);
 
         mockMvc.perform(post("/api/auth/logout")
                 .cookie(new Cookie(
                         RefreshCookieService.COOKIE_NAME,
                         "refresh-token")))
                 .andExpect(status().isNoContent())
-                .andExpect(header().string(
-                        HttpHeaders.SET_COOKIE,
-                        "cleared-refresh-cookie"))
+                .andExpect(cookie().value(
+                        RefreshCookieService.COOKIE_NAME,
+                        ""))
+                .andExpect(cookie().maxAge(
+                        RefreshCookieService.COOKIE_NAME,
+                        0))
+                .andExpect(cookie().path(
+                        RefreshCookieService.COOKIE_NAME,
+                        "/api/auth"))
+                .andExpect(cookie().httpOnly(
+                        RefreshCookieService.COOKIE_NAME,
+                        true))
                 .andExpect(content().string(""));
 
         then(authService)
@@ -254,13 +271,22 @@ class AuthControllerTest {
     @Test
     void shouldClearRefreshCookieWhenSessionIsMissing() throws Exception {
         given(refreshCookieService.clear())
-                .willReturn("cleared-refresh-cookie");
+                .willReturn(CLEARED_REFRESH_COOKIE);
 
         mockMvc.perform(post("/api/auth/logout"))
                 .andExpect(status().isNoContent())
-                .andExpect(header().string(
-                        HttpHeaders.SET_COOKIE,
-                        "cleared-refresh-cookie"));
+                .andExpect(cookie().value(
+                        RefreshCookieService.COOKIE_NAME,
+                        ""))
+                .andExpect(cookie().maxAge(
+                        RefreshCookieService.COOKIE_NAME,
+                        0))
+                .andExpect(cookie().path(
+                        RefreshCookieService.COOKIE_NAME,
+                        "/api/auth"))
+                .andExpect(cookie().httpOnly(
+                        RefreshCookieService.COOKIE_NAME,
+                        true));
 
         then(authService)
                 .should()

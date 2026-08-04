@@ -2,6 +2,7 @@ package com.delvex.server.auth;
 
 import java.util.Locale;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,7 +43,13 @@ public class AuthService {
                 request.firstName().strip(),
                 request.lastName().strip());
 
-        User savedUser = userRepository.save(user);
+        User savedUser;
+
+        try {
+            savedUser = userRepository.saveAndFlush(user);
+        } catch (DataIntegrityViolationException exception) {
+            throw new EmailAlreadyExistsException(exception);
+        }
 
         String accessToken = tokenService.createAccessToken(
                 savedUser.getId());

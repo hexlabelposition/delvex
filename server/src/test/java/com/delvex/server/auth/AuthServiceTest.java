@@ -10,6 +10,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.UUID;
@@ -52,7 +53,7 @@ class AuthServiceTest {
                 .willReturn(false);
         given(passwordEncoder.encode("strong-password"))
                 .willReturn("{bcrypt}encoded-password");
-        given(userRepository.save(any(User.class)))
+        given(userRepository.saveAndFlush(any(User.class)))
                 .willReturn(savedUser);
 
         given(savedUser.getId()).willReturn(userId);
@@ -72,7 +73,10 @@ class AuthServiceTest {
         assertThat(response.accessToken()).isEqualTo("access-token");
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-        then(userRepository).should().save(userCaptor.capture());
+
+        then(userRepository)
+                .should()
+                .saveAndFlush(userCaptor.capture());
 
         User userToSave = userCaptor.getValue();
 
@@ -99,7 +103,38 @@ class AuthServiceTest {
                 .hasMessage("Email is already registered");
 
         verifyNoInteractions(passwordEncoder);
-        then(userRepository).should(never()).save(any(User.class));
+
+        then(userRepository)
+                .should(never())
+                .saveAndFlush(any(User.class));
+
+        verifyNoInteractions(tokenService);
+    }
+
+    @Test
+    void shouldRejectEmailWhenDatabaseConstraintIsViolated() {
+        RegisterRequest request = new RegisterRequest(
+                "john@example.com",
+                "strong-password",
+                "John",
+                "Doe");
+
+        given(userRepository.existsByEmailIgnoreCase("john@example.com"))
+                .willReturn(false);
+        given(passwordEncoder.encode("strong-password"))
+                .willReturn("{bcrypt}encoded-password");
+        given(userRepository.saveAndFlush(any(User.class)))
+                .willThrow(new DataIntegrityViolationException(
+                        "Unique constraint violated"));
+
+        assertThatThrownBy(() -> authService.register(request))
+                .isInstanceOf(EmailAlreadyExistsException.class)
+                .hasMessage("Email is already registered");
+
+        assertThatThrownBy(() -> authService.register(request))
+                .isInstanceOf(EmailAlreadyExistsException.class)
+                .hasMessage("Email is already registered")
+                .hasCauseInstanceOf(DataIntegrityViolationException.class);
 
         verifyNoInteractions(tokenService);
     }

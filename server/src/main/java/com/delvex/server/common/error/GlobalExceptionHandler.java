@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 import com.delvex.server.auth.EmailAlreadyExistsException;
 import com.delvex.server.auth.InvalidCredentialsException;
@@ -137,6 +138,45 @@ public class GlobalExceptionHandler {
                 exception.getMessage(),
                 request.getRequestURI(),
                 Map.of());
+
+        return ResponseEntity.status(status).body(error);
+    }
+
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ApiError> handleMethodValidation(
+            HandlerMethodValidationException exception,
+            HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        Map<String, String> fieldErrors = new LinkedHashMap<>();
+
+        logHandledException(status, exception, request);
+
+        exception.getParameterValidationResults()
+                .forEach(result -> {
+                    String parameterName = result
+                            .getMethodParameter()
+                            .getParameterName();
+
+                    if (parameterName == null) {
+                        parameterName = "argument"
+                                + result.getMethodParameter()
+                                        .getParameterIndex();
+                    }
+
+                    fieldErrors.putIfAbsent(
+                            parameterName,
+                            result.getResolvableErrors()
+                                    .getFirst()
+                                    .getDefaultMessage());
+                });
+
+        ApiError error = new ApiError(
+                Instant.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                "Validation failed",
+                request.getRequestURI(),
+                fieldErrors);
 
         return ResponseEntity.status(status).body(error);
     }

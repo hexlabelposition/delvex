@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.delvex.server.auth.SecurityConfiguration;
 import com.delvex.server.shipment.dto.CreateShipmentRequest;
+import com.delvex.server.shipment.dto.ShipmentPageResponse;
 import com.delvex.server.shipment.dto.ShipmentResponse;
 import com.delvex.server.shipment.dto.UpdateShipmentRequest;
 
@@ -66,20 +67,71 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void shouldReturnUserShipments() throws Exception {
+    void shouldReturnDefaultShipmentPage() throws Exception {
         UUID userId = UUID.randomUUID();
         ShipmentResponse response = shipmentResponse();
 
-        given(shipmentService.findAll(userId))
-                .willReturn(List.of(response));
+        given(shipmentService.findAll(userId, 0, 20))
+                .willReturn(new ShipmentPageResponse(
+                        List.of(response),
+                        0,
+                        20,
+                        1,
+                        1));
 
         mockMvc.perform(get("/api/shipments")
                 .with(jwtFor(userId)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id")
+                .andExpect(jsonPath("$.content[0].id")
                         .value(response.id().toString()))
-                .andExpect(jsonPath("$[0].originCity").value("Legnica"))
-                .andExpect(jsonPath("$[0].destinationCity").value("Wroclaw"));
+                .andExpect(jsonPath("$.content[0].originCity")
+                        .value("Legnica"))
+                .andExpect(jsonPath("$.content[0].destinationCity")
+                        .value("Wroclaw"))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(20))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1));
+    }
+
+    @Test
+    void shouldApplyShipmentPaginationParameters() throws Exception {
+        UUID userId = UUID.randomUUID();
+
+        given(shipmentService.findAll(userId, 2, 10))
+                .willReturn(new ShipmentPageResponse(
+                        List.of(),
+                        2,
+                        10,
+                        25,
+                        3));
+
+        mockMvc.perform(get("/api/shipments")
+                .param("page", "2")
+                .param("size", "10")
+                .with(jwtFor(userId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isEmpty())
+                .andExpect(jsonPath("$.page").value(2))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(25))
+                .andExpect(jsonPath("$.totalPages").value(3));
+    }
+
+    @Test
+    void shouldRejectInvalidPaginationParameters() throws Exception {
+        UUID userId = UUID.randomUUID();
+
+        mockMvc.perform(get("/api/shipments")
+                .param("page", "-1")
+                .param("size", "101")
+                .with(jwtFor(userId)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Validation failed"))
+                .andExpect(jsonPath("$.fieldErrors.page").exists())
+                .andExpect(jsonPath("$.fieldErrors.size").exists());
+
+        then(shipmentService).shouldHaveNoInteractions();
     }
 
     @Test

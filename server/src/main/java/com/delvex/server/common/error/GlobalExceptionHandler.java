@@ -1,13 +1,16 @@
 package com.delvex.server.common.error;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -21,6 +24,7 @@ import com.delvex.server.shipment.ShipmentNotFoundException;
 import com.delvex.server.user.UserNotFoundException;
 
 import jakarta.servlet.http.HttpServletRequest;
+import tools.jackson.databind.exc.InvalidFormatException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -142,6 +146,45 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(error);
     }
 
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> handleUnreadableMessage(
+            HttpMessageNotReadableException exception,
+            HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        InvalidFormatException invalidFormatException =
+                findInvalidFormatException(exception);
+
+        logHandledException(status, exception, request);
+
+        String message = "Malformed JSON request";
+        Map<String, String> fieldErrors = Map.of();
+
+        if (invalidFormatException != null
+                && invalidFormatException.getTargetType().isEnum()) {
+            String allowedValues = Arrays.stream(
+                            invalidFormatException
+                                    .getTargetType()
+                                    .getEnumConstants())
+                    .map(Object::toString)
+                    .collect(Collectors.joining(", "));
+
+            message = "Validation failed";
+            fieldErrors = Map.of(
+                    "value",
+                    "Must be one of: " + allowedValues);
+        }
+
+        ApiError error = new ApiError(
+                Instant.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                message,
+                request.getRequestURI(),
+                fieldErrors);
+
+        return ResponseEntity.status(status).body(error);
+    }
+
     @ExceptionHandler(HandlerMethodValidationException.class)
     public ResponseEntity<ApiError> handleMethodValidation(
             HandlerMethodValidationException exception,
@@ -207,6 +250,20 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(error);
     }
 
+    private InvalidFormatException findInvalidFormatException(
+            Throwable throwable) {
+        Throwable current = throwable;
+
+        while (current != null) {
+            if (current instanceof InvalidFormatException invalidFormat) {
+                return invalidFormat;
+            }
+            current = current.getCause();
+        }
+
+        return null;
+    }
+
     private void logHandledException(
             HttpStatus status,
             Exception exception,
@@ -218,4 +275,3 @@ public class GlobalExceptionHandler {
                 exception.getClass().getSimpleName());
     }
 }
-

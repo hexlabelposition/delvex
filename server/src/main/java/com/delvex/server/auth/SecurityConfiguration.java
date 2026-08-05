@@ -20,10 +20,15 @@ public class SecurityConfiguration {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/users/me").authenticated()
+                        .requestMatchers(
+                                "/api/users/me",
+                                "/api/shipments",
+                                "/api/shipments/**")
+                        .authenticated()
                         .anyRequest().permitAll())
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(Customizer.withDefaults()))
                 .build();
     }
 }
+

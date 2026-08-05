@@ -1,15 +1,18 @@
 package com.delvex.server.shipment;
 
-import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.delvex.server.shipment.dto.CreateShipmentRequest;
+import com.delvex.server.shipment.dto.ShipmentPageResponse;
 import com.delvex.server.shipment.dto.ShipmentResponse;
 import com.delvex.server.shipment.dto.UpdateShipmentRequest;
 import com.delvex.server.user.User;
@@ -66,19 +69,29 @@ public class ShipmentService {
     }
 
     @Transactional(readOnly = true)
-    public List<ShipmentResponse> findAll(UUID userId) {
-        List<ShipmentResponse> shipments = shipmentRepository
-                .findAllByUser_IdOrderByCreatedAtDesc(userId)
-                .stream()
-                .map(ShipmentResponse::from)
-                .toList();
+    public ShipmentPageResponse findAll(
+            UUID userId,
+            int page,
+            int size) {
+        Page<Shipment> shipments = shipmentRepository.findAllByUser_Id(
+                userId,
+                PageRequest.of(
+                        page,
+                        size,
+                        Sort.by(
+                                Sort.Direction.DESC,
+                                "createdAt")));
 
         LOGGER.debug(
-                "shipments loaded userId={} count={}",
+                "shipments loaded userId={} page={} size={} count={} "
+                        + "totalElements={}",
                 userId,
-                shipments.size());
+                page,
+                size,
+                shipments.getNumberOfElements(),
+                shipments.getTotalElements());
 
-        return shipments;
+        return ShipmentPageResponse.from(shipments);
     }
 
     @Transactional(readOnly = true)

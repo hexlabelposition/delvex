@@ -13,9 +13,11 @@ import org.springframework.web.bind.annotation.RestController;
 import com.delvex.server.user.dto.UpdateUserRequest;
 import com.delvex.server.user.dto.UserResponse;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 
 @RestController
+@SecurityRequirement(name = "bearerAuth")
 @RequestMapping("/api/users")
 public class UserController {
 

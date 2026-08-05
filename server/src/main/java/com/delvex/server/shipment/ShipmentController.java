@@ -21,11 +21,13 @@ import com.delvex.server.shipment.dto.ShipmentPageResponse;
 import com.delvex.server.shipment.dto.ShipmentResponse;
 import com.delvex.server.shipment.dto.UpdateShipmentRequest;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
 @RestController
+@SecurityRequirement(name = "bearerAuth")
 @RequestMapping("/api/shipments")
 public class ShipmentController {
 

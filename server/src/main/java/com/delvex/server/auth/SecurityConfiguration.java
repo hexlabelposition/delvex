@@ -8,18 +8,47 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 
+import com.delvex.server.common.error.ApiAccessDeniedHandler;
+import com.delvex.server.common.error.ApiAuthenticationEntryPoint;
+import com.delvex.server.common.error.ApiErrorResponseWriter;
+
+import tools.jackson.databind.json.JsonMapper;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfiguration {
 
     @Bean
+    public ApiErrorResponseWriter apiErrorResponseWriter(
+            JsonMapper jsonMapper) {
+        return new ApiErrorResponseWriter(jsonMapper);
+    }
+
+    @Bean
+    public ApiAuthenticationEntryPoint apiAuthenticationEntryPoint(
+            ApiErrorResponseWriter errorResponseWriter) {
+        return new ApiAuthenticationEntryPoint(errorResponseWriter);
+    }
+
+    @Bean
+    public ApiAccessDeniedHandler apiAccessDeniedHandler(
+            ApiErrorResponseWriter errorResponseWriter) {
+        return new ApiAccessDeniedHandler(errorResponseWriter);
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(
-            HttpSecurity http) throws Exception {
+            HttpSecurity http,
+            ApiAuthenticationEntryPoint authenticationEntryPoint,
+            ApiAccessDeniedHandler accessDeniedHandler) throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(
                                 "/api/users/me",
@@ -28,8 +57,9 @@ public class SecurityConfiguration {
                         .authenticated()
                         .anyRequest().permitAll())
                 .oauth2ResourceServer(oauth2 -> oauth2
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler)
                         .jwt(Customizer.withDefaults()))
                 .build();
     }
 }
-

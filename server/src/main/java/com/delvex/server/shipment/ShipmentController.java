@@ -1,6 +1,5 @@
 package com.delvex.server.shipment;
 
-import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -13,14 +12,18 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.delvex.server.shipment.dto.CreateShipmentRequest;
+import com.delvex.server.shipment.dto.ShipmentPageResponse;
 import com.delvex.server.shipment.dto.ShipmentResponse;
 import com.delvex.server.shipment.dto.UpdateShipmentRequest;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 
 @RestController
 @RequestMapping("/api/shipments")
@@ -41,9 +44,19 @@ public class ShipmentController {
     }
 
     @GetMapping
-    public List<ShipmentResponse> findAll(
-            @AuthenticationPrincipal Jwt jwt) {
-        return shipmentService.findAll(userId(jwt));
+    public ShipmentPageResponse findAll(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "0")
+            @Min(value = 0, message = "Page must not be negative")
+            int page,
+            @RequestParam(defaultValue = "20")
+            @Min(value = 1, message = "Size must be at least 1")
+            @Max(value = 100, message = "Size must not exceed 100")
+            int size) {
+        return shipmentService.findAll(
+                userId(jwt),
+                page,
+                size);
     }
 
     @GetMapping("/{shipmentId}")

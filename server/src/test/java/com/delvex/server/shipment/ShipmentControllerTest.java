@@ -253,12 +253,72 @@ class ShipmentControllerTest {
     }
 
     @Test
+    void shouldRejectMalformedJson() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID shipmentId = UUID.randomUUID();
+
+        mockMvc.perform(patch("/api/shipments/{shipmentId}", shipmentId)
+                .with(jwtFor(userId))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                          "status": "IN_TRANSIT"
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("Bad Request"))
+                .andExpect(jsonPath("$.message")
+                        .value("Malformed JSON request"))
+                .andExpect(jsonPath("$.path")
+                        .value("/api/shipments/" + shipmentId))
+                .andExpect(jsonPath("$.fieldErrors").isEmpty());
+
+        then(shipmentService).shouldHaveNoInteractions();
+    }
+
+    @Test
+    void shouldRejectInvalidShipmentStatus() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID shipmentId = UUID.randomUUID();
+
+        mockMvc.perform(patch("/api/shipments/{shipmentId}", shipmentId)
+                .with(jwtFor(userId))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                          "status": "UNKNOWN"
+                        }
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("Bad Request"))
+                .andExpect(jsonPath("$.message").value("Validation failed"))
+                .andExpect(jsonPath("$.fieldErrors.value")
+                        .value("Must be one of: CREATED, IN_TRANSIT, DELIVERED, CANCELLED"));
+
+        then(shipmentService).shouldHaveNoInteractions();
+    }
+
+    @Test
     void shouldRequireAuthentication() throws Exception {
         mockMvc.perform(get("/api/shipments"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(
+                        MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.error").value("Unauthorized"))
+                .andExpect(jsonPath("$.message")
+                        .value("Authentication is required"))
+                .andExpect(jsonPath("$.path").value("/api/shipments"))
+                .andExpect(jsonPath("$.fieldErrors").isEmpty());
 
-        mockMvc.perform(get("/api/shipments/{shipmentId}", UUID.randomUUID()))
-                .andExpect(status().isUnauthorized());
+        UUID shipmentId = UUID.randomUUID();
+
+        mockMvc.perform(get("/api/shipments/{shipmentId}", shipmentId))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.path")
+                        .value("/api/shipments/" + shipmentId));
     }
 
     private org.springframework.test.web.servlet.request.RequestPostProcessor jwtFor(

@@ -27,6 +27,12 @@ class SecurityConfigurationTest {
         mockMvc.perform(get("/api/health"))
                 .andExpect(status().isOk());
 
+        mockMvc.perform(get("/api/health/live"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/health/ready"))
+                .andExpect(status().isOk());
+
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{}"))

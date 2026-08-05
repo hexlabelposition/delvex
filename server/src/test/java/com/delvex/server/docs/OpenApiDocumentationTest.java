@@ -39,6 +39,12 @@ class OpenApiDocumentationTest {
                 .andExpect(jsonPath("$.info.version").value("v1"))
                 .andExpect(jsonPath("$.paths['/api/health']").exists())
                 .andExpect(jsonPath(
+                        "$.paths['/api/health/live']")
+                        .exists())
+                .andExpect(jsonPath(
+                        "$.paths['/api/health/ready']")
+                        .exists())
+                .andExpect(jsonPath(
                         "$.components.securitySchemes.bearerAuth.type")
                         .value("http"))
                 .andExpect(jsonPath(
@@ -58,6 +64,12 @@ class OpenApiDocumentationTest {
                         .isArray())
                 .andExpect(jsonPath(
                         "$.paths['/api/health'].get.security")
+                        .doesNotExist())
+                .andExpect(jsonPath(
+                        "$.paths['/api/health/live'].get.security")
+                        .doesNotExist())
+                .andExpect(jsonPath(
+                        "$.paths['/api/health/ready'].get.security")
                         .doesNotExist())
                 .andExpect(jsonPath(
                         "$.paths['/api/auth/login'].post.security")

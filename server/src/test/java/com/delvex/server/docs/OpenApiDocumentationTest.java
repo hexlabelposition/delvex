@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.containsString;
@@ -14,6 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@ActiveProfiles("dev")
 class OpenApiDocumentationTest {
 
     @Autowired
@@ -41,6 +43,24 @@ class OpenApiDocumentationTest {
                         .value("http"))
                 .andExpect(jsonPath(
                         "$.components.securitySchemes.bearerAuth.scheme")
-                        .value("bearer"));
+                        .value("bearer"))
+                .andExpect(jsonPath(
+                        "$.paths['/api/shipments'].get.security[0].bearerAuth")
+                        .isArray())
+                .andExpect(jsonPath(
+                        "$.paths['/api/shipments'].post.security[0].bearerAuth")
+                        .isArray())
+                .andExpect(jsonPath(
+                        "$.paths['/api/users/me'].get.security[0].bearerAuth")
+                        .isArray())
+                .andExpect(jsonPath(
+                        "$.paths['/api/users/me'].patch.security[0].bearerAuth")
+                        .isArray())
+                .andExpect(jsonPath(
+                        "$.paths['/api/health'].get.security")
+                        .doesNotExist())
+                .andExpect(jsonPath(
+                        "$.paths['/api/auth/login'].post.security")
+                        .doesNotExist());
     }
 }

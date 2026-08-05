@@ -9,11 +9,16 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.delvex.server.shipment.dto.CreateShipmentRequest;
+import com.delvex.server.shipment.dto.ShipmentPageResponse;
 import com.delvex.server.shipment.dto.ShipmentResponse;
 import com.delvex.server.shipment.dto.UpdateShipmentRequest;
 import com.delvex.server.user.User;
@@ -22,6 +27,7 @@ import com.delvex.server.user.UserRepository;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
@@ -70,18 +76,46 @@ class ShipmentServiceTest {
     }
 
     @Test
-    void shouldReturnOnlyUserShipments() {
+    void shouldReturnPaginatedUserShipments() {
         UUID userId = UUID.randomUUID();
         Shipment shipment = createShipment(createUser(userId));
 
-        given(shipmentRepository
-                .findAllByUser_IdOrderByCreatedAtDesc(userId))
-                .willReturn(List.of(shipment));
+        given(shipmentRepository.findAllByUser_Id(
+                eq(userId),
+                any(Pageable.class)))
+                .willReturn(new PageImpl<>(
+                        List.of(shipment),
+                        PageRequest.of(1, 10),
+                        25));
 
-        List<ShipmentResponse> responses = shipmentService.findAll(userId);
+        ShipmentPageResponse response = shipmentService.findAll(
+                userId,
+                1,
+                10);
 
-        assertThat(responses).hasSize(1);
-        assertThat(responses.getFirst().id()).isEqualTo(shipment.getId());
+        assertThat(response.content()).hasSize(1);
+        assertThat(response.content().getFirst().id())
+                .isEqualTo(shipment.getId());
+        assertThat(response.page()).isEqualTo(1);
+        assertThat(response.size()).isEqualTo(10);
+        assertThat(response.totalElements()).isEqualTo(25);
+        assertThat(response.totalPages()).isEqualTo(3);
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(
+                Pageable.class);
+
+        then(shipmentRepository).should().findAllByUser_Id(
+                eq(userId),
+                pageableCaptor.capture());
+
+        Pageable pageable = pageableCaptor.getValue();
+
+        assertThat(pageable.getPageNumber()).isEqualTo(1);
+        assertThat(pageable.getPageSize()).isEqualTo(10);
+        assertThat(pageable.getSort()
+                .getOrderFor("createdAt")
+                .isDescending())
+                .isTrue();
     }
 
     @Test

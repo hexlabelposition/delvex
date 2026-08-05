@@ -24,8 +24,10 @@ auth:
 
 springdoc:
   api-docs:
+    enabled: false
     path: /docs/openapi.json
   swagger-ui:
+    enabled: false
     path: /docs
     disable-swagger-default-url: true
 

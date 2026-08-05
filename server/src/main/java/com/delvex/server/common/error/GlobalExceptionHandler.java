@@ -4,6 +4,8 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -22,11 +24,16 @@ import jakarta.servlet.http.HttpServletRequest;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(
+            GlobalExceptionHandler.class);
+
     @ExceptionHandler(EmailAlreadyExistsException.class)
     public ResponseEntity<ApiError> handleEmailAlreadyRegistered(
             EmailAlreadyExistsException exception,
             HttpServletRequest request) {
         HttpStatus status = HttpStatus.CONFLICT;
+
+        logHandledException(status, exception, request);
 
         ApiError error = new ApiError(
                 Instant.now(),
@@ -45,6 +52,8 @@ public class GlobalExceptionHandler {
             HttpServletRequest request) {
         HttpStatus status = HttpStatus.UNAUTHORIZED;
 
+        logHandledException(status, exception, request);
+
         ApiError error = new ApiError(
                 Instant.now(),
                 status.value(),
@@ -61,6 +70,8 @@ public class GlobalExceptionHandler {
             InvalidRefreshTokenException exception,
             HttpServletRequest request) {
         HttpStatus status = HttpStatus.UNAUTHORIZED;
+
+        logHandledException(status, exception, request);
 
         ApiError error = new ApiError(
                 Instant.now(),
@@ -79,6 +90,8 @@ public class GlobalExceptionHandler {
             HttpServletRequest request) {
         HttpStatus status = HttpStatus.NOT_FOUND;
 
+        logHandledException(status, exception, request);
+
         ApiError error = new ApiError(
                 Instant.now(),
                 status.value(),
@@ -95,6 +108,8 @@ public class GlobalExceptionHandler {
             ShipmentNotFoundException exception,
             HttpServletRequest request) {
         HttpStatus status = HttpStatus.NOT_FOUND;
+
+        logHandledException(status, exception, request);
 
         ApiError error = new ApiError(
                 Instant.now(),
@@ -113,6 +128,8 @@ public class GlobalExceptionHandler {
             HttpServletRequest request) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
 
+        logHandledException(status, exception, request);
+
         ApiError error = new ApiError(
                 Instant.now(),
                 status.value(),
@@ -129,6 +146,8 @@ public class GlobalExceptionHandler {
             MethodArgumentNotValidException exception,
             HttpServletRequest request) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        logHandledException(status, exception, request);
         Map<String, String> fieldErrors = new LinkedHashMap<>();
 
         exception.getBindingResult()
@@ -146,6 +165,39 @@ public class GlobalExceptionHandler {
                 fieldErrors);
 
         return ResponseEntity.status(status).body(error);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiError> handleUnexpectedException(
+            Exception exception,
+            HttpServletRequest request) {
+        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        LOGGER.error(
+                "unexpected request failure path={}",
+                request.getRequestURI(),
+                exception);
+
+        ApiError error = new ApiError(
+                Instant.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                "An unexpected error occurred",
+                request.getRequestURI(),
+                Map.of());
+
+        return ResponseEntity.status(status).body(error);
+    }
+
+    private void logHandledException(
+            HttpStatus status,
+            Exception exception,
+            HttpServletRequest request) {
+        LOGGER.warn(
+                "request rejected status={} path={} exception={}",
+                status.value(),
+                request.getRequestURI(),
+                exception.getClass().getSimpleName());
     }
 }
 

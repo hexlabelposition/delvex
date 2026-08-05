@@ -2,6 +2,8 @@ package com.delvex.server.user;
 
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,6 +13,9 @@ import com.delvex.server.user.dto.UserResponse;
 @Service
 public class UserService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(
+            UserService.class);
+
     private final UserRepository userRepository;
 
     public UserService(UserRepository userRepository) {
@@ -19,7 +24,11 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public UserResponse getCurrentUser(UUID userId) {
-        return UserResponse.from(findUser(userId));
+        UserResponse response = UserResponse.from(findUser(userId));
+
+        LOGGER.debug("user profile loaded userId={}", userId);
+
+        return response;
     }
 
     @Transactional
@@ -31,6 +40,8 @@ public class UserService {
         user.updateProfile(
                 strip(request.firstName()),
                 strip(request.lastName()));
+
+        LOGGER.info("user profile updated userId={}", userId);
 
         return UserResponse.from(user);
     }

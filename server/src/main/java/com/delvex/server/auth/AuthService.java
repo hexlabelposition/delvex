@@ -2,6 +2,8 @@ package com.delvex.server.auth;
 
 import java.util.Locale;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,9 @@ import com.delvex.server.user.UserRepository;
 
 @Service
 public class AuthService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(
+            AuthService.class);
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -65,6 +70,8 @@ public class AuthService {
         String refreshToken = refreshTokenService.issue(
                 savedUser.getId());
 
+        LOGGER.info("user registered userId={}", savedUser.getId());
+
         return new RegisterResponse(
                 savedUser.getId(),
                 savedUser.getEmail(),
@@ -94,6 +101,8 @@ public class AuthService {
         String refreshToken = refreshTokenService.issue(
                 user.getId());
 
+        LOGGER.info("user authenticated userId={}", user.getId());
+
         return new LoginResponse(
                 user.getId(),
                 user.getEmail(),
@@ -117,6 +126,10 @@ public class AuthService {
         String accessToken = tokenService.createAccessToken(
                 rotatedToken.userId());
 
+        LOGGER.info(
+                "refresh token rotated userId={}",
+                rotatedToken.userId());
+
         return new RefreshResponse(
                 accessToken,
                 rotatedToken.refreshToken());
@@ -127,10 +140,12 @@ public class AuthService {
         if (refreshToken == null
                 || refreshToken.isBlank()
                 || refreshToken.length() > 512) {
+            LOGGER.debug("logout skipped reason=missing_or_invalid_cookie");
             return;
         }
 
         refreshTokenService.revoke(refreshToken);
+        LOGGER.info("logout processed");
     }
 
 }

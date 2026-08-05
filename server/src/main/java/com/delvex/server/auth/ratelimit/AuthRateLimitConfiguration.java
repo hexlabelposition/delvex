@@ -7,6 +7,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import com.delvex.server.common.error.ApiErrorResponseWriter;
 
+import tools.jackson.databind.json.JsonMapper;
+
 @Configuration
 @EnableConfigurationProperties(AuthRateLimitProperties.class)
 public class AuthRateLimitConfiguration implements WebMvcConfigurer {
@@ -15,11 +17,11 @@ public class AuthRateLimitConfiguration implements WebMvcConfigurer {
 
     public AuthRateLimitConfiguration(
             AuthRateLimitProperties properties,
-            ApiErrorResponseWriter errorResponseWriter) {
+            JsonMapper jsonMapper) {
         this.interceptor = new AuthRateLimitInterceptor(
                 new AuthRateLimiter(properties.getWindow()),
                 properties,
-                errorResponseWriter);
+                new ApiErrorResponseWriter(jsonMapper));
     }
 
     @Override

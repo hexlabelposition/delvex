@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +18,9 @@ import com.delvex.server.user.UserRepository;
 
 @Service
 public class ShipmentService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(
+            ShipmentService.class);
 
     private final ShipmentRepository shipmentRepository;
     private final UserRepository userRepository;
@@ -50,23 +55,43 @@ public class ShipmentService {
                 request.pickupAt(),
                 request.deliveryAt());
 
-        return ShipmentResponse.from(
-                shipmentRepository.saveAndFlush(shipment));
+        Shipment savedShipment = shipmentRepository.saveAndFlush(shipment);
+
+        LOGGER.info(
+                "shipment created userId={} shipmentId={}",
+                userId,
+                savedShipment.getId());
+
+        return ShipmentResponse.from(savedShipment);
     }
 
     @Transactional(readOnly = true)
     public List<ShipmentResponse> findAll(UUID userId) {
-        return shipmentRepository
+        List<ShipmentResponse> shipments = shipmentRepository
                 .findAllByUser_IdOrderByCreatedAtDesc(userId)
                 .stream()
                 .map(ShipmentResponse::from)
                 .toList();
+
+        LOGGER.debug(
+                "shipments loaded userId={} count={}",
+                userId,
+                shipments.size());
+
+        return shipments;
     }
 
     @Transactional(readOnly = true)
     public ShipmentResponse findById(UUID userId, UUID shipmentId) {
-        return ShipmentResponse.from(
+        ShipmentResponse response = ShipmentResponse.from(
                 findOwnedShipment(userId, shipmentId));
+
+        LOGGER.debug(
+                "shipment loaded userId={} shipmentId={}",
+                userId,
+                shipmentId);
+
+        return response;
     }
 
     @Transactional
@@ -91,13 +116,24 @@ public class ShipmentService {
                 request.pickupAt(),
                 request.deliveryAt());
 
+        LOGGER.info(
+                "shipment updated userId={} shipmentId={}",
+                userId,
+                shipmentId);
+
         return ShipmentResponse.from(shipment);
     }
 
     @Transactional
     public void delete(UUID userId, UUID shipmentId) {
-        shipmentRepository.delete(
-                findOwnedShipment(userId, shipmentId));
+        Shipment shipment = findOwnedShipment(userId, shipmentId);
+
+        shipmentRepository.delete(shipment);
+
+        LOGGER.info(
+                "shipment deleted userId={} shipmentId={}",
+                userId,
+                shipmentId);
     }
 
     private Shipment findOwnedShipment(UUID userId, UUID shipmentId) {

@@ -25,3 +25,9 @@ springdoc:
   swagger-ui:
     path: /docs
     disable-swagger-default-url: true
+
+logging:
+  level:
+    com.delvex.server: ${LOG_LEVEL:INFO}
+  pattern:
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level requestId=%X{requestId:-none} %logger{36} - %msg%n"

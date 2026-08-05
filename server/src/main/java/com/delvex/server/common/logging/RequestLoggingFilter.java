@@ -45,6 +45,13 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
 
         try {
             filterChain.doFilter(request, response);
+        } catch (ServletException | IOException | RuntimeException exception) {
+            LOGGER.error(
+                    "request failed method={} path={}",
+                    request.getMethod(),
+                    request.getRequestURI(),
+                    exception);
+            throw exception;
         } finally {
             long durationMs = TimeUnit.NANOSECONDS.toMillis(
                     System.nanoTime() - startedAt);

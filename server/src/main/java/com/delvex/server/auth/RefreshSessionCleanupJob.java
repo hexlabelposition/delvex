@@ -19,11 +19,6 @@ public class RefreshSessionCleanupJob {
     private final Clock clock;
 
     public RefreshSessionCleanupJob(
-            RefreshSessionRepository refreshSessionRepository) {
-        this(refreshSessionRepository, Clock.systemUTC());
-    }
-
-    RefreshSessionCleanupJob(
             RefreshSessionRepository refreshSessionRepository,
             Clock clock) {
         this.refreshSessionRepository = refreshSessionRepository;

@@ -4,13 +4,16 @@ spring:
   application:
     name: server
   datasource:
-    url: jdbc:postgresql://localhost:5432/${POSTGRES_DB}?currentSchema=public
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB}?currentSchema=${POSTGRES_SCHEMA:public}
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: validate
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:}
 
 auth:
   issuer: delvex

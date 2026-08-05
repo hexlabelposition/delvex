@@ -56,7 +56,9 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(authorize -> {
                     authorize.requestMatchers(
                             HttpMethod.GET,
-                            "/api/health")
+                            "/api/health",
+                            "/api/health/live",
+                            "/api/health/ready")
                             .permitAll();
                     authorize.requestMatchers(
                             HttpMethod.POST,

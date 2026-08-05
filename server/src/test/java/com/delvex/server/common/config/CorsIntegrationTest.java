@@ -11,6 +11,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.delvex.server.auth.SecurityConfiguration;
+import com.delvex.server.health.DatabaseReadinessProbe;
 import com.delvex.server.health.HealthController;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
@@ -32,6 +33,9 @@ class CorsIntegrationTest {
 
     @MockitoBean
     private JwtDecoder jwtDecoder;
+
+    @MockitoBean
+    private DatabaseReadinessProbe databaseReadinessProbe;
 
     @Test
     void shouldAllowConfiguredOrigin() throws Exception {

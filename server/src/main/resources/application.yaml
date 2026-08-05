@@ -18,3 +18,10 @@ auth:
   access-token-ttl: 15m
   refresh-token-ttl: 30d
   refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:false}
+
+springdoc:
+  api-docs:
+    path: /docs/openapi.json
+  swagger-ui:
+    path: /docs
+    disable-swagger-default-url: true

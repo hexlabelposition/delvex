@@ -167,28 +167,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(error);
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiError> handleUnexpectedException(
-            Exception exception,
-            HttpServletRequest request) {
-        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
-
-        LOGGER.error(
-                "unexpected request failure path={}",
-                request.getRequestURI(),
-                exception);
-
-        ApiError error = new ApiError(
-                Instant.now(),
-                status.value(),
-                status.getReasonPhrase(),
-                "An unexpected error occurred",
-                request.getRequestURI(),
-                Map.of());
-
-        return ResponseEntity.status(status).body(error);
-    }
-
     private void logHandledException(
             HttpStatus status,
             Exception exception,

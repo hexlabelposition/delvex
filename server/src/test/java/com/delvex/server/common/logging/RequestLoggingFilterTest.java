@@ -141,6 +141,14 @@ class RequestLoggingFilterTest {
                 .isInstanceOf(ServletException.class);
 
         assertThat(MDC.get("requestId")).isNull();
+        assertThat(appender.list)
+                .anySatisfy(event -> {
+                    assertThat(event.getLevel()).isEqualTo(Level.ERROR);
+                    assertThat(event.getFormattedMessage())
+                            .contains("request failed")
+                            .contains("method=GET")
+                            .contains("path=/api/failure");
+                });
     }
 
     private String singleLog() {

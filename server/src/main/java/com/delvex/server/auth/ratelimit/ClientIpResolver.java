@@ -18,6 +18,7 @@ public class ClientIpResolver {
 
     public ClientIpResolver(List<String> trustedProxyCidrs) {
         this.trustedProxies = trustedProxyCidrs.stream()
+                .filter(cidr -> !cidr.isBlank())
                 .map(IpSubnet::parse)
                 .toList();
     }

@@ -144,6 +144,8 @@ public class Shipment {
             BigDecimal weightKg,
             Instant pickupAt,
             Instant deliveryAt) {
+        validateUpdate(status);
+
         Instant updatedPickupAt = pickupAt != null ? pickupAt : this.pickupAt;
         Instant updatedDeliveryAt = deliveryAt != null ? deliveryAt : this.deliveryAt;
 
@@ -162,6 +164,29 @@ public class Shipment {
         this.weightKg = valueOrCurrent(weightKg, this.weightKg);
         this.pickupAt = updatedPickupAt;
         this.deliveryAt = updatedDeliveryAt;
+    }
+
+    public void validateDeletion() {
+        if (!status.canBeDeleted()) {
+            throw new InvalidShipmentStateException(
+                    status + " shipments cannot be deleted");
+        }
+    }
+
+    private void validateUpdate(ShipmentStatus requestedStatus) {
+        if (status.isTerminal()) {
+            throw new InvalidShipmentStateException(
+                    status + " shipments cannot be updated");
+        }
+
+        if (requestedStatus != null
+                && !status.canTransitionTo(requestedStatus)) {
+            throw new InvalidShipmentStateException(
+                    "Shipment status cannot change from "
+                            + status
+                            + " to "
+                            + requestedStatus);
+        }
     }
 
     private void validateSchedule(Instant pickupAt, Instant deliveryAt) {

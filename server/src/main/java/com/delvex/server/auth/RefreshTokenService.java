@@ -9,7 +9,6 @@ import java.util.Base64;
 import java.util.HexFormat;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,9 +23,9 @@ public class RefreshTokenService {
 
     public RefreshTokenService(
             RefreshSessionRepository refreshSessionRepository,
-            @Value("${auth.refresh-token-ttl}") Duration refreshTokenTtl) {
+            AuthProperties properties) {
         this.refreshSessionRepository = refreshSessionRepository;
-        this.refreshTokenTtl = refreshTokenTtl;
+        this.refreshTokenTtl = properties.refreshTokenTtl();
     }
 
     @Transactional

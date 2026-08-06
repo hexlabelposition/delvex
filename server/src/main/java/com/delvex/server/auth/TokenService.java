@@ -4,7 +4,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
@@ -19,11 +18,10 @@ public class TokenService {
 
     public TokenService(
             JwtEncoder jwtEncoder,
-            @Value("${auth.issuer}") String issuer,
-            @Value("${auth.access-token-ttl}") Duration accessTokenTtl) {
+            AuthProperties properties) {
         this.jwtEncoder = jwtEncoder;
-        this.issuer = issuer;
-        this.accessTokenTtl = accessTokenTtl;
+        this.issuer = properties.issuer();
+        this.accessTokenTtl = properties.accessTokenTtl();
     }
 
     public String createAccessToken(UUID userId) {

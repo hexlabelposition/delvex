@@ -15,8 +15,8 @@ RUN ./mvnw --batch-mode --no-transfer-progress \
 FROM eclipse-temurin:21-jre-alpine
 
 RUN apk add --no-cache curl \
-    && addgroup --system delvex \
-    && adduser --system --ingroup delvex delvex
+    && addgroup -S delvex \
+    && adduser -S -D -H -G delvex delvex
 
 WORKDIR /app
 

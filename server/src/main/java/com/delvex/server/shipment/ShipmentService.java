@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.core.TypedPropertyPath;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -80,7 +81,8 @@ public class ShipmentService {
                         size,
                         Sort.by(
                                 Sort.Direction.DESC,
-                                "createdAt")));
+                                TypedPropertyPath.path(
+                                        Shipment::getCreatedAt))));
 
         LOGGER.debug(
                 "shipments loaded userId={} page={} size={} count={} "

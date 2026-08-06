@@ -27,8 +27,4 @@ USER delvex
 
 EXPOSE 8080
 
-HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=5 \
-    CMD curl --fail --silent http://localhost:8080/api/health/ready \
-        || exit 1
-
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

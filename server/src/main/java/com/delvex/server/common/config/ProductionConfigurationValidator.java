@@ -3,6 +3,8 @@ package com.delvex.server.common.config;
 import java.net.URI;
 import java.util.List;
 
+import com.delvex.server.auth.AuthProperties;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
@@ -20,13 +22,13 @@ public class ProductionConfigurationValidator {
     public ProductionConfigurationValidator(
             Environment environment,
             CorsProperties corsProperties,
-            @Value("${auth.refresh-cookie-secure}") boolean secureCookie,
+            AuthProperties authProperties,
             @Value("${springdoc.api-docs.enabled}") boolean apiDocsEnabled,
             @Value("${springdoc.swagger-ui.enabled}") boolean swaggerUiEnabled) {
         validate(
                 environment.acceptsProfiles(Profiles.of("dev")),
                 corsProperties.allowedOrigins(),
-                secureCookie,
+                authProperties.refreshCookieSecure(),
                 apiDocsEnabled,
                 swaggerUiEnabled);
     }

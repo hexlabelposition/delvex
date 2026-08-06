@@ -4,6 +4,7 @@ import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
 
+import static com.delvex.server.auth.TestAuthProperties.authProperties;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class RefreshCookieServiceTest {
@@ -11,8 +12,7 @@ class RefreshCookieServiceTest {
     @Test
     void shouldCreateSecureHttpOnlyRefreshCookie() {
         RefreshCookieService refreshCookieService = new RefreshCookieService(
-                Duration.ofDays(30),
-                true);
+                authProperties(Duration.ofDays(30), true));
 
         String cookie = refreshCookieService.create("refresh-token");
 
@@ -28,8 +28,7 @@ class RefreshCookieServiceTest {
     @Test
     void shouldClearRefreshCookie() {
         RefreshCookieService refreshCookieService = new RefreshCookieService(
-                Duration.ofDays(30),
-                true);
+                authProperties(Duration.ofDays(30), true));
 
         String cookie = refreshCookieService.clear();
 

@@ -12,6 +12,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.delvex.server.auth.TestAuthProperties.authProperties;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -31,7 +32,7 @@ class RefreshTokenServiceTest {
     void setUp() {
         refreshTokenService = new RefreshTokenService(
                 refreshSessionRepository,
-                Duration.ofDays(30));
+                authProperties());
     }
 
     @Test

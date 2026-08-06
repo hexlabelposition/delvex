@@ -38,7 +38,7 @@ springdoc:
     path: /docs/openapi.json
   swagger-ui:
     enabled: false
-    path: /docs
+    path: /swagger-ui.html
     disable-swagger-default-url: true
 
 logging:

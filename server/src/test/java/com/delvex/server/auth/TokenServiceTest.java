@@ -10,6 +10,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.time.Duration;
 import java.util.UUID;
 
+import static com.delvex.server.auth.TestAuthProperties.authProperties;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class TokenServiceTest {
@@ -25,12 +26,11 @@ class TokenServiceTest {
         JwtEncoder jwtEncoder = configuration.jwtEncoder(secretKey);
         JwtDecoder jwtDecoder = configuration.jwtDecoder(
                 secretKey,
-                "delvex");
+                authProperties());
 
         TokenService tokenService = new TokenService(
                 jwtEncoder,
-                "delvex",
-                Duration.ofMinutes(15));
+                authProperties());
 
         UUID userId = UUID.randomUUID();
 

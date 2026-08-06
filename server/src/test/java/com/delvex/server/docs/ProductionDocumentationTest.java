@@ -1,5 +1,7 @@
 package com.delvex.server.docs;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -21,11 +23,13 @@ class ProductionDocumentationTest {
 
     @Test
     void shouldNotExposeDocumentationInProduction() throws Exception {
-        mockMvc.perform(get("/docs"))
-                .andExpect(status().isUnauthorized());
+        for (String path : List.of("/docs", "/docs/")) {
+            mockMvc.perform(get(path))
+                    .andExpect(status().isUnauthorized());
 
-        mockMvc.perform(get("/docs").with(jwt()))
-                .andExpect(status().isNotFound());
+            mockMvc.perform(get(path).with(jwt()))
+                    .andExpect(status().isNotFound());
+        }
 
         mockMvc.perform(get("/docs/openapi.json").with(jwt()))
                 .andExpect(status().isNotFound());

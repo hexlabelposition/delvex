@@ -348,7 +348,7 @@ Build the executable JAR:
 
 ```bash
 ./mvnw --batch-mode --no-transfer-progress -DskipTests package
-java -jar target/server-0.0.1-SNAPSHOT.jar
+java -jar target/server-1.0.0.jar
 ```
 
 Flyway migrations run automatically when the application starts. Startup fails

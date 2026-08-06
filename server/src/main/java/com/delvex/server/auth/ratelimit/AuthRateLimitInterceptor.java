@@ -21,14 +21,17 @@ public class AuthRateLimitInterceptor implements HandlerInterceptor {
 
     private final AuthRateLimiter rateLimiter;
     private final AuthRateLimitProperties properties;
+    private final ClientIpResolver clientIpResolver;
     private final ApiErrorResponseWriter errorResponseWriter;
 
     public AuthRateLimitInterceptor(
             AuthRateLimiter rateLimiter,
             AuthRateLimitProperties properties,
+            ClientIpResolver clientIpResolver,
             ApiErrorResponseWriter errorResponseWriter) {
         this.rateLimiter = rateLimiter;
         this.properties = properties;
+        this.clientIpResolver = clientIpResolver;
         this.errorResponseWriter = errorResponseWriter;
     }
 
@@ -45,7 +48,7 @@ public class AuthRateLimitInterceptor implements HandlerInterceptor {
 
         RateLimitDecision decision = rateLimiter.check(
                 rule.endpoint(),
-                request.getRemoteAddr(),
+                clientIpResolver.resolve(request),
                 rule.maxRequests());
 
         if (decision.allowed()) {

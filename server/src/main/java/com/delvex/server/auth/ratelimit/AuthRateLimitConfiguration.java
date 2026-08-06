@@ -21,6 +21,8 @@ public class AuthRateLimitConfiguration implements WebMvcConfigurer {
         this.interceptor = new AuthRateLimitInterceptor(
                 new AuthRateLimiter(properties.getWindow()),
                 properties,
+                new ClientIpResolver(
+                        properties.getTrustedProxyCidrs()),
                 new ApiErrorResponseWriter(jsonMapper));
     }
 

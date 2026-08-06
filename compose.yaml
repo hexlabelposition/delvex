@@ -7,6 +7,7 @@ services:
     env_file:
       - .env
     environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:?Set SPRING_PROFILES_ACTIVE to dev or prod}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
     ports:

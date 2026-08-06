@@ -31,10 +31,15 @@ public class AuthRateLimiter {
             String clientId,
             int maxRequests) {
         long now = clock.millis();
+
+        // Windows are aligned to the Unix epoch, making Retry-After identical
+        // for all requests that fall into the same fixed time bucket.
         long windowStart = now - Math.floorMod(now, windowMillis);
         ClientKey key = new ClientKey(endpoint, clientId);
         AtomicBoolean allowed = new AtomicBoolean();
 
+        // ConcurrentHashMap.compute serializes updates for this key, preventing
+        // parallel login attempts from losing increments.
         windows.compute(key, (ignored, current) -> {
             if (current == null
                     || current.windowStartMillis() != windowStart) {
@@ -67,6 +72,8 @@ public class AuthRateLimiter {
     }
 
     private void cleanupExpiredWindows(long currentWindowStart) {
+        // Cleanup is amortized over requests instead of running a scheduler on
+        // every application instance for this small in-memory MVP limiter.
         if (requestCount.incrementAndGet() % CLEANUP_INTERVAL != 0) {
             return;
         }

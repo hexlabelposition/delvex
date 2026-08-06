@@ -68,6 +68,8 @@ public class SecurityConfiguration {
                             "/api/auth/logout")
                             .permitAll();
 
+                    // Documentation becomes public only in the profile that
+                    // also enables springdoc generation (currently dev).
                     if (apiDocsEnabled) {
                         authorize.requestMatchers(
                                 "/docs",
@@ -76,6 +78,8 @@ public class SecurityConfiguration {
                                 .permitAll();
                     }
 
+                    // New routes are protected unless deliberately added to
+                    // one of the public allowlists above.
                     authorize.anyRequest().authenticated();
                 })
                 .oauth2ResourceServer(oauth2 -> oauth2

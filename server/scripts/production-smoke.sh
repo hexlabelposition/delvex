@@ -165,6 +165,8 @@ jq --exit-status --arg id "$shipment_id" \
     '.id == $id and .status == "CREATED"' \
     "$temp_dir/body.json" >/dev/null
 
+# The prod cookie is Secure while this loopback smoke intentionally uses HTTP.
+# Send its captured value explicitly instead of relying on curl's cookie jar.
 refresh_status=$(curl --silent --show-error \
     --dump-header "$temp_dir/headers.txt" \
     --output "$temp_dir/body.json" \
@@ -198,6 +200,8 @@ expect_status "$update_status" "200" "Shipment update"
 jq --exit-status '.status == "IN_TRANSIT"' \
     "$temp_dir/body.json" >/dev/null
 
+# A valid JWT bypasses the default-deny 401 and proves that springdoc did not
+# generate an authenticated documentation resource in production.
 for path in "/docs" "/docs/openapi.json"; do
     docs_status=$(curl --silent --show-error \
         --output "$temp_dir/body.json" \

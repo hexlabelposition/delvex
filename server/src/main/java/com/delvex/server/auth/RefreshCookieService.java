@@ -2,7 +2,6 @@ package com.delvex.server.auth;
 
 import java.time.Duration;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 
@@ -16,11 +15,9 @@ public class RefreshCookieService {
     private final Duration refreshTokenTtl;
     private final boolean secure;
 
-    public RefreshCookieService(
-            @Value("${auth.refresh-token-ttl}") Duration refreshTokenTtl,
-            @Value("${auth.refresh-cookie-secure}") boolean secure) {
-        this.refreshTokenTtl = refreshTokenTtl;
-        this.secure = secure;
+    public RefreshCookieService(AuthProperties properties) {
+        this.refreshTokenTtl = properties.refreshTokenTtl();
+        this.secure = properties.refreshCookieSecure();
     }
 
     public String create(String refreshToken) {

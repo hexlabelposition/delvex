@@ -20,7 +20,7 @@ auth:
   access-token-secret: ${ACCESS_TOKEN_SECRET}
   access-token-ttl: 15m
   refresh-token-ttl: 30d
-  refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:false}
+  refresh-cookie-secure: true
   refresh-session-cleanup-interval: ${REFRESH_SESSION_CLEANUP_INTERVAL:1h}
   refresh-session-cleanup-initial-delay: ${REFRESH_SESSION_CLEANUP_INITIAL_DELAY:1h}
 

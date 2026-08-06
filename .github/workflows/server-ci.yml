@@ -46,10 +46,12 @@ jobs:
           --health-retries 5
 
     env:
+      POSTGRES_HOST: localhost
       POSTGRES_DB: delvex_test
       POSTGRES_USER: delvex
       POSTGRES_PASSWORD: test-password
       ACCESS_TOKEN_SECRET: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+      CORS_ALLOWED_ORIGINS: https://app.example.com
 
     steps:
       - name: Check out repository

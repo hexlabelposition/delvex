@@ -23,6 +23,7 @@ import com.delvex.server.shipment.dto.UpdateShipmentRequest;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -236,6 +237,60 @@ class ShipmentControllerTest {
                 .andExpect(jsonPath("$.message").value("Validation failed"));
 
         then(shipmentService).shouldHaveNoInteractions();
+    }
+
+    @Test
+    void shouldReturnConflictForInvalidStatusTransition()
+            throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID shipmentId = UUID.randomUUID();
+
+        given(shipmentService.update(
+                any(UUID.class),
+                any(UUID.class),
+                any(UpdateShipmentRequest.class)))
+                .willThrow(new InvalidShipmentStateException(
+                        "Shipment status cannot change from CREATED to DELIVERED"));
+
+        mockMvc.perform(patch(
+                "/api/shipments/{shipmentId}",
+                shipmentId)
+                .with(jwtFor(userId))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                          "status": "DELIVERED"
+                        }
+                        """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.error").value("Conflict"))
+                .andExpect(jsonPath("$.message").value(
+                        "Shipment status cannot change from CREATED to DELIVERED"))
+                .andExpect(jsonPath("$.path").value(
+                        "/api/shipments/" + shipmentId));
+    }
+
+    @Test
+    void shouldReturnConflictWhenDeletingDeliveredShipment()
+            throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID shipmentId = UUID.randomUUID();
+
+        willThrow(new InvalidShipmentStateException(
+                "DELIVERED shipments cannot be deleted"))
+                .given(shipmentService)
+                .delete(userId, shipmentId);
+
+        mockMvc.perform(delete(
+                "/api/shipments/{shipmentId}",
+                shipmentId)
+                .with(jwtFor(userId)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.error").value("Conflict"))
+                .andExpect(jsonPath("$.message").value(
+                        "DELIVERED shipments cannot be deleted"));
     }
 
     @Test

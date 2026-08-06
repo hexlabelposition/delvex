@@ -141,6 +141,7 @@ public class ShipmentService {
     public void delete(UUID userId, UUID shipmentId) {
         Shipment shipment = findOwnedShipment(userId, shipmentId);
 
+        shipment.validateDeletion();
         shipmentRepository.delete(shipment);
 
         LOGGER.info(

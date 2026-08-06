@@ -30,6 +30,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 class ShipmentServiceTest {
@@ -169,6 +170,139 @@ class ShipmentServiceTest {
     }
 
     @Test
+    void shouldAdvanceShipmentThroughLifecycle() {
+        UUID userId = UUID.randomUUID();
+        Shipment shipment = createShipment(createUser(userId));
+
+        given(shipmentRepository.findByIdAndUser_Id(
+                shipment.getId(),
+                userId))
+                .willReturn(Optional.of(shipment));
+
+        ShipmentResponse inTransit = shipmentService.update(
+                userId,
+                shipment.getId(),
+                statusUpdate(ShipmentStatus.IN_TRANSIT));
+        ShipmentResponse delivered = shipmentService.update(
+                userId,
+                shipment.getId(),
+                statusUpdate(ShipmentStatus.DELIVERED));
+
+        assertThat(inTransit.status())
+                .isEqualTo(ShipmentStatus.IN_TRANSIT);
+        assertThat(delivered.status())
+                .isEqualTo(ShipmentStatus.DELIVERED);
+    }
+
+    @Test
+    void shouldRejectSkippedStatusTransition() {
+        UUID userId = UUID.randomUUID();
+        Shipment shipment = createShipment(createUser(userId));
+
+        given(shipmentRepository.findByIdAndUser_Id(
+                shipment.getId(),
+                userId))
+                .willReturn(Optional.of(shipment));
+
+        assertThatThrownBy(() -> shipmentService.update(
+                userId,
+                shipment.getId(),
+                statusUpdate(ShipmentStatus.DELIVERED)))
+                .isInstanceOf(InvalidShipmentStateException.class)
+                .hasMessage(
+                        "Shipment status cannot change from CREATED to DELIVERED");
+    }
+
+    @Test
+    void shouldRejectBackwardStatusTransition() {
+        UUID userId = UUID.randomUUID();
+        Shipment shipment = createShipment(createUser(userId));
+        ReflectionTestUtils.setField(
+                shipment,
+                "status",
+                ShipmentStatus.IN_TRANSIT);
+
+        given(shipmentRepository.findByIdAndUser_Id(
+                shipment.getId(),
+                userId))
+                .willReturn(Optional.of(shipment));
+
+        assertThatThrownBy(() -> shipmentService.update(
+                userId,
+                shipment.getId(),
+                statusUpdate(ShipmentStatus.CREATED)))
+                .isInstanceOf(InvalidShipmentStateException.class)
+                .hasMessage(
+                        "Shipment status cannot change from IN_TRANSIT to CREATED");
+    }
+
+    @Test
+    void shouldRejectUpdatesToDeliveredShipment() {
+        UUID userId = UUID.randomUUID();
+        Shipment shipment = createShipment(createUser(userId));
+        ReflectionTestUtils.setField(
+                shipment,
+                "status",
+                ShipmentStatus.DELIVERED);
+
+        given(shipmentRepository.findByIdAndUser_Id(
+                shipment.getId(),
+                userId))
+                .willReturn(Optional.of(shipment));
+
+        assertThatThrownBy(() -> shipmentService.update(
+                userId,
+                shipment.getId(),
+                statusUpdate(ShipmentStatus.DELIVERED)))
+                .isInstanceOf(InvalidShipmentStateException.class)
+                .hasMessage("DELIVERED shipments cannot be updated");
+    }
+
+    @Test
+    void shouldRejectDeletionAfterShipmentDispatch() {
+        UUID userId = UUID.randomUUID();
+        Shipment shipment = createShipment(createUser(userId));
+        ReflectionTestUtils.setField(
+                shipment,
+                "status",
+                ShipmentStatus.IN_TRANSIT);
+
+        given(shipmentRepository.findByIdAndUser_Id(
+                shipment.getId(),
+                userId))
+                .willReturn(Optional.of(shipment));
+
+        assertThatThrownBy(() -> shipmentService.delete(
+                userId,
+                shipment.getId()))
+                .isInstanceOf(InvalidShipmentStateException.class)
+                .hasMessage("IN_TRANSIT shipments cannot be deleted");
+
+        then(shipmentRepository)
+                .should(never())
+                .delete(shipment);
+    }
+
+    @Test
+    void shouldAllowCancelledShipmentDeletion() {
+        UUID userId = UUID.randomUUID();
+        Shipment shipment = createShipment(createUser(userId));
+        ReflectionTestUtils.setField(
+                shipment,
+                "status",
+                ShipmentStatus.CANCELLED);
+
+        given(shipmentRepository.findByIdAndUser_Id(
+                shipment.getId(),
+                userId))
+                .willReturn(Optional.of(shipment));
+
+        shipmentService.delete(userId, shipment.getId());
+
+        then(shipmentRepository).should().delete(shipment);
+    }
+
+    @Test
     void shouldDeleteOwnedShipment() {
         UUID userId = UUID.randomUUID();
         Shipment shipment = createShipment(createUser(userId));
@@ -227,6 +361,24 @@ class ShipmentServiceTest {
                 request))
                 .isInstanceOf(InvalidShipmentScheduleException.class)
                 .hasMessage("Delivery time must not be before pickup time");
+    }
+
+    private UpdateShipmentRequest statusUpdate(
+            ShipmentStatus status) {
+        return new UpdateShipmentRequest(
+                status,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
     }
 
     private CreateShipmentRequest createRequest() {

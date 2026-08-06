@@ -5,7 +5,7 @@ import java.util.Base64;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
@@ -22,6 +22,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 
 @Configuration
+@EnableConfigurationProperties(AuthProperties.class)
 public class AuthConfiguration {
 
     @Bean
@@ -40,14 +41,14 @@ public class AuthConfiguration {
     @Bean
     public JwtDecoder jwtDecoder(
             SecretKey accessTokenSecretKey,
-            @Value("${auth.issuer}") String issuer) {
+            AuthProperties properties) {
         NimbusJwtDecoder decoder = NimbusJwtDecoder
                 .withSecretKey(accessTokenSecretKey)
                 .macAlgorithm(MacAlgorithm.HS256)
                 .build();
 
         OAuth2TokenValidator<Jwt> issuerValidator =
-                JwtValidators.createDefaultWithIssuer(issuer);
+                JwtValidators.createDefaultWithIssuer(properties.issuer());
         OAuth2TokenValidator<Jwt> tokenTypeValidator =
                 new JwtClaimValidator<String>(
                         "type",
@@ -62,8 +63,8 @@ public class AuthConfiguration {
     }
 
     @Bean
-    public SecretKey accessTokenSecretKey(
-            @Value("${auth.access-token-secret}") String encodedSecret) {
+    public SecretKey accessTokenSecretKey(AuthProperties properties) {
+        String encodedSecret = properties.accessTokenSecret();
         byte[] secretBytes;
 
         try {

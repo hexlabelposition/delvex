@@ -9,6 +9,10 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.stereotype.Component;
 
+/**
+ * Fails application startup before traffic is accepted when a higher-priority
+ * property source overrides the secure defaults from application-prod.yaml.
+ */
 @Component
 @Profile("prod")
 public class ProductionConfigurationValidator {

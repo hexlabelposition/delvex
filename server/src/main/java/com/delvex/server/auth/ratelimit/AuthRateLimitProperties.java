@@ -1,6 +1,7 @@
 package com.delvex.server.auth.ratelimit;
 
 import java.time.Duration;
+import java.util.List;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -24,6 +25,9 @@ public class AuthRateLimitProperties {
 
     @Min(1)
     private int refreshRequests = 30;
+
+    @NotNull
+    private List<String> trustedProxyCidrs = List.of();
 
     public Duration getWindow() {
         return window;
@@ -55,6 +59,14 @@ public class AuthRateLimitProperties {
 
     public void setRefreshRequests(int refreshRequests) {
         this.refreshRequests = refreshRequests;
+    }
+
+    public List<String> getTrustedProxyCidrs() {
+        return trustedProxyCidrs;
+    }
+
+    public void setTrustedProxyCidrs(List<String> trustedProxyCidrs) {
+        this.trustedProxyCidrs = trustedProxyCidrs;
     }
 
     @AssertTrue(message = "Rate limit window must be positive")

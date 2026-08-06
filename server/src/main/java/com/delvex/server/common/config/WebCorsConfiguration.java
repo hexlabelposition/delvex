@@ -48,7 +48,7 @@ public class WebCorsConfiguration {
         }
 
         return Arrays.stream(allowedOrigins.split(","))
-                .map(String::strip)
+                .map(origin -> origin.strip())
                 .filter(origin -> !origin.isBlank())
                 .distinct()
                 .toList();

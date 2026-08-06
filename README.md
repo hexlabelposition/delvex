@@ -368,7 +368,7 @@ a free port 8080, and a previously packaged JAR:
 ```bash
 cd server
 ./mvnw --batch-mode --no-transfer-progress -DskipTests package
-./scripts/production-smoke.sh
+bash scripts/production-smoke.sh
 ```
 
 > The script creates a real user, shipment, and refresh-session records. Run it

@@ -31,6 +31,15 @@ class OpenApiDocumentationTest {
     }
 
     @Test
+    void shouldExposeSwaggerUiWithTrailingSlash() throws Exception {
+        mockMvc.perform(get("/docs/"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(header().string(
+                        "Location",
+                        containsString("swagger-ui")));
+    }
+
+    @Test
     void shouldExposeOpenApiDocument() throws Exception {
         mockMvc.perform(get("/docs/openapi.json"))
                 .andExpect(status().isOk())

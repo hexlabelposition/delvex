@@ -17,7 +17,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(properties = {
         "rate-limit.auth.login-requests=1",
         "rate-limit.auth.register-requests=10",
-        "rate-limit.auth.refresh-requests=10"
+        "rate-limit.auth.refresh-requests=10",
+        "rate-limit.auth.trusted-proxy-cidrs=10.0.0.0/8"
 })
 @AutoConfigureMockMvc
 @ActiveProfiles("dev")
@@ -65,5 +66,28 @@ class AuthRateLimitIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{}"))
                 .andExpect(status().isBadRequest());
+
+    @Test
+    void shouldLimitForwardedClientsIndependently()
+            throws Exception {
+        performLoginFromProxy("198.51.100.31")
+                .andExpect(status().isBadRequest());
+        performLoginFromProxy("198.51.100.32")
+                .andExpect(status().isBadRequest());
+        performLoginFromProxy("198.51.100.31")
+                .andExpect(status().isTooManyRequests());
+    }
+
+    private org.springframework.test.web.servlet.ResultActions
+            performLoginFromProxy(String clientAddress)
+                    throws Exception {
+        return mockMvc.perform(post("/api/auth/login")
+                .with(request -> {
+                    request.setRemoteAddr("10.0.0.5");
+                    return request;
+                })
+                .header("X-Forwarded-For", clientAddress)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"));
     }
 }

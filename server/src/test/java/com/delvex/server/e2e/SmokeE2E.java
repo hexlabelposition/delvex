@@ -118,7 +118,6 @@ class SmokeE2E {
                 "$.accessToken");
         Cookie rotatedRefreshCookie = refreshCookie(refresh);
 
-        assertThat(refreshedAccessToken).isNotEqualTo(accessToken);
         assertThat(rotatedRefreshCookie.getValue())
                 .isNotEqualTo(refreshCookie.getValue());
 

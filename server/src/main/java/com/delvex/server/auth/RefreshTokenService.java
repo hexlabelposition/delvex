@@ -34,6 +34,8 @@ public class RefreshTokenService {
         Instant issuedAt = Instant.now();
         String refreshToken = generateToken();
 
+        // Persist only a digest. A database leak must not expose bearer tokens
+        // that can be replayed directly against the refresh endpoint.
         refreshSessionRepository.save(new RefreshSession(
                 userId,
                 hash(refreshToken),
@@ -55,6 +57,8 @@ public class RefreshTokenService {
             throw new InvalidRefreshTokenException();
         }
 
+        // Revocation and replacement share this transaction. A failure while
+        // issuing the replacement therefore cannot leave two active tokens.
         currentSession.revoke(now);
 
         return new RotatedRefreshToken(

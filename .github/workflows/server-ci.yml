@@ -7,12 +7,14 @@ on:
     paths:
       - "server/**"
       - ".github/workflows/server-ci.yml"
+      - "compose.yaml"
   push:
     branches:
       - dev
     paths:
       - "server/**"
       - ".github/workflows/server-ci.yml"
+      - "compose.yaml"
 
 concurrency:
   group: server-ci-${{ github.workflow }}-${{ github.ref }}
@@ -79,8 +81,9 @@ jobs:
           path: server/target/surefire-reports/
           if-no-files-found: ignore
 
-  smoke:
-    name: Smoke E2E
+
+  production-smoke:
+    name: Production JAR smoke
     runs-on: ubuntu-latest
 
     defaults:
@@ -91,22 +94,25 @@ jobs:
       postgres:
         image: postgres:17-alpine
         env:
-          POSTGRES_DB: delvex_smoke
+          POSTGRES_DB: delvex_prod_smoke
           POSTGRES_USER: delvex
           POSTGRES_PASSWORD: smoke-password
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U delvex -d delvex_smoke"
+          --health-cmd "pg_isready -U delvex -d delvex_prod_smoke"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
 
     env:
-      POSTGRES_DB: delvex_smoke
+      SPRING_PROFILES_ACTIVE: prod
+      POSTGRES_HOST: localhost
+      POSTGRES_DB: delvex_prod_smoke
       POSTGRES_USER: delvex
       POSTGRES_PASSWORD: smoke-password
       ACCESS_TOKEN_SECRET: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+      CORS_ALLOWED_ORIGINS: https://app.example.com
 
     steps:
       - name: Check out repository
@@ -120,16 +126,22 @@ jobs:
           cache: maven
           cache-dependency-path: server/pom.xml
 
-      - name: Make Maven Wrapper executable
-        run: chmod +x mvnw
+      - name: Make scripts executable
+        run: chmod +x mvnw scripts/production-smoke.sh
 
-      - name: Run smoke E2E
-        run: ./mvnw --batch-mode --no-transfer-progress -Dtest=SmokeE2E test
+      - name: Package production JAR
+        run: ./mvnw --batch-mode --no-transfer-progress -DskipTests package
 
-      - name: Upload smoke test reports
+      - name: Run production HTTP smoke
+        run: ./scripts/production-smoke.sh
+
+      - name: Build production container
+        run: docker build --tag delvex-server:ci .
+
+      - name: Upload production smoke log
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: server-smoke-test-reports
-          path: server/target/surefire-reports/
+          name: server-production-smoke-log
+          path: server/target/production-smoke.log
           if-no-files-found: ignore

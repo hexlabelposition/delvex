@@ -15,6 +15,7 @@ and a real production JAR smoke test.
 - Spring MVC and Jakarta Validation
 - Spring Security OAuth2 Resource Server
 - Spring Data JPA
+- Spring-Dotenv
 - PostgreSQL 17
 - Flyway migrations
 - springdoc OpenAPI
@@ -181,10 +182,14 @@ A system Maven installation is not required; use `server/mvnw`.
 The API is available at `http://localhost:8080`. PostgreSQL is exposed at
 `localhost:5432`, and its data is stored in the `postgres_data` volume.
 
-Compose deliberately requires an explicit `SPRING_PROFILES_ACTIVE`. It also
-overrides `POSTGRES_HOST` to `postgres` and `POSTGRES_PORT` to `5432`
-inside the Docker network; keep `localhost` in the local `.env` for tools
-running on the host.
+Compose deliberately requires an explicit `SPRING_PROFILES_ACTIVE`. It reads
+the root `.env` for interpolation and passes only the variables listed in
+`compose.yaml` to the server. It overrides `POSTGRES_HOST` to `postgres`
+and `POSTGRES_PORT` to `5432` inside the Docker network; keep `localhost`
+in the local `.env` for tools running on the host.
+
+The server health check is defined in Compose and calls the database-backed
+`/api/health/ready` endpoint with `curl` from the Java image.
 
 To remove the local database as well as the containers:
 
@@ -202,21 +207,19 @@ Start PostgreSQL first:
 docker compose up -d postgres
 ```
 
-Then export the root environment file and start Spring Boot:
+Run Spring Boot from the repository root so Spring-Dotenv finds the root
+`.env` file:
 
 ```bash
-cd server
-set -a
-source ../.env
-set +a
-chmod +x mvnw
-./mvnw spring-boot:run
+chmod +x server/mvnw
+./server/mvnw --file server/pom.xml spring-boot:run
 ```
 
-The `spring.config.import` entry resolves `.env` relative to the process
-working directory. Exporting the root file as shown above avoids maintaining a
-second `server/.env`. IDE launch configurations should likewise load the root
-`.env` or provide the same environment variables directly.
+Spring-Dotenv parses dotenv syntax, including optional quoted values, and adds
+the file as a low-priority Spring property source. Real environment variables
+always win, and a missing `.env` file is ignored. IDE launch configurations
+should use the repository root as their working directory or provide the same
+variables directly.
 
 ## OpenAPI documentation
 
@@ -327,7 +330,8 @@ The application fails fast when production configuration is unsafe:
 - required database or token settings are missing or invalid
 
 The production Docker image runs as a non-root `delvex` user and exposes port
-8080. Its health check uses the database-backed readiness endpoint.
+8080. The Compose deployment checks it through the database-backed readiness
+endpoint.
 
 Build it directly:
 

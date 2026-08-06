@@ -30,6 +30,7 @@ rate-limit:
     register-requests: ${AUTH_RATE_LIMIT_REGISTER_REQUESTS:5}
     login-requests: ${AUTH_RATE_LIMIT_LOGIN_REQUESTS:10}
     refresh-requests: ${AUTH_RATE_LIMIT_REFRESH_REQUESTS:30}
+    trusted-proxy-cidrs: ${AUTH_RATE_LIMIT_TRUSTED_PROXY_CIDRS:}
 
 springdoc:
   api-docs:

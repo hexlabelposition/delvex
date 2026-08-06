@@ -45,6 +45,9 @@ public class AuthService {
                 .strip()
                 .toLowerCase(Locale.ROOT);
 
+        // This pre-check returns a friendly error in the common case. The
+        // database unique constraint below still closes the concurrent
+        // registration race between this query and the insert.
         if (userRepository.existsByEmailIgnoreCase(email)) {
             throw new EmailAlreadyExistsException();
         }

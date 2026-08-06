@@ -27,12 +27,16 @@ public class ClientIpResolver {
         String remoteAddress = request.getRemoteAddr();
         InetAddress peer = parseAddress(remoteAddress);
 
+        // Forwarded headers are client-controlled. They become authoritative
+        // only when the socket peer is an explicitly trusted proxy.
         if (peer == null || !isTrusted(peer)) {
             return peer == null
                     ? remoteAddress
                     : peer.getHostAddress();
         }
 
+        // RFC Forwarded is preferred; X-Forwarded-For remains a compatibility
+        // fallback for proxies that do not emit the standard header.
         List<InetAddress> forwardedAddresses =
                 parseForwarded(request);
 
@@ -44,6 +48,9 @@ public class ClientIpResolver {
             return peer.getHostAddress();
         }
 
+        // Proxies append hops on the right. Walking backwards removes trusted
+        // infrastructure and stops at the closest untrusted address, so a
+        // client cannot bypass limits by prepending a forged value.
         for (int index = forwardedAddresses.size() - 1;
                 index >= 0;
                 index--) {
@@ -250,6 +257,8 @@ public class ClientIpResolver {
     }
 
     private static InetAddress parseInetAddress(String value) {
+        // parseAddress allows only literal IPv6 characters before this call,
+        // preventing InetAddress from performing a hostname lookup.
         try {
             return InetAddress.getByName(value);
         } catch (UnknownHostException exception) {
@@ -289,6 +298,9 @@ public class ClientIpResolver {
             }
 
             byte[] network = address.getAddress().clone();
+
+            // Store a canonical network address so membership checks can mask
+            // and compare raw bytes for both IPv4 and IPv6.
             applyMask(network, prefixLength);
 
             return new IpSubnet(network, prefixLength);

@@ -7,6 +7,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -66,6 +67,7 @@ class AuthRateLimitIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{}"))
                 .andExpect(status().isBadRequest());
+    }
 
     @Test
     void shouldLimitForwardedClientsIndependently()
@@ -78,7 +80,7 @@ class AuthRateLimitIntegrationTest {
                 .andExpect(status().isTooManyRequests());
     }
 
-    private org.springframework.test.web.servlet.ResultActions
+    private ResultActions
             performLoginFromProxy(String clientAddress)
                     throws Exception {
         return mockMvc.perform(post("/api/auth/login")

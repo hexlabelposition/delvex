@@ -28,8 +28,7 @@ class RefreshCookieServiceTest {
     @Test
     void shouldClearRefreshCookie() {
         RefreshCookieService refreshCookieService = new RefreshCookieService(
-                Duration.ofDays(30),
-                true);
+                authProperties(Duration.ofDays(30), true));
 
         String cookie = refreshCookieService.clear();
 

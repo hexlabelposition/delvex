@@ -1,5 +1,3 @@
-import "server-only";
-
 import type { ApiErrorBody } from "@/lib/api/types";
 
 interface ApiRequestOptions extends RequestInit {
@@ -83,10 +81,10 @@ export class ApiClient {
   }
 }
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+const apiUrl = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL;
 
 if (apiUrl === undefined) {
-  throw new Error("NEXT_PUBLIC_API_URL is required");
+  throw new Error("API_URL or NEXT_PUBLIC_API_URL is required");
 }
 
 export const apiClient = new ApiClient(apiUrl.replace(/\/$/, ""));

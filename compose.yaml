@@ -6,6 +6,8 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?Set NEXT_PUBLIC_API_URL}
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
     ports:
       - "3000:3000"
     depends_on:
@@ -85,7 +87,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 15s
+      start_period: 20s
 
 volumes:
   postgres_data:

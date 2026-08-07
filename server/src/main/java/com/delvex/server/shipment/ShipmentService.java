@@ -81,8 +81,7 @@ public class ShipmentService {
                         size,
                         Sort.by(
                                 Sort.Direction.DESC,
-                                TypedPropertyPath.path(
-                                        Shipment::getCreatedAt))));
+                                TypedPropertyPath.path(Shipment::getCreatedAt))));
 
         LOGGER.debug(
                 "shipments loaded userId={} page={} size={} count={} "

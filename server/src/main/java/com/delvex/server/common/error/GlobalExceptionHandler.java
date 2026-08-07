@@ -185,7 +185,7 @@ public class GlobalExceptionHandler {
                             invalidFormatException
                                     .getTargetType()
                                     .getEnumConstants())
-                    .map(Object::toString)
+                    .map(enumConstant -> enumConstant.toString())
                     .collect(Collectors.joining(", "));
 
             message = "Validation failed";

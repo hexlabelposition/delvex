@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   createContext,
   type ReactNode,
@@ -28,7 +28,6 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const pathname = usePathname();
   const router = useRouter();
   const [session, setSessionState] = useState<AuthSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,7 +43,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setSessionState(refreshedSession);
       setIsLoading(false);
 
-      if (refreshedSession === null && pathname.startsWith("/dashboard")) {
+      if (
+        refreshedSession === null &&
+        window.location.pathname.startsWith("/dashboard")
+      ) {
         router.replace("/login");
       }
     });
@@ -52,7 +54,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => {
       active = false;
     };
-  }, [pathname, router]);
+  }, [router]);
 
   const setSession = useCallback((newSession: AuthSession) => {
     setSessionState(newSession);

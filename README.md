@@ -73,6 +73,12 @@ while **client/.env.local** is used by a Next.js process running on the host.
 Public Next.js variables are visible in the browser and must never contain
 secrets.
 
+**NODE_ENV** in the root file applies only to the running client container and
+stays **production**. The client image contains a production build, so a
+development value would disable optimizations without providing hot reload.
+Use the standalone Bun workflow from the [client guide](client/README.md#local-development)
+for that instead.
+
 ## Local development
 
 ### Prepare the Compose environment
@@ -155,6 +161,14 @@ docker build --tag delvex-server ./server
 The client uses Next.js standalone output and runs as a non-root user. Public
 **NEXT_PUBLIC_** values are fixed during the client build, so rebuild the image
 when the public API URL changes.
+
+Compose does not rebuild an existing image when a build argument changes, so
+editing **NEXT_PUBLIC_API_URL** in the root **.env** has no effect on a plain
+**docker compose up**. Rebuild the client explicitly:
+
+~~~bash
+docker compose up --build client
+~~~
 
 ## CI and releases
 

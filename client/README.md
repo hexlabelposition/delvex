@@ -100,10 +100,12 @@ docker run --rm --publish 3000:3000 delvex-client
 
 The multi-stage image installs dependencies with Bun, builds the standalone
 application, and runs the generated server with Node.js as the non-root
-**nextjs** user.
+**node** user provided by the runtime base image.
 
 Static files from **public** and **.next/static** are copied explicitly because
-Next.js does not include them in the standalone directory automatically.
+Next.js does not include them in the standalone directory automatically. The
+build stage creates **public** when it is missing, so removing every static
+asset from the repository does not break the image build.
 
 ## Docker Compose
 
@@ -118,7 +120,8 @@ Compose builds the client with **NEXT_PUBLIC_API_URL**, waits for the server
 readiness check, and exposes the dashboard at http://localhost:3000.
 
 Change the root environment value and rebuild the client whenever the public API
-address changes:
+address changes. Compose reuses an existing image even when a build argument
+differs, so **docker compose up** alone keeps serving the previous address:
 
 ~~~bash
 docker compose build client

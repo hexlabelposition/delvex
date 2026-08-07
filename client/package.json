@@ -1,12 +1,18 @@
 {
   "name": "client",
-  "version": "0.1.0",
+  "version": "0.0.0",
+  "type": "module",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "format": "prettier --write .",
+    "typecheck": "tsc --noEmit",
+    "format:check": "prettier --check .",
+    "prepare": "cd .. && husky client/.husky"
   },
   "dependencies": {
     "next": "16.2.12",
@@ -20,8 +26,16 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-simple-import-sort": "^14.0.0",
+    "eslint-plugin-unused-imports": "^4.4.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.3.0",
+    "prettier": "^3.9.6",
+    "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "typescript-eslint": "^8.66.0"
   },
   "ignoreScripts": [
     "sharp",
@@ -30,5 +44,12 @@
   "trustedDependencies": [
     "sharp",
     "unrs-resolver"
-  ]
+  ],
+  "lint-staged": {
+    "*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,css,yml,yaml}": "prettier --write"
+  }
 }

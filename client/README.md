@@ -12,6 +12,7 @@ server module.
 - React 19
 - TypeScript
 - Tailwind CSS 4
+- shadcn/ui with Base UI and Lucide icons
 - Bun
 - Docker
 
@@ -61,6 +62,23 @@ host, start these services from the repository root:
 ```bash
 docker compose up --build server
 ```
+
+## UI components
+
+The client uses shadcn/ui with the compact **Nova** style, **Base UI**
+primitives, an **olive** base color, Lucide icons, and CSS variables for
+theming. These choices are recorded in **components.json** so the CLI generates
+components that match the existing UI foundation.
+
+Run the shadcn CLI from the **client** directory to add a component:
+
+```bash
+bunx shadcn@latest add input
+```
+
+Generated components are placed in **src/components/ui**. Add components only
+when a feature needs them so the repository does not accumulate unused UI code.
+The existing **Button** component verifies the configured generation workflow.
 
 ## Checks and production build
 

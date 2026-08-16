@@ -45,7 +45,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (
         refreshedSession === null &&
-        window.location.pathname.startsWith("/dashboard")
+        ["/dashboard", "/shipments", "/create", "/profile"].some(
+          (route) =>
+            window.location.pathname === route ||
+            window.location.pathname.startsWith(`${route}/`),
+        )
       ) {
         router.replace("/login");
       }

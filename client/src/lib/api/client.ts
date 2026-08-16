@@ -37,6 +37,14 @@ export class ApiClient {
     });
   }
 
+  patch<T>(path: string, body?: unknown, options: ApiRequestOptions = {}) {
+    return this.request<T>(path, {
+      ...options,
+      body: body === undefined ? undefined : JSON.stringify(body),
+      method: "PATCH",
+    });
+  }
+
   private async request<T>(path: string, options: ApiRequestOptions) {
     const headers = new Headers(options.headers);
 

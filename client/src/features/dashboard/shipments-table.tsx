@@ -1,3 +1,7 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+
 import { formatDate, formatWeight } from "@/features/dashboard/format";
 import { StatusBadge } from "@/features/dashboard/status-badge";
 import type { Shipment } from "@/lib/api/types";
@@ -9,6 +13,12 @@ export function ShipmentsTable({
   shipments: Shipment[];
   compact?: boolean;
 }) {
+  const router = useRouter();
+
+  const openShipment = (shipmentId: string) => {
+    router.push(`/shipments/${shipmentId}`);
+  };
+
   return (
     <div className="overflow-x-auto rounded-xl border">
       <table className="w-full min-w-[760px] text-left text-sm">
@@ -25,7 +35,18 @@ export function ShipmentsTable({
         </thead>
         <tbody className="divide-y">
           {shipments.map((shipment) => (
-            <tr key={shipment.id} className="hover:bg-muted/30">
+            <tr
+              key={shipment.id}
+              className="hover:bg-muted/30 focus-visible:ring-ring cursor-pointer transition-colors focus-visible:ring-2 focus-visible:outline-none"
+              tabIndex={0}
+              onClick={() => openShipment(shipment.id)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  openShipment(shipment.id);
+                }
+              }}
+            >
               <td className="px-4 py-3 font-mono text-xs">
                 {shipment.referenceNumber}
               </td>

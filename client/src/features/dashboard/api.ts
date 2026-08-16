@@ -18,6 +18,16 @@ export async function getShipments(accessToken: string, page = 0, size = 10) {
   return response.data;
 }
 
+export async function getShipment(shipmentId: string, accessToken: string) {
+  const response = await apiClient.get<Shipment>(
+    `/api/shipments/${shipmentId}`,
+    {
+      accessToken,
+    },
+  );
+  return response.data;
+}
+
 export async function createShipment(
   payload: CreateShipmentPayload,
   { accessToken }: TokenOptions,

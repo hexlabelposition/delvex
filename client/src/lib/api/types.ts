@@ -72,3 +72,11 @@ export interface CreateShipmentPayload {
   pickupAt: string | null;
   deliveryAt: string | null;
 }
+
+export type UpdateShipmentPayload = Partial<
+  Omit<CreateShipmentPayload, "pickupAt" | "deliveryAt">
+> & {
+  status?: ShipmentStatus;
+  pickupAt?: string;
+  deliveryAt?: string;
+};

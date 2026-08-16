@@ -45,6 +45,10 @@ export class ApiClient {
     });
   }
 
+  delete<T>(path: string, options: ApiRequestOptions = {}) {
+    return this.request<T>(path, { ...options, method: "DELETE" });
+  }
+
   private async request<T>(path: string, options: ApiRequestOptions) {
     const headers = new Headers(options.headers);
 

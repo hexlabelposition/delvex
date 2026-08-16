@@ -1,10 +1,11 @@
 "use client";
 
-import { ArrowLeft, PackageOpen } from "lucide-react";
+import { ArrowLeft, PackageOpen, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,13 +14,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-provider";
-import { getShipment } from "@/features/dashboard/api";
+import {
+  deleteShipment,
+  getShipment,
+  updateShipment,
+} from "@/features/dashboard/api";
 import { EmptyState } from "@/features/dashboard/empty-state";
 import { formatDate, formatWeight } from "@/features/dashboard/format";
 import { StatusBadge } from "@/features/dashboard/status-badge";
 import { ApiClientError } from "@/lib/api/client";
-import type { Shipment } from "@/lib/api/types";
+import type { Shipment, ShipmentStatus } from "@/lib/api/types";
+
+type ConfirmationAction = "cancel" | "delete";
 
 function AddressCard({
   title,
@@ -50,7 +58,17 @@ function AddressCard({
   );
 }
 
-function ShipmentDetails({ shipment }: { shipment: Shipment }) {
+function ShipmentDetails({
+  shipment,
+  actionLoading,
+  onStatusChange,
+  onConfirm,
+}: {
+  shipment: Shipment;
+  actionLoading: boolean;
+  onStatusChange: (status: ShipmentStatus) => void;
+  onConfirm: (action: ConfirmationAction) => void;
+}) {
   return (
     <>
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -62,7 +80,69 @@ function ShipmentDetails({ shipment }: { shipment: Shipment }) {
             Shipment details
           </h1>
         </div>
-        <StatusBadge status={shipment.status} />
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusBadge status={shipment.status} />
+          {shipment.status === "CREATED" && (
+            <>
+              <Button
+                size="sm"
+                disabled={actionLoading}
+                onClick={() => onStatusChange("IN_TRANSIT")}
+              >
+                Mark in transit
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={actionLoading}
+                onClick={() => onConfirm("cancel")}
+              >
+                Cancel shipment
+              </Button>
+            </>
+          )}
+          {shipment.status === "IN_TRANSIT" && (
+            <>
+              <Button
+                size="sm"
+                disabled={actionLoading}
+                onClick={() => onStatusChange("DELIVERED")}
+              >
+                Mark delivered
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={actionLoading}
+                onClick={() => onConfirm("cancel")}
+              >
+                Cancel shipment
+              </Button>
+            </>
+          )}
+          {(shipment.status === "CREATED" ||
+            shipment.status === "IN_TRANSIT") && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={actionLoading}
+              render={<Link href={`/shipments/${shipment.id}/edit`} />}
+            >
+              <Pencil /> Edit
+            </Button>
+          )}
+          {(shipment.status === "CREATED" ||
+            shipment.status === "CANCELLED") && (
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={actionLoading}
+              onClick={() => onConfirm("delete")}
+            >
+              <Trash2 /> Delete
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="mt-7 grid gap-3 md:grid-cols-2">
@@ -133,10 +213,16 @@ function ShipmentDetails({ shipment }: { shipment: Shipment }) {
 }
 
 export default function ShipmentDetailsPage() {
+  const router = useRouter();
   const { session } = useAuth();
   const { shipmentId } = useParams<{ shipmentId: string }>();
   const [shipment, setShipment] = useState<Shipment | null>(null);
   const [error, setError] = useState<"not-found" | "unavailable" | null>(null);
+  const [actionError, setActionError] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
+  const [confirmation, setConfirmation] = useState<ConfirmationAction | null>(
+    null,
+  );
 
   useEffect(() => {
     if (session === null || shipmentId === undefined) return;
@@ -161,6 +247,58 @@ export default function ShipmentDetailsPage() {
     };
   }, [session, shipmentId]);
 
+  const updateStatus = async (status: ShipmentStatus) => {
+    if (session === null || shipment === null) return;
+    setActionLoading(true);
+    setActionError("");
+    try {
+      setShipment(
+        await updateShipment(
+          shipment.id,
+          { status },
+          { accessToken: session.accessToken },
+        ),
+      );
+    } catch (requestError) {
+      setActionError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Could not update shipment",
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const confirmAction = async () => {
+    if (session === null || shipment === null || confirmation === null) return;
+    setActionLoading(true);
+    setActionError("");
+    try {
+      if (confirmation === "cancel") {
+        setShipment(
+          await updateShipment(
+            shipment.id,
+            { status: "CANCELLED" },
+            { accessToken: session.accessToken },
+          ),
+        );
+        setConfirmation(null);
+      } else {
+        await deleteShipment(shipment.id, { accessToken: session.accessToken });
+        router.push("/shipments?deleted=1");
+      }
+    } catch (requestError) {
+      setActionError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Could not update shipment",
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-4xl">
       <Button variant="ghost" size="sm" render={<Link href="/shipments" />}>
@@ -182,7 +320,44 @@ export default function ShipmentDetailsPage() {
         ) : shipment === null ? (
           <p className="text-muted-foreground">Loading shipment…</p>
         ) : (
-          <ShipmentDetails shipment={shipment} />
+          <>
+            {actionError && (
+              <Alert variant="destructive" className="mb-5">
+                <AlertDescription>{actionError}</AlertDescription>
+              </Alert>
+            )}
+            <ShipmentDetails
+              shipment={shipment}
+              actionLoading={actionLoading}
+              onStatusChange={(status) => void updateStatus(status)}
+              onConfirm={setConfirmation}
+            />
+            <ConfirmDialog
+              open={confirmation !== null}
+              title={
+                confirmation === "delete"
+                  ? "Delete shipment?"
+                  : "Cancel shipment?"
+              }
+              description={
+                confirmation === "delete"
+                  ? "This shipment will be permanently removed."
+                  : "This shipment will be marked as cancelled and cannot be changed afterwards."
+              }
+              confirmLabel={
+                confirmation === "delete"
+                  ? "Delete shipment"
+                  : "Cancel shipment"
+              }
+              confirming={actionLoading}
+              onOpenChange={(open) => {
+                if (!open && !actionLoading) setConfirmation(null);
+              }}
+              onConfirm={() => void confirmAction()}
+            >
+              <span />
+            </ConfirmDialog>
+          </>
         )}
       </div>
     </div>

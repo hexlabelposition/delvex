@@ -31,9 +31,15 @@ cp .env.example .env.local
 
 | Variable            | Required | Purpose                                                      |
 | ------------------- | -------- | ------------------------------------------------------------ |
+| API_URL             | yes      | Server URL used by Server Actions without a trailing slash   |
 | NEXT_PUBLIC_API_URL | yes      | Browser-reachable Delvex server URL without a trailing slash |
 
 The default local value is **http://localhost:8080**.
+
+For standalone development, both variables point to **http://localhost:8080**.
+Compose overrides **API_URL** with **http://server:8080** so Server Actions can
+reach Spring Boot through the internal network, while the public URL remains
+browser-reachable.
 
 Variables prefixed with **NEXT_PUBLIC_** are exposed to browser code. Never put
 credentials, tokens, or other secrets in them. Next.js embeds public variables

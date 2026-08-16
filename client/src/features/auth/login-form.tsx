@@ -7,15 +7,10 @@ import { useRouter } from "next/navigation";
 import { useActionState, useEffect } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { loginAction } from "@/features/auth/actions";
 import { useAuth } from "@/features/auth/auth-provider";
+import { AuthShell } from "@/features/auth/auth-shell";
 import { FormField } from "@/features/auth/form-field";
 import { loginSchema } from "@/features/auth/schema";
 import { SubmitButton } from "@/features/auth/submit-button";
@@ -43,42 +38,57 @@ export function LoginForm() {
   }, [lastResult?.session, router, setSession]);
 
   return (
-    <Card className="w-full max-w-sm">
-      <CardHeader>
-        <CardTitle>Sign in</CardTitle>
-        <CardDescription>Enter your credentials to continue.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form {...getFormProps(form)} action={action} className="grid gap-4">
-          {form.errors !== undefined && (
-            <Alert variant="destructive">
-              <AlertDescription>{form.errors.join(" ")}</AlertDescription>
-            </Alert>
-          )}
-          <FormField
-            field={fields.email}
-            label="Email"
-            type="email"
-            autoComplete="email"
-          />
-          <FormField
-            field={fields.password}
-            label="Password"
-            type="password"
-            autoComplete="current-password"
-          />
-          <SubmitButton>Sign in</SubmitButton>
-          <p className="text-muted-foreground text-center text-sm">
-            Don&apos;t have an account?{" "}
-            <Link
-              href="/register"
-              className="text-primary font-medium hover:underline"
-            >
-              Create account
-            </Link>
-          </p>
-        </form>
-      </CardContent>
-    </Card>
+    <AuthShell
+      title="Sign in to Delvex"
+      description="Enter your email and password to continue."
+    >
+      {form.errors !== undefined && (
+        <Alert
+          variant="destructive"
+          className="mb-4 rounded-md py-3 text-[13px]"
+        >
+          <AlertDescription>{form.errors.join(" ")}</AlertDescription>
+        </Alert>
+      )}
+      <Card className="ring-border gap-0 rounded-lg border-0 py-0 shadow-sm ring-1">
+        <CardContent className="p-[22px]">
+          <form
+            {...getFormProps(form)}
+            action={action}
+            className="grid gap-[14px]"
+          >
+            <FormField
+              field={fields.email}
+              label="Email"
+              type="email"
+              autoComplete="email"
+              placeholder="you@company.com"
+            />
+            <FormField
+              field={fields.password}
+              label="Password"
+              type="password"
+              autoComplete="current-password"
+              placeholder="Your password"
+              canTogglePassword
+            />
+            <SubmitButton pendingLabel="Signing in…">Sign in</SubmitButton>
+            <p className="text-muted-foreground text-center text-xs">
+              Password recovery is not available yet — contact support if you
+              are locked out.
+            </p>
+          </form>
+        </CardContent>
+      </Card>
+      <p className="text-muted-foreground mt-[18px] text-center text-[13px]">
+        New to Delvex?{" "}
+        <Link
+          href="/register"
+          className="text-foreground font-medium hover:underline"
+        >
+          Create an account
+        </Link>
+      </p>
+    </AuthShell>
   );
 }

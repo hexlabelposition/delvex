@@ -7,15 +7,10 @@ import { useRouter } from "next/navigation";
 import { useActionState, useEffect } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { registerAction } from "@/features/auth/actions";
 import { useAuth } from "@/features/auth/auth-provider";
+import { AuthShell } from "@/features/auth/auth-shell";
 import { FormField } from "@/features/auth/form-field";
 import { registerSchema } from "@/features/auth/schema";
 import { SubmitButton } from "@/features/auth/submit-button";
@@ -43,54 +38,69 @@ export function RegisterForm() {
   }, [lastResult?.session, router, setSession]);
 
   return (
-    <Card className="w-full max-w-sm">
-      <CardHeader>
-        <CardTitle>Create account</CardTitle>
-        <CardDescription>Enter your details to get started.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form {...getFormProps(form)} action={action} className="grid gap-4">
-          {form.errors !== undefined && (
-            <Alert variant="destructive">
-              <AlertDescription>{form.errors.join(" ")}</AlertDescription>
-            </Alert>
-          )}
-          <div className="grid gap-4 sm:grid-cols-2">
+    <AuthShell
+      title="Create your account"
+      description="Track and manage your own shipments in one place."
+    >
+      {form.errors !== undefined && (
+        <Alert
+          variant="destructive"
+          className="mb-4 rounded-md py-3 text-[13px]"
+        >
+          <AlertDescription>{form.errors.join(" ")}</AlertDescription>
+        </Alert>
+      )}
+      <Card className="ring-border gap-0 rounded-lg border-0 py-0 shadow-sm ring-1">
+        <CardContent className="p-[22px]">
+          <form
+            {...getFormProps(form)}
+            action={action}
+            className="grid gap-[14px]"
+          >
+            <FormField
+              field={fields.email}
+              label="Email"
+              type="email"
+              autoComplete="email"
+              placeholder="you@company.com"
+            />
+            <FormField
+              field={fields.password}
+              label="Password"
+              type="password"
+              autoComplete="new-password"
+              placeholder="At least 8 characters"
+              hint="8–72 characters"
+              canTogglePassword
+            />
             <FormField
               field={fields.firstName}
               label="First name"
               autoComplete="given-name"
+              placeholder="Marta"
             />
             <FormField
               field={fields.lastName}
               label="Last name"
               autoComplete="family-name"
+              placeholder="Kowalska"
+              hint="Up to 50 characters"
             />
-          </div>
-          <FormField
-            field={fields.email}
-            label="Email"
-            type="email"
-            autoComplete="email"
-          />
-          <FormField
-            field={fields.password}
-            label="Password"
-            type="password"
-            autoComplete="new-password"
-          />
-          <SubmitButton>Create account</SubmitButton>
-          <p className="text-muted-foreground text-center text-sm">
-            Already have an account?{" "}
-            <Link
-              href="/login"
-              className="text-primary font-medium hover:underline"
-            >
-              Sign in
-            </Link>
-          </p>
-        </form>
-      </CardContent>
-    </Card>
+            <SubmitButton pendingLabel="Creating account…">
+              Create account
+            </SubmitButton>
+          </form>
+        </CardContent>
+      </Card>
+      <p className="text-muted-foreground mt-[18px] text-center text-[13px]">
+        Already have an account?{" "}
+        <Link
+          href="/login"
+          className="text-foreground font-medium hover:underline"
+        >
+          Sign in
+        </Link>
+      </p>
+    </AuthShell>
   );
 }

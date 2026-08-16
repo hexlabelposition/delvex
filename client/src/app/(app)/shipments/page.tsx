@@ -46,6 +46,11 @@ function ShipmentsContent() {
           Shipment created successfully.
         </p>
       )}
+      {searchParams.get("deleted") === "1" && (
+        <p className="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          Shipment deleted successfully.
+        </p>
+      )}
       <div className="mt-7">
         {error ? (
           <EmptyState

@@ -3,6 +3,7 @@ import type {
   CreateShipmentPayload,
   Shipment,
   ShipmentPage,
+  UpdateShipmentPayload,
   UserResponse,
 } from "@/lib/api/types";
 
@@ -36,6 +37,28 @@ export async function createShipment(
     accessToken,
   });
   return response.data;
+}
+
+export async function updateShipment(
+  shipmentId: string,
+  payload: UpdateShipmentPayload,
+  { accessToken }: TokenOptions,
+) {
+  const response = await apiClient.patch<Shipment>(
+    `/api/shipments/${shipmentId}`,
+    payload,
+    { accessToken },
+  );
+  return response.data;
+}
+
+export async function deleteShipment(
+  shipmentId: string,
+  { accessToken }: TokenOptions,
+) {
+  await apiClient.delete<void>(`/api/shipments/${shipmentId}`, {
+    accessToken,
+  });
 }
 
 export async function updateProfile(

@@ -26,3 +26,49 @@ export interface UserResponse extends AuthUser {
   createdAt: string;
   updatedAt: string;
 }
+
+export type ShipmentStatus =
+  "CREATED" | "IN_TRANSIT" | "DELIVERED" | "CANCELLED";
+
+export interface Shipment {
+  id: string;
+  referenceNumber: string;
+  status: ShipmentStatus;
+  originCountry: string;
+  originCity: string;
+  originPostalCode: string;
+  originAddress: string;
+  destinationCountry: string;
+  destinationCity: string;
+  destinationPostalCode: string;
+  destinationAddress: string;
+  cargoDescription: string;
+  weightKg: number;
+  pickupAt: string | null;
+  deliveryAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ShipmentPage {
+  content: Shipment[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+export interface CreateShipmentPayload {
+  originCountry: string;
+  originCity: string;
+  originPostalCode: string;
+  originAddress: string;
+  destinationCountry: string;
+  destinationCity: string;
+  destinationPostalCode: string;
+  destinationAddress: string;
+  cargoDescription: string;
+  weightKg: number;
+  pickupAt: string | null;
+  deliveryAt: string | null;
+}

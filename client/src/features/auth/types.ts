@@ -4,7 +4,7 @@ import type { AuthUser } from "@/lib/api/types";
 
 export interface AuthSession {
   accessToken: string;
-  user: AuthUser;
+  user: AuthUser & { createdAt?: string; updatedAt?: string };
 }
 
 export interface AuthFormState {

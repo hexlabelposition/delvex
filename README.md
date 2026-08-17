@@ -67,11 +67,11 @@ runs on the host against PostgreSQL from Compose, keep **POSTGRES_DB**,
 environment files. The hostnames remain different: Compose uses the internal
 service name **postgres**, while the standalone server uses **localhost**.
 
-**NEXT_PUBLIC_API_URL** is also intentionally present in both the root and
-client templates. The root value is embedded into the Compose client image,
-while **client/.env.local** is used by a Next.js process running on the host.
-Public Next.js variables are visible in the browser and must never contain
-secrets.
+**NEXT_PUBLIC_API_URL** and **NEXT_PUBLIC_SITE_URL** are intentionally present
+in both the root and client templates. Root values are embedded into the Compose
+client image, while **client/.env.local** is used by a Next.js process running
+on the host. The site URL supplies canonical and social-preview metadata. Public
+Next.js variables are visible in the browser and must never contain secrets.
 
 **NODE_ENV** in the root file applies only to the running client container and
 stays **production**. The client image contains a production build, so a

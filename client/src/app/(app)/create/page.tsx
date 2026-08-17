@@ -3,6 +3,7 @@
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
+import { z } from "zod";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -17,102 +18,91 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/features/auth/auth-provider";
 import { createShipment } from "@/features/dashboard/api";
+import {
+  locationSelectOptions,
+  shipmentLocationIdSchema,
+} from "@/features/shipments/locations";
 import { ApiClientError } from "@/lib/api/client";
-import type { CreateShipmentPayload } from "@/lib/api/types";
 
-type FormValues = Record<keyof CreateShipmentPayload, string>;
+const formSchema = z
+  .object({
+    originLocationId: shipmentLocationIdSchema,
+    destinationLocationId: shipmentLocationIdSchema,
+    cargoDescription: z
+      .string()
+      .trim()
+      .min(1, "This field is required")
+      .max(500),
+    weightKg: z.coerce
+      .number()
+      .finite()
+      .min(0.01, "Weight must be at least 0.01 kg")
+      .multipleOf(0.01),
+    pickupAt: z.string(),
+    deliveryAt: z.string(),
+  })
+  .superRefine((value, context) => {
+    if (
+      value.pickupAt &&
+      value.deliveryAt &&
+      new Date(value.deliveryAt) < new Date(value.pickupAt)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["deliveryAt"],
+        message: "Delivery cannot be earlier than pickup",
+      });
+    }
+  });
+
+interface FormValues {
+  originLocationId: string;
+  destinationLocationId: string;
+  cargoDescription: string;
+  weightKg: string;
+  pickupAt: string;
+  deliveryAt: string;
+}
+type Field = keyof FormValues;
 const initialValues: FormValues = {
-  originCountry: "",
-  originCity: "",
-  originPostalCode: "",
-  originAddress: "",
-  destinationCountry: "",
-  destinationCity: "",
-  destinationPostalCode: "",
-  destinationAddress: "",
+  originLocationId: "",
+  destinationLocationId: "",
   cargoDescription: "",
   weightKg: "",
   pickupAt: "",
   deliveryAt: "",
 };
-const steps = [
+const steps: { title: string; hint: string; fields: readonly Field[] }[] = [
   {
     title: "Origin",
-    hint: "The pickup address for this shipment.",
-    fields: [
-      "originCountry",
-      "originCity",
-      "originPostalCode",
-      "originAddress",
-    ] as const,
+    hint: "Choose the Delvex pickup point.",
+    fields: ["originLocationId"],
   },
   {
     title: "Destination",
-    hint: "The delivery address for this shipment.",
-    fields: [
-      "destinationCountry",
-      "destinationCity",
-      "destinationPostalCode",
-      "destinationAddress",
-    ] as const,
+    hint: "Choose the Delvex delivery point.",
+    fields: ["destinationLocationId"],
   },
   {
     title: "Cargo",
     hint: "Describe the goods and give the total weight.",
-    fields: ["cargoDescription", "weightKg"] as const,
+    fields: ["cargoDescription", "weightKg"],
   },
   {
     title: "Schedule",
     hint: "Both dates are optional and can be added later.",
-    fields: ["pickupAt", "deliveryAt"] as const,
+    fields: ["pickupAt", "deliveryAt"],
   },
 ];
-const labels: Record<keyof CreateShipmentPayload, string> = {
-  originCountry: "Country code",
-  originCity: "City",
-  originPostalCode: "Postal code",
-  originAddress: "Address",
-  destinationCountry: "Country code",
-  destinationCity: "City",
-  destinationPostalCode: "Postal code",
-  destinationAddress: "Address",
-  cargoDescription: "Cargo description",
-  weightKg: "Weight (kg)",
-  pickupAt: "Pickup date and time",
-  deliveryAt: "Delivery date and time",
-};
 
-function validate(values: FormValues, step: number) {
-  const errors: Record<string, string> = {};
-  for (const field of steps[step].fields) {
-    const value = values[field].trim();
-    if (step < 3 && value === "") errors[field] = "This field is required";
-  }
-  if (step === 0) {
-    if (values.originCountry && !/^[a-z]{2}$/i.test(values.originCountry))
-      errors.originCountry = "Use a two-letter country code";
-  }
-  if (step === 1) {
-    if (
-      values.destinationCountry &&
-      !/^[a-z]{2}$/i.test(values.destinationCountry)
-    )
-      errors.destinationCountry = "Use a two-letter country code";
-  }
-  if (
-    step === 2 &&
-    (Number(values.weightKg) < 0.01 ||
-      !Number.isFinite(Number(values.weightKg)))
-  )
-    errors.weightKg = "Weight must be at least 0.01 kg";
-  if (
-    step === 3 &&
-    values.pickupAt &&
-    values.deliveryAt &&
-    new Date(values.deliveryAt) < new Date(values.pickupAt)
-  )
-    errors.deliveryAt = "Delivery cannot be earlier than pickup";
-  return errors;
+function errorsFor(values: FormValues, fields?: readonly Field[]) {
+  const result = formSchema.safeParse(values);
+  if (result.success) return {} as Record<string, string>;
+  return Object.fromEntries(
+    result.error.issues
+      .filter((issue) => !fields || fields.includes(issue.path[0] as Field))
+      .map((issue) => [String(issue.path[0]), issue.message]),
+  );
 }
 
 export default function CreatePage() {
@@ -123,33 +113,31 @@ export default function CreatePage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const current = steps[step];
-  const update = (field: keyof CreateShipmentPayload, value: string) =>
+  const update = (field: Field, value: string) =>
     setValues((previous) => ({ ...previous, [field]: value }));
   const next = () => {
-    const nextErrors = validate(values, step);
+    const nextErrors = errorsFor(values, steps[step].fields);
     setErrors(nextErrors);
-    if (Object.keys(nextErrors).length === 0) setStep((value) => value + 1);
+    if (!Object.keys(nextErrors).length) setStep((value) => value + 1);
   };
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    const nextErrors = validate(values, 3);
+    const nextErrors = errorsFor(values);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length || session === null) return;
+    const payload = formSchema.parse(values);
     setSubmitting(true);
     setSubmitError("");
     try {
       await createShipment(
         {
-          ...values,
-          originCountry: values.originCountry.toUpperCase(),
-          destinationCountry: values.destinationCountry.toUpperCase(),
-          weightKg: Number(values.weightKg),
-          pickupAt: values.pickupAt
-            ? new Date(values.pickupAt).toISOString()
+          ...payload,
+          cargoDescription: payload.cargoDescription.trim(),
+          pickupAt: payload.pickupAt
+            ? new Date(payload.pickupAt).toISOString()
             : null,
-          deliveryAt: values.deliveryAt
-            ? new Date(values.deliveryAt).toISOString()
+          deliveryAt: payload.deliveryAt
+            ? new Date(payload.deliveryAt).toISOString()
             : null,
         },
         { accessToken: session.accessToken },
@@ -164,12 +152,13 @@ export default function CreatePage() {
       setSubmitting(false);
     }
   };
+  const current = steps[step];
   return (
     <div className="mx-auto max-w-3xl">
       <h1 className="text-3xl font-semibold tracking-tight">Create shipment</h1>
       <p className="text-muted-foreground mt-2">
-        The reference number and status are assigned automatically. New
-        shipments start as Created.
+        The reference number and status are assigned automatically. Logistics
+        updates the status after creation.
       </p>
       <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {steps.map((item, index) => (
@@ -187,15 +176,7 @@ export default function CreatePage() {
       <form onSubmit={(event) => void submit(event)}>
         <Card className="mt-5 gap-0 py-0">
           <CardHeader className="px-5 pt-5">
-            <CardTitle>
-              {current.title === "Origin"
-                ? "Where does it start?"
-                : current.title === "Destination"
-                  ? "Where is it going?"
-                  : current.title === "Cargo"
-                    ? "What is being shipped?"
-                    : "When should it move?"}
-            </CardTitle>
+            <CardTitle>{current.title}</CardTitle>
             <CardDescription>{current.hint}</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 px-5 pb-5 sm:grid-cols-2">
@@ -204,8 +185,34 @@ export default function CreatePage() {
                 key={field}
                 className={field === "cargoDescription" ? "sm:col-span-2" : ""}
               >
-                <Label htmlFor={field}>{labels[field]}</Label>
-                {field === "cargoDescription" ? (
+                <Label htmlFor={field}>
+                  {field === "originLocationId"
+                    ? "Pickup point"
+                    : field === "destinationLocationId"
+                      ? "Delivery point"
+                      : field === "cargoDescription"
+                        ? "Cargo description"
+                        : field === "weightKg"
+                          ? "Weight (kg)"
+                          : field === "pickupAt"
+                            ? "Pickup date and time"
+                            : "Delivery date and time"}
+                </Label>
+                {field.endsWith("LocationId") ? (
+                  <select
+                    id={field}
+                    className="border-input mt-2 h-8 w-full rounded-lg border bg-transparent px-2.5 text-sm"
+                    value={values[field]}
+                    onChange={(event) => update(field, event.target.value)}
+                  >
+                    <option value="">Select a point</option>
+                    {locationSelectOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                ) : field === "cargoDescription" ? (
                   <textarea
                     id={field}
                     value={values[field]}
@@ -217,13 +224,7 @@ export default function CreatePage() {
                   <Input
                     id={field}
                     className="mt-2"
-                    type={
-                      field === "weightKg"
-                        ? "number"
-                        : field === "pickupAt" || field === "deliveryAt"
-                          ? "datetime-local"
-                          : "text"
-                    }
+                    type={field === "weightKg" ? "number" : "datetime-local"}
                     min={field === "weightKg" ? "0.01" : undefined}
                     step={field === "weightKg" ? "0.01" : undefined}
                     value={values[field]}
@@ -262,7 +263,7 @@ export default function CreatePage() {
                 <ArrowLeft /> Back
               </Button>
             )}
-            {step < 3 ? (
+            {step < steps.length - 1 ? (
               <Button type="button" onClick={next}>
                 Continue
               </Button>

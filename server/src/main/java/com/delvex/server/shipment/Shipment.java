@@ -87,14 +87,8 @@ public class Shipment {
     public Shipment(
             User user,
             String referenceNumber,
-            String originCountry,
-            String originCity,
-            String originPostalCode,
-            String originAddress,
-            String destinationCountry,
-            String destinationCity,
-            String destinationPostalCode,
-            String destinationAddress,
+            ShipmentLocation originLocation,
+            ShipmentLocation destinationLocation,
             String cargoDescription,
             BigDecimal weightKg,
             Instant pickupAt,
@@ -104,14 +98,8 @@ public class Shipment {
         this.user = user;
         this.referenceNumber = referenceNumber;
         this.status = ShipmentStatus.CREATED;
-        this.originCountry = originCountry;
-        this.originCity = originCity;
-        this.originPostalCode = originPostalCode;
-        this.originAddress = originAddress;
-        this.destinationCountry = destinationCountry;
-        this.destinationCity = destinationCity;
-        this.destinationPostalCode = destinationPostalCode;
-        this.destinationAddress = destinationAddress;
+        applyOriginLocation(originLocation);
+        applyDestinationLocation(destinationLocation);
         this.cargoDescription = cargoDescription;
         this.weightKg = weightKg;
         this.pickupAt = pickupAt;
@@ -131,35 +119,21 @@ public class Shipment {
     }
 
     public void update(
-            ShipmentStatus status,
-            String originCountry,
-            String originCity,
-            String originPostalCode,
-            String originAddress,
-            String destinationCountry,
-            String destinationCity,
-            String destinationPostalCode,
-            String destinationAddress,
+            ShipmentLocation originLocation,
+            ShipmentLocation destinationLocation,
             String cargoDescription,
             BigDecimal weightKg,
             Instant pickupAt,
             Instant deliveryAt) {
-        validateUpdate(status);
+        validateUpdate();
 
         Instant updatedPickupAt = pickupAt != null ? pickupAt : this.pickupAt;
         Instant updatedDeliveryAt = deliveryAt != null ? deliveryAt : this.deliveryAt;
 
         validateSchedule(updatedPickupAt, updatedDeliveryAt);
 
-        this.status = valueOrCurrent(status, this.status);
-        this.originCountry = valueOrCurrent(originCountry, this.originCountry);
-        this.originCity = valueOrCurrent(originCity, this.originCity);
-        this.originPostalCode = valueOrCurrent(originPostalCode, this.originPostalCode);
-        this.originAddress = valueOrCurrent(originAddress, this.originAddress);
-        this.destinationCountry = valueOrCurrent(destinationCountry, this.destinationCountry);
-        this.destinationCity = valueOrCurrent(destinationCity, this.destinationCity);
-        this.destinationPostalCode = valueOrCurrent(destinationPostalCode, this.destinationPostalCode);
-        this.destinationAddress = valueOrCurrent(destinationAddress, this.destinationAddress);
+        if (originLocation != null) applyOriginLocation(originLocation);
+        if (destinationLocation != null) applyDestinationLocation(destinationLocation);
         this.cargoDescription = valueOrCurrent(cargoDescription, this.cargoDescription);
         this.weightKg = valueOrCurrent(weightKg, this.weightKg);
         this.pickupAt = updatedPickupAt;
@@ -173,20 +147,25 @@ public class Shipment {
         }
     }
 
-    private void validateUpdate(ShipmentStatus requestedStatus) {
-        if (status.isTerminal()) {
+    private void validateUpdate() {
+        if (status != ShipmentStatus.CREATED) {
             throw new InvalidShipmentStateException(
                     status + " shipments cannot be updated");
         }
+    }
 
-        if (requestedStatus != null
-                && !status.canTransitionTo(requestedStatus)) {
-            throw new InvalidShipmentStateException(
-                    "Shipment status cannot change from "
-                            + status
-                            + " to "
-                            + requestedStatus);
-        }
+    private void applyOriginLocation(ShipmentLocation location) {
+        originCountry = location.country();
+        originCity = location.city();
+        originPostalCode = location.postalCode();
+        originAddress = location.address();
+    }
+
+    private void applyDestinationLocation(ShipmentLocation location) {
+        destinationCountry = location.country();
+        destinationCity = location.city();
+        destinationPostalCode = location.postalCode();
+        destinationAddress = location.address();
     }
 
     private void validateSchedule(Instant pickupAt, Instant deliveryAt) {

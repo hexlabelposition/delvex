@@ -129,14 +129,8 @@ if [[ -z "$refresh_token" ]]; then
 fi
 
 shipment_payload='{
-  "originCountry": "PL",
-  "originCity": "Legnica",
-  "originPostalCode": "59-220",
-  "originAddress": "Rynek 1",
-  "destinationCountry": "PL",
-  "destinationCity": "Wroclaw",
-  "destinationPostalCode": "50-001",
-  "destinationAddress": "Rynek 2",
+  "originLocationId": "WROCLAW",
+  "destinationLocationId": "WARSAW",
   "cargoDescription": "Production smoke cargo",
   "weightKg": 12.50
 }'
@@ -194,10 +188,11 @@ update_status=$(curl --silent --show-error \
     --request PATCH \
     --header "Authorization: Bearer $refreshed_access_token" \
     --header "Content-Type: application/json" \
-    --data '{"status":"IN_TRANSIT"}' \
+    --data '{"cargoDescription":"Updated production smoke cargo"}' \
     "$base_url/api/shipments/$shipment_id")
 expect_status "$update_status" "200" "Shipment update"
-jq --exit-status '.status == "IN_TRANSIT"' \
+jq --exit-status \
+    '.status == "CREATED" and .cargoDescription == "Updated production smoke cargo"' \
     "$temp_dir/body.json" >/dev/null
 
 # A valid JWT bypasses the default-deny 401 and proves that springdoc did not

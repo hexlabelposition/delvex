@@ -16,18 +16,14 @@ import {
 } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-provider";
-import {
-  deleteShipment,
-  getShipment,
-  updateShipment,
-} from "@/features/dashboard/api";
+import { deleteShipment, getShipment } from "@/features/dashboard/api";
 import { EmptyState } from "@/features/dashboard/empty-state";
 import { formatDate, formatWeight } from "@/features/dashboard/format";
 import { StatusBadge } from "@/features/dashboard/status-badge";
 import { ApiClientError } from "@/lib/api/client";
-import type { Shipment, ShipmentStatus } from "@/lib/api/types";
+import type { Shipment } from "@/lib/api/types";
 
-type ConfirmationAction = "cancel" | "delete";
+type ConfirmationAction = "delete";
 
 function AddressCard({
   title,
@@ -61,12 +57,10 @@ function AddressCard({
 function ShipmentDetails({
   shipment,
   actionLoading,
-  onStatusChange,
   onConfirm,
 }: {
   shipment: Shipment;
   actionLoading: boolean;
-  onStatusChange: (status: ShipmentStatus) => void;
   onConfirm: (action: ConfirmationAction) => void;
 }) {
   return (
@@ -83,45 +77,6 @@ function ShipmentDetails({
         <div className="flex flex-wrap items-center gap-2">
           <StatusBadge status={shipment.status} />
           {shipment.status === "CREATED" && (
-            <>
-              <Button
-                size="sm"
-                disabled={actionLoading}
-                onClick={() => onStatusChange("IN_TRANSIT")}
-              >
-                Mark in transit
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={actionLoading}
-                onClick={() => onConfirm("cancel")}
-              >
-                Cancel shipment
-              </Button>
-            </>
-          )}
-          {shipment.status === "IN_TRANSIT" && (
-            <>
-              <Button
-                size="sm"
-                disabled={actionLoading}
-                onClick={() => onStatusChange("DELIVERED")}
-              >
-                Mark delivered
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={actionLoading}
-                onClick={() => onConfirm("cancel")}
-              >
-                Cancel shipment
-              </Button>
-            </>
-          )}
-          {(shipment.status === "CREATED" ||
-            shipment.status === "IN_TRANSIT") && (
             <Button
               size="sm"
               variant="outline"
@@ -131,8 +86,7 @@ function ShipmentDetails({
               <Pencil /> Edit
             </Button>
           )}
-          {(shipment.status === "CREATED" ||
-            shipment.status === "CANCELLED") && (
+          {shipment.status === "CREATED" && (
             <Button
               size="sm"
               variant="destructive"
@@ -247,47 +201,13 @@ export default function ShipmentDetailsPage() {
     };
   }, [session, shipmentId]);
 
-  const updateStatus = async (status: ShipmentStatus) => {
-    if (session === null || shipment === null) return;
-    setActionLoading(true);
-    setActionError("");
-    try {
-      setShipment(
-        await updateShipment(
-          shipment.id,
-          { status },
-          { accessToken: session.accessToken },
-        ),
-      );
-    } catch (requestError) {
-      setActionError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Could not update shipment",
-      );
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
   const confirmAction = async () => {
     if (session === null || shipment === null || confirmation === null) return;
     setActionLoading(true);
     setActionError("");
     try {
-      if (confirmation === "cancel") {
-        setShipment(
-          await updateShipment(
-            shipment.id,
-            { status: "CANCELLED" },
-            { accessToken: session.accessToken },
-          ),
-        );
-        setConfirmation(null);
-      } else {
-        await deleteShipment(shipment.id, { accessToken: session.accessToken });
-        router.push("/shipments?deleted=1");
-      }
+      await deleteShipment(shipment.id, { accessToken: session.accessToken });
+      router.push("/shipments?deleted=1");
     } catch (requestError) {
       setActionError(
         requestError instanceof Error
@@ -329,26 +249,13 @@ export default function ShipmentDetailsPage() {
             <ShipmentDetails
               shipment={shipment}
               actionLoading={actionLoading}
-              onStatusChange={(status) => void updateStatus(status)}
               onConfirm={setConfirmation}
             />
             <ConfirmDialog
               open={confirmation !== null}
-              title={
-                confirmation === "delete"
-                  ? "Delete shipment?"
-                  : "Cancel shipment?"
-              }
-              description={
-                confirmation === "delete"
-                  ? "This shipment will be permanently removed."
-                  : "This shipment will be marked as cancelled and cannot be changed afterwards."
-              }
-              confirmLabel={
-                confirmation === "delete"
-                  ? "Delete shipment"
-                  : "Cancel shipment"
-              }
+              title="Delete shipment?"
+              description="This shipment will be permanently removed."
+              confirmLabel="Delete shipment"
               confirming={actionLoading}
               onOpenChange={(open) => {
                 if (!open && !actionLoading) setConfirmation(null);

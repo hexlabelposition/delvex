@@ -59,14 +59,8 @@ export interface ShipmentPage {
 }
 
 export interface CreateShipmentPayload {
-  originCountry: string;
-  originCity: string;
-  originPostalCode: string;
-  originAddress: string;
-  destinationCountry: string;
-  destinationCity: string;
-  destinationPostalCode: string;
-  destinationAddress: string;
+  originLocationId: string;
+  destinationLocationId: string;
   cargoDescription: string;
   weightKg: number;
   pickupAt: string | null;
@@ -76,7 +70,6 @@ export interface CreateShipmentPayload {
 export type UpdateShipmentPayload = Partial<
   Omit<CreateShipmentPayload, "pickupAt" | "deliveryAt">
 > & {
-  status?: ShipmentStatus;
   pickupAt?: string;
   deliveryAt?: string;
 };

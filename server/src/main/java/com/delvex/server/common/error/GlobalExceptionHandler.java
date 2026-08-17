@@ -20,6 +20,7 @@ import com.delvex.server.auth.EmailAlreadyExistsException;
 import com.delvex.server.auth.InvalidCredentialsException;
 import com.delvex.server.auth.InvalidRefreshTokenException;
 import com.delvex.server.shipment.InvalidShipmentScheduleException;
+import com.delvex.server.shipment.InvalidShipmentLocationException;
 import com.delvex.server.shipment.InvalidShipmentStateException;
 import com.delvex.server.shipment.ShipmentNotFoundException;
 import com.delvex.server.user.UserNotFoundException;
@@ -145,6 +146,17 @@ public class GlobalExceptionHandler {
                 Map.of());
 
         return ResponseEntity.status(status).body(error);
+    }
+
+    @ExceptionHandler(InvalidShipmentLocationException.class)
+    public ResponseEntity<ApiError> handleInvalidShipmentLocation(
+            InvalidShipmentLocationException exception,
+            HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        logHandledException(status, exception, request);
+        return ResponseEntity.status(status).body(new ApiError(
+                Instant.now(), status.value(), status.getReasonPhrase(),
+                exception.getMessage(), request.getRequestURI(), Map.of()));
     }
 
     @ExceptionHandler(InvalidShipmentStateException.class)

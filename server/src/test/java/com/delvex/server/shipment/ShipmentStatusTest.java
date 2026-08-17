@@ -46,7 +46,7 @@ class ShipmentStatusTest {
         assertThat(ShipmentStatus.IN_TRANSIT.isTerminal()).isFalse();
 
         assertThat(ShipmentStatus.CREATED.canBeDeleted()).isTrue();
-        assertThat(ShipmentStatus.CANCELLED.canBeDeleted()).isTrue();
+        assertThat(ShipmentStatus.CANCELLED.canBeDeleted()).isFalse();
         assertThat(ShipmentStatus.IN_TRANSIT.canBeDeleted()).isFalse();
         assertThat(ShipmentStatus.DELIVERED.canBeDeleted()).isFalse();
     }

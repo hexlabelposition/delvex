@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.delvex.server.auth.SecurityConfiguration;
 import com.delvex.server.health.DatabaseReadinessProbe;
 import com.delvex.server.health.HealthController;
+import com.delvex.server.health.RedisReadinessProbe;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -36,6 +37,9 @@ class CorsIntegrationTest {
 
     @MockitoBean
     private DatabaseReadinessProbe databaseReadinessProbe;
+
+    @MockitoBean
+    private RedisReadinessProbe redisReadinessProbe;
 
     @Test
     void shouldAllowConfiguredOrigin() throws Exception {
@@ -63,3 +67,4 @@ class CorsIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 }
+

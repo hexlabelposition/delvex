@@ -4,8 +4,8 @@
 
 Delvex is a logistics platform for managing users and shipments. The current
 MVP provides a production-oriented backend with authentication, shipment
-lifecycle management, PostgreSQL persistence, operational health checks, and a
-Next.js web client workspace. The repository is structured as a monorepo and
+lifecycle management, PostgreSQL persistence, Redis-backed rate limiting,
+operational health checks, and a Next.js web client workspace. The repository is structured as a monorepo and
 supports a complete containerized development stack.
 
 ## Product capabilities
@@ -28,7 +28,7 @@ supports a complete containerized development stack.
 ├── server/                     # Spring Boot API
 │   ├── README.md               # complete backend documentation
 │   └── .env.example            # standalone backend configuration
-├── compose.yaml                # client, server, and PostgreSQL stack
+├── compose.yaml                # client, server, PostgreSQL, and Redis stack
 ├── .env.example                # Docker Compose configuration
 └── .github/workflows/          # continuous integration
 ~~~
@@ -44,7 +44,7 @@ supports a complete containerized development stack.
 - **Client:** Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Bun
 - **Server:** Java 21, Spring Boot 4.1, Spring Security, Spring Data JPA,
   Flyway, and springdoc OpenAPI
-- **Database:** PostgreSQL 17
+- **Data:** PostgreSQL 17 for durable data and Redis 8 for rate-limit counters
 - **Infrastructure:** Docker and Docker Compose
 - **CI:** GitHub Actions
 
@@ -107,20 +107,21 @@ The services are available at:
 - client: http://localhost:3000
 - API: http://localhost:8080
 - PostgreSQL: localhost:5432
+- Redis: localhost:6379
 
-The client waits for server readiness, and the server waits for PostgreSQL
-readiness.
+The client waits for server readiness, and the server waits for PostgreSQL and
+Redis readiness.
 
-### Start only PostgreSQL
+### Start only infrastructure
 
 ~~~bash
-docker compose up -d postgres
+docker compose up -d postgres redis
 ~~~
 
 This is the recommended infrastructure mode when running both application
 modules directly on the host.
 
-### Start PostgreSQL and the server
+### Start infrastructure and the server
 
 ~~~bash
 docker compose up --build server
@@ -173,7 +174,8 @@ docker compose up --build client
 ## CI and releases
 
 Server changes targeting **dev** run Maven tests, package and start the
-production JAR against PostgreSQL, execute the real HTTP smoke scenario, and
+production JAR against PostgreSQL and Redis, execute the real HTTP smoke
+scenario, and
 build the production server image.
 
 Delvex currently uses one product version for the monorepo. Stable releases are
@@ -187,3 +189,4 @@ standalone output, and container usage.
 See [server/README.md](server/README.md) for API routes, authentication,
 configuration variables, OpenAPI, database migrations, testing, production
 startup, security, and operational behavior.
+

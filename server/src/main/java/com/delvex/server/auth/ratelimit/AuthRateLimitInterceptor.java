@@ -46,10 +46,21 @@ public class AuthRateLimitInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        RateLimitDecision decision = rateLimiter.check(
-                rule.endpoint(),
-                clientIpResolver.resolve(request),
-                rule.maxRequests());
+        RateLimitDecision decision;
+
+        try {
+            decision = rateLimiter.check(
+                    rule.endpoint(),
+                    clientIpResolver.resolve(request),
+                    rule.maxRequests());
+        } catch (RateLimitStoreUnavailableException exception) {
+            errorResponseWriter.write(
+                    request,
+                    response,
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "Authentication temporarily unavailable");
+            return false;
+        }
 
         if (decision.allowed()) {
             return true;

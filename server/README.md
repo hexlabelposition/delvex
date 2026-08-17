@@ -12,8 +12,9 @@ PostgreSQL persistence, API documentation, security, and operational health.
 - Spring Boot 4.1
 - Spring MVC and Jakarta Validation
 - Spring Security OAuth2 Resource Server
-- Spring Data JPA
+- Spring Data JPA and Spring Data Redis
 - PostgreSQL 17
+- Redis 8
 - Flyway migrations
 - springdoc OpenAPI
 - Spring-Dotenv
@@ -34,8 +35,9 @@ PostgreSQL persistence, API documentation, security, and operational health.
 - consistent JSON errors for validation, malformed JSON, security, and domain
   failures;
 - configurable CORS and application logging;
-- authentication rate limiting with trusted-proxy client IP resolution;
-- separate liveness and database-backed readiness checks;
+- Redis-backed authentication rate limiting with trusted-proxy client IP
+  resolution;
+- separate liveness and PostgreSQL/Redis-backed readiness checks;
 - development-only Swagger UI and OpenAPI JSON;
 - secure-by-default production profile;
 - real HTTP smoke flow against a packaged production JAR and PostgreSQL.
@@ -133,6 +135,7 @@ job.
 
 - JDK 21
 - Docker with Docker Compose
+- PostgreSQL and Redis for local server execution
 - Bash
 - curl and jq only for the production smoke script
 
@@ -140,20 +143,20 @@ A system Maven installation is not required.
 
 ## Local development
 
-The recommended backend workflow runs PostgreSQL in Docker and Spring Boot
-directly on the host.
+The recommended backend workflow runs PostgreSQL and Redis in Docker and Spring
+Boot directly on the host.
 
-### 1. Prepare PostgreSQL
+### 1. Prepare infrastructure
 
 From the repository root:
 
 ~~~bash
 cp .env.example .env
-docker compose up -d postgres
+docker compose up -d postgres redis
 ~~~
 
 Fill the root **.env** before startup. Compose uses it to initialize the
-database.
+database and starts an ephemeral Redis instance for rate-limit counters.
 
 ### 2. Prepare the server environment
 
@@ -192,7 +195,7 @@ The API is available at http://localhost:8080.
 
 ### Full Docker Compose stack
 
-To run both the server and PostgreSQL as containers, use the root environment
+To run the server, PostgreSQL, and Redis as containers, use the root environment
 and instructions in the [project README](../README.md#start-the-current-stack).
 
 ## OpenAPI documentation
@@ -216,6 +219,10 @@ disabled and unreachable in production.
 | POSTGRES_SCHEMA | public | JDBC current schema |
 | POSTGRES_USER | none | Required database user |
 | POSTGRES_PASSWORD | none | Required database password |
+| REDIS_HOST | localhost outside prod | Required explicitly in prod |
+| REDIS_PORT | 6379 | Redis port |
+| REDIS_CONNECT_TIMEOUT | 2s | Redis connection timeout |
+| REDIS_TIMEOUT | 2s | Redis command timeout |
 | ACCESS_TOKEN_SECRET | none | Base64 value with at least 32 decoded bytes |
 | CORS_ALLOWED_ORIGINS | empty; localhost in dev | Comma-separated exact origins |
 | LOG_LEVEL | INFO | Log level for com.delvex.server |
@@ -271,9 +278,16 @@ left and selects the first untrusted address.
 Do not use **0.0.0.0/0** or **::/0** when the application can also be reached
 directly.
 
-The MVP rate limiter is maintained in memory per application instance and
-resets when the process restarts. Multi-instance deployments should use a
-shared store or enforce limits at the gateway.
+Rate-limit counters are stored in Redis and shared by every server instance.
+Each key contains the endpoint, a SHA-256 digest of the resolved client address,
+and the fixed-window start time. A Lua script increments the counter and assigns
+its expiry atomically, so concurrent requests cannot lose increments or leave
+keys without a TTL.
+
+Redis is used only for short-lived rate-limit state. Refresh sessions, users,
+and shipments remain in PostgreSQL because they require durable, transactional
+persistence. If Redis is unavailable, protected authentication endpoints return
+HTTP 503 instead of silently bypassing rate limiting.
 
 ## Production configuration
 
@@ -288,6 +302,10 @@ POSTGRES_DB="delvex"
 POSTGRES_SCHEMA="public"
 POSTGRES_USER="delvex"
 POSTGRES_PASSWORD="<secret>"
+REDIS_HOST="redis.internal"
+REDIS_PORT="6379"
+REDIS_CONNECT_TIMEOUT="2s"
+REDIS_TIMEOUT="2s"
 ACCESS_TOKEN_SECRET="<base64-secret>"
 CORS_ALLOWED_ORIGINS="https://app.example.com"
 LOG_LEVEL="INFO"
@@ -299,7 +317,7 @@ The application fails fast when production configuration is unsafe:
 - refresh cookies are not secure;
 - Swagger UI or OpenAPI JSON is enabled;
 - CORS origins are missing or unsafe;
-- required database or authentication settings are missing or invalid.
+- required database, Redis, or authentication settings are missing or invalid.
 
 The production image runs as a non-root **delvex** user and exposes port 8080.
 
@@ -334,8 +352,8 @@ registration, shipment creation and retrieval, refresh rotation, shipment
 update, production documentation checks, logout, revoked-token rejection, and
 a final readiness check.
 
-It requires the **prod** environment, an available disposable PostgreSQL
-database, a free port 8080, and a packaged JAR:
+It requires the **prod** environment, available disposable PostgreSQL and Redis
+instances, a free port 8080, and a packaged JAR:
 
 ~~~bash
 ./mvnw --batch-mode --no-transfer-progress -DskipTests package
@@ -357,7 +375,7 @@ The Server CI workflow runs for backend, Compose, and workflow changes targeting
 **dev**.
 
 - **Maven tests** executes the complete unit and integration suite against
-  PostgreSQL.
+  PostgreSQL and Redis.
 - **Production JAR smoke** packages the executable JAR, starts it with the prod
   profile, performs the real HTTP scenario, and builds the production image.
 
@@ -367,11 +385,12 @@ upload step on a successful run is expected.
 ## Operational notes
 
 - **GET /api/health/live** reports only process liveness.
-- **GET /api/health** and **GET /api/health/ready** query PostgreSQL and return
-  HTTP 503 when the database is unavailable.
+- **GET /api/health** and **GET /api/health/ready** query PostgreSQL and Redis
+  and return HTTP 503 when either required dependency is unavailable.
 - Logs include a request ID. A valid incoming X-Request-ID is reused; otherwise
   the server creates one and returns it in the response.
 - All routes are authenticated by default. Only explicitly listed health and
   authentication routes are public.
 - Raw refresh tokens are never returned in JSON.
 - Database changes belong in a new Flyway migration.
+

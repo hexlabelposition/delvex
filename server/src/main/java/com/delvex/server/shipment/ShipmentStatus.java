@@ -25,6 +25,6 @@ public enum ShipmentStatus {
     }
 
     public boolean canBeDeleted() {
-        return this == CREATED || this == CANCELLED;
+        return this == CREATED;
     }
 }

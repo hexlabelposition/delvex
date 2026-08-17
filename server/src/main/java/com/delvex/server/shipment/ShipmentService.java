@@ -46,14 +46,8 @@ public class ShipmentService {
         Shipment shipment = new Shipment(
                 user,
                 createReferenceNumber(),
-                normalizeCountry(request.originCountry()),
-                strip(request.originCity()),
-                strip(request.originPostalCode()),
-                strip(request.originAddress()),
-                normalizeCountry(request.destinationCountry()),
-                strip(request.destinationCity()),
-                strip(request.destinationPostalCode()),
-                strip(request.destinationAddress()),
+                ShipmentLocation.fromId(request.originLocationId()),
+                ShipmentLocation.fromId(request.destinationLocationId()),
                 strip(request.cargoDescription()),
                 request.weightKg(),
                 request.pickupAt(),
@@ -115,16 +109,14 @@ public class ShipmentService {
             UpdateShipmentRequest request) {
         Shipment shipment = findOwnedShipment(userId, shipmentId);
 
+        ShipmentLocation originLocation = request.originLocationId() == null
+                ? null : ShipmentLocation.fromId(request.originLocationId());
+        ShipmentLocation destinationLocation = request.destinationLocationId() == null
+                ? null : ShipmentLocation.fromId(request.destinationLocationId());
+
         shipment.update(
-                request.status(),
-                normalizeCountry(request.originCountry()),
-                strip(request.originCity()),
-                strip(request.originPostalCode()),
-                strip(request.originAddress()),
-                normalizeCountry(request.destinationCountry()),
-                strip(request.destinationCity()),
-                strip(request.destinationPostalCode()),
-                strip(request.destinationAddress()),
+                originLocation,
+                destinationLocation,
                 strip(request.cargoDescription()),
                 request.weightKg(),
                 request.pickupAt(),
@@ -159,12 +151,6 @@ public class ShipmentService {
 
     private String createReferenceNumber() {
         return "DLX-" + UUID.randomUUID().toString().toUpperCase(Locale.ROOT);
-    }
-
-    private String normalizeCountry(String value) {
-        return value == null
-                ? null
-                : value.strip().toUpperCase(Locale.ROOT);
     }
 
     private String strip(String value) {

@@ -1,10 +1,12 @@
-import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
-export const metadata: Metadata = {
+import { createPageMetadata } from "@/lib/metadata";
+
+export const metadata = createPageMetadata({
   title: "Edit shipment",
   description: "Update shipment addresses, cargo details, and schedule.",
-};
+  path: "/shipments",
+});
 
 export default function EditShipmentLayout({
   children,

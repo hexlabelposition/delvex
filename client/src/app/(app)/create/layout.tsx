@@ -1,10 +1,12 @@
-import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
-export const metadata: Metadata = {
+import { createPageMetadata } from "@/lib/metadata";
+
+export const metadata = createPageMetadata({
   title: "Create shipment",
   description: "Create a new shipment in Delvex.",
-};
+  path: "/create",
+});
 
 export default function CreateShipmentLayout({
   children,

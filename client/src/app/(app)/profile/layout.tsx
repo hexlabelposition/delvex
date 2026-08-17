@@ -1,10 +1,12 @@
-import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
-export const metadata: Metadata = {
+import { createPageMetadata } from "@/lib/metadata";
+
+export const metadata = createPageMetadata({
   title: "Profile",
   description: "View and update your Delvex account details.",
-};
+  path: "/profile",
+});
 
 export default function ProfileLayout({ children }: { children: ReactNode }) {
   return children;

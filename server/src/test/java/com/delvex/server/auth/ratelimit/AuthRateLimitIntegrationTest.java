@@ -1,9 +1,13 @@
 package com.delvex.server.auth.ratelimit;
 
+import java.util.Set;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -25,8 +29,24 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("dev")
 class AuthRateLimitIntegrationTest {
 
+    private static final String RATE_LIMIT_KEY_PATTERN =
+            "delvex:rate-limit:auth:*";
+
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private StringRedisTemplate redisTemplate;
+
+    @BeforeEach
+    void clearRateLimitCounters() {
+        Set<String> keys = redisTemplate.keys(
+                RATE_LIMIT_KEY_PATTERN);
+
+        if (keys != null && !keys.isEmpty()) {
+            redisTemplate.delete(keys);
+        }
+    }
 
     @Test
     void shouldLimitLoginRequestsByClientAddress() throws Exception {

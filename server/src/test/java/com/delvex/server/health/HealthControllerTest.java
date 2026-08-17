@@ -25,8 +25,11 @@ class HealthControllerTest {
     @MockitoBean
     private DatabaseReadinessProbe databaseReadinessProbe;
 
+    @MockitoBean
+    private RedisReadinessProbe redisReadinessProbe;
+
     @Test
-    void shouldReturnLivenessWithoutCheckingDatabase() throws Exception {
+    void shouldReturnLivenessWithoutCheckingDependencies() throws Exception {
         mockMvc.perform(get("/api/health/live"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(
@@ -34,11 +37,13 @@ class HealthControllerTest {
                 .andExpect(jsonPath("$.status").value("ok"));
 
         then(databaseReadinessProbe).shouldHaveNoInteractions();
+        then(redisReadinessProbe).shouldHaveNoInteractions();
     }
 
     @Test
-    void shouldReturnReadyWhenDatabaseIsAvailable() throws Exception {
+    void shouldReturnReadyWhenDependenciesAreAvailable() throws Exception {
         given(databaseReadinessProbe.isReady()).willReturn(true);
+        given(redisReadinessProbe.isReady()).willReturn(true);
 
         mockMvc.perform(get("/api/health"))
                 .andExpect(status().isOk())
@@ -50,6 +55,7 @@ class HealthControllerTest {
     @Test
     void shouldExposeExplicitReadinessEndpoint() throws Exception {
         given(databaseReadinessProbe.isReady()).willReturn(true);
+        given(redisReadinessProbe.isReady()).willReturn(true);
 
         mockMvc.perform(get("/api/health/ready"))
                 .andExpect(status().isOk())
@@ -59,6 +65,21 @@ class HealthControllerTest {
     @Test
     void shouldReturnUnavailableWhenDatabaseIsDown() throws Exception {
         given(databaseReadinessProbe.isReady()).willReturn(false);
+
+        mockMvc.perform(get("/api/health/ready"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(content().contentTypeCompatibleWith(
+                        MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status")
+                        .value("unavailable"));
+
+        then(redisReadinessProbe).shouldHaveNoInteractions();
+    }
+
+    @Test
+    void shouldReturnUnavailableWhenRedisIsDown() throws Exception {
+        given(databaseReadinessProbe.isReady()).willReturn(true);
+        given(redisReadinessProbe.isReady()).willReturn(false);
 
         mockMvc.perform(get("/api/health/ready"))
                 .andExpect(status().isServiceUnavailable())

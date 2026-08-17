@@ -29,12 +29,14 @@ Create the local client environment from the committed template:
 cp .env.example .env.local
 ```
 
-| Variable            | Required | Purpose                                                      |
-| ------------------- | -------- | ------------------------------------------------------------ |
-| API_URL             | yes      | Server URL used by Server Actions without a trailing slash   |
-| NEXT_PUBLIC_API_URL | yes      | Browser-reachable Delvex server URL without a trailing slash |
+| Variable             | Required | Purpose                                                                 |
+| -------------------- | -------- | ----------------------------------------------------------------------- |
+| API_URL              | yes      | Server URL used by Server Actions without a trailing slash              |
+| NEXT_PUBLIC_API_URL  | yes      | Browser-reachable Delvex server URL without a trailing slash            |
+| NEXT_PUBLIC_SITE_URL | yes      | Client origin for canonical, Open Graph, Twitter, and manifest metadata |
 
-The default local value is **http://localhost:8080**.
+The default local values are **http://localhost:8080** for the API and
+**http://localhost:3000** for the client.
 
 For standalone development, both variables point to **http://localhost:8080**.
 Compose overrides **API_URL** with **http://server:8080** so Server Actions can
@@ -43,8 +45,8 @@ browser-reachable.
 
 Variables prefixed with **NEXT_PUBLIC_** are exposed to browser code. Never put
 credentials, tokens, or other secrets in them. Next.js embeds public variables
-during the production build, so changing **NEXT_PUBLIC_API_URL** requires a new
-client build or Docker image.
+during the production build, so changing **NEXT_PUBLIC_API_URL** or
+**NEXT_PUBLIC_SITE_URL** requires a new client build or Docker image.
 
 When the complete stack runs in Compose, the browser still connects through
 **localhost:8080**. Do not use the internal Docker service name **server** in
@@ -112,6 +114,7 @@ the browser bundle:
 ```bash
 docker build \
   --build-arg NEXT_PUBLIC_API_URL=http://localhost:8080 \
+  --build-arg NEXT_PUBLIC_SITE_URL=http://localhost:3000 \
   --tag delvex-client \
   .
 ```
@@ -140,8 +143,9 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Compose builds the client with **NEXT_PUBLIC_API_URL**, waits for the server
-readiness check, and exposes the dashboard at http://localhost:3000.
+Compose builds the client with **NEXT_PUBLIC_API_URL** and
+**NEXT_PUBLIC_SITE_URL**, waits for the server readiness check, and exposes the
+dashboard at http://localhost:3000.
 
 Change the root environment value and rebuild the client whenever the public API
 address changes. Compose reuses an existing image even when a build argument

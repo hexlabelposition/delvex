@@ -16,10 +16,13 @@ public class AuthRateLimitConfiguration implements WebMvcConfigurer {
     private final AuthRateLimitInterceptor interceptor;
 
     public AuthRateLimitConfiguration(
+            RateLimitStore rateLimitStore,
             AuthRateLimitProperties properties,
             JsonMapper jsonMapper) {
         this.interceptor = new AuthRateLimitInterceptor(
-                new AuthRateLimiter(properties.getWindow()),
+                new AuthRateLimiter(
+                        rateLimitStore,
+                        properties.getWindow()),
                 properties,
                 new ClientIpResolver(
                         properties.getTrustedProxyCidrs()),

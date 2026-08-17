@@ -41,6 +41,10 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB}
       POSTGRES_SCHEMA: ${POSTGRES_SCHEMA:-public}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_CONNECT_TIMEOUT: ${REDIS_CONNECT_TIMEOUT:-2s}
+      REDIS_TIMEOUT: ${REDIS_TIMEOUT:-2s}
       ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET:?Set ACCESS_TOKEN_SECRET}
       REFRESH_SESSION_CLEANUP_INTERVAL: ${REFRESH_SESSION_CLEANUP_INTERVAL:-1h}
       REFRESH_SESSION_CLEANUP_INITIAL_DELAY: ${REFRESH_SESSION_CLEANUP_INITIAL_DELAY:-1h}
@@ -55,6 +59,8 @@ services:
       - "8080:8080"
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
@@ -89,6 +95,20 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+
+  redis:
+    container_name: delvex-redis
+    image: redis:8-alpine
+    ports:
+      - "127.0.0.1:6379:6379"
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
   postgres_data:

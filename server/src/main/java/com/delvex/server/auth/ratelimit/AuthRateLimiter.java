@@ -1,27 +1,32 @@
 package com.delvex.server.auth.ratelimit;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.time.Duration;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.HexFormat;
 
 public class AuthRateLimiter {
 
-    private static final long CLEANUP_INTERVAL = 1024;
+    private static final String KEY_PREFIX =
+            "delvex:rate-limit:auth:";
 
+    private final RateLimitStore store;
     private final long windowMillis;
     private final Clock clock;
-    private final ConcurrentMap<ClientKey, ClientWindow> windows =
-            new ConcurrentHashMap<>();
-    private final AtomicLong requestCount = new AtomicLong();
 
-    public AuthRateLimiter(Duration window) {
-        this(window, Clock.systemUTC());
+    public AuthRateLimiter(
+            RateLimitStore store,
+            Duration window) {
+        this(store, window, Clock.systemUTC());
     }
 
-    AuthRateLimiter(Duration window, Clock clock) {
+    AuthRateLimiter(
+            RateLimitStore store,
+            Duration window,
+            Clock clock) {
+        this.store = store;
         this.windowMillis = window.toMillis();
         this.clock = clock;
     }
@@ -31,66 +36,49 @@ public class AuthRateLimiter {
             String clientId,
             int maxRequests) {
         long now = clock.millis();
-
-        // Windows are aligned to the Unix epoch, making Retry-After identical
-        // for all requests that fall into the same fixed time bucket.
         long windowStart = now - Math.floorMod(now, windowMillis);
-        ClientKey key = new ClientKey(endpoint, clientId);
-        AtomicBoolean allowed = new AtomicBoolean();
+        long windowEnd = windowStart + windowMillis;
+        Duration timeToLive = Duration.ofMillis(
+                Math.max(1, windowEnd - now));
+        String key = createKey(endpoint, clientId, windowStart);
 
-        // ConcurrentHashMap.compute serializes updates for this key, preventing
-        // parallel login attempts from losing increments.
-        windows.compute(key, (ignored, current) -> {
-            if (current == null
-                    || current.windowStartMillis() != windowStart) {
-                allowed.set(true);
-                return new ClientWindow(windowStart, 1);
-            }
-
-            if (current.requests() < maxRequests) {
-                allowed.set(true);
-                return new ClientWindow(
-                        windowStart,
-                        current.requests() + 1);
-            }
-
-            return current;
-        });
-
-        cleanupExpiredWindows(windowStart);
-
-        long retryAfterMillis = windowStart
-                + windowMillis
-                - now;
+        // Redis increments the shared counter and assigns its expiry in one
+        // script, so concurrent requests and multiple server instances cannot
+        // lose updates or create counters without a TTL.
+        long requests = store.increment(key, timeToLive);
         long retryAfterSeconds = Math.max(
                 1,
-                (retryAfterMillis + 999) / 1000);
+                (windowEnd - now + 999) / 1000);
 
         return new RateLimitDecision(
-                allowed.get(),
+                requests <= maxRequests,
                 retryAfterSeconds);
     }
 
-    private void cleanupExpiredWindows(long currentWindowStart) {
-        // Cleanup is amortized over requests instead of running a scheduler on
-        // every application instance for this small in-memory MVP limiter.
-        if (requestCount.incrementAndGet() % CLEANUP_INTERVAL != 0) {
-            return;
-        }
-
-        windows.entrySet().removeIf(entry ->
-                entry.getValue().windowStartMillis()
-                        < currentWindowStart);
-    }
-
-    private record ClientKey(
+    private static String createKey(
             String endpoint,
-            String clientId) {
+            String clientId,
+            long windowStart) {
+        return KEY_PREFIX
+                + endpoint
+                + ":"
+                + hash(clientId)
+                + ":"
+                + windowStart;
     }
 
-    private record ClientWindow(
-            long windowStartMillis,
-            int requests) {
+    private static String hash(String value) {
+        try {
+            byte[] digest = MessageDigest
+                    .getInstance("SHA-256")
+                    .digest(value.getBytes(StandardCharsets.UTF_8));
+
+            return HexFormat.of().formatHex(digest);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException(
+                    "SHA-256 is not available",
+                    exception);
+        }
     }
 
     public record RateLimitDecision(

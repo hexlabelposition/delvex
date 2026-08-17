@@ -11,10 +11,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class HealthController {
 
     private final DatabaseReadinessProbe databaseReadinessProbe;
+    private final RedisReadinessProbe redisReadinessProbe;
 
     public HealthController(
-            DatabaseReadinessProbe databaseReadinessProbe) {
+            DatabaseReadinessProbe databaseReadinessProbe,
+            RedisReadinessProbe redisReadinessProbe) {
         this.databaseReadinessProbe = databaseReadinessProbe;
+        this.redisReadinessProbe = redisReadinessProbe;
     }
 
     @GetMapping("/live")
@@ -24,7 +27,8 @@ public class HealthController {
 
     @GetMapping({"", "/ready"})
     public ResponseEntity<HealthStatus> readiness() {
-        if (databaseReadinessProbe.isReady()) {
+        if (databaseReadinessProbe.isReady()
+                && redisReadinessProbe.isReady()) {
             return ResponseEntity.ok(new HealthStatus("ok"));
         }
 

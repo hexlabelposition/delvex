@@ -1,6 +1,7 @@
 # Delvex
 
 [![Server CI](https://github.com/hexlabelposition/delvex/actions/workflows/server-ci.yml/badge.svg?branch=dev)](https://github.com/hexlabelposition/delvex/actions/workflows/server-ci.yml)
+[![Client CI](https://github.com/hexlabelposition/delvex/actions/workflows/client-ci.yml/badge.svg?branch=dev)](https://github.com/hexlabelposition/delvex/actions/workflows/client-ci.yml)
 
 Delvex is a logistics platform for managing users and shipments. The current
 MVP provides a production-oriented backend with authentication, shipment
@@ -175,8 +176,12 @@ docker compose up --build client
 
 Server changes targeting **dev** run Maven tests, package and start the
 production JAR against PostgreSQL and Redis, execute the real HTTP smoke
-scenario, and
-build the production server image.
+scenario, and build the production server image.
+
+Client changes targeting **dev** install the locked Bun dependencies, verify
+Prettier formatting, run ESLint and TypeScript checks, create the production
+Next.js build, and build the production client image. Server and client
+workflows use path filters, so unchanged modules do not run unnecessary jobs.
 
 Delvex currently uses one product version for the monorepo. Stable releases are
 tagged from **main** as **v<major>.<minor>.<patch>**.

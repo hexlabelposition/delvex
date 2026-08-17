@@ -1,5 +1,6 @@
 package com.delvex.server.auth.ratelimit;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -10,6 +11,7 @@ import com.delvex.server.common.error.ApiErrorResponseWriter;
 import tools.jackson.databind.json.JsonMapper;
 
 @Configuration
+@ConditionalOnBean(RateLimitStore.class)
 @EnableConfigurationProperties(AuthRateLimitProperties.class)
 public class AuthRateLimitConfiguration implements WebMvcConfigurer {
 

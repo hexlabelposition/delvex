@@ -81,6 +81,12 @@ jobs:
         working-directory: client
         run: bunx playwright install --with-deps chromium
 
+      - name: Verify Compose API routing
+        run: |
+          set -euo pipefail
+          rendered_api_url=$(API_URL=http://localhost:8080 docker compose config --format json | jq --raw-output '.services.client.environment.API_URL')
+          test "$rendered_api_url" = "http://server:8080"
+
       - name: Start clean production stack
         run: |
           set -euo pipefail

@@ -39,9 +39,11 @@ The default local values are **http://localhost:8080** for the API and
 **http://localhost:3000** for the client.
 
 For standalone development, both variables point to **http://localhost:8080**.
-Compose overrides **API_URL** with **http://server:8080** so Server Actions can
-reach Spring Boot through the internal network, while the public URL remains
-browser-reachable.
+Compose fixes **API_URL** to **http://server:8080** so Server Actions always reach
+Spring Boot through Docker service discovery, while the public URL remains
+browser-reachable. A host or local client value such as **http://localhost:8080**
+is intentionally ignored by Compose because `localhost` inside the client
+container points back to that container.
 
 Variables prefixed with **NEXT_PUBLIC_** are exposed to browser code. Never put
 credentials, tokens, or other secrets in them. Next.js embeds public variables

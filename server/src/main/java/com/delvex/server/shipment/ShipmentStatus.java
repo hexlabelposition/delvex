@@ -2,6 +2,7 @@ package com.delvex.server.shipment;
 
 public enum ShipmentStatus {
     CREATED,
+    ACCEPTED,
     IN_TRANSIT,
     DELIVERED,
     CANCELLED;
@@ -12,7 +13,9 @@ public enum ShipmentStatus {
         }
 
         return switch (this) {
-            case CREATED -> target == IN_TRANSIT
+            case CREATED -> target == ACCEPTED
+                    || target == CANCELLED;
+            case ACCEPTED -> target == IN_TRANSIT
                     || target == CANCELLED;
             case IN_TRANSIT -> target == DELIVERED
                     || target == CANCELLED;

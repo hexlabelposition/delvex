@@ -69,7 +69,8 @@ public class AuthService {
         }
 
         String accessToken = tokenService.createAccessToken(
-                savedUser.getId());
+                savedUser.getId(),
+                savedUser.getRole());
         String refreshToken = refreshTokenService.issue(
                 savedUser.getId());
 
@@ -80,6 +81,7 @@ public class AuthService {
                 savedUser.getEmail(),
                 savedUser.getFirstName(),
                 savedUser.getLastName(),
+                savedUser.getRole(),
                 accessToken,
                 refreshToken);
     }
@@ -100,7 +102,8 @@ public class AuthService {
         }
 
         String accessToken = tokenService.createAccessToken(
-                user.getId());
+                user.getId(),
+                user.getRole());
         String refreshToken = refreshTokenService.issue(
                 user.getId());
 
@@ -111,6 +114,7 @@ public class AuthService {
                 user.getEmail(),
                 user.getFirstName(),
                 user.getLastName(),
+                user.getRole(),
                 accessToken,
                 refreshToken);
     }
@@ -126,8 +130,12 @@ public class AuthService {
         RefreshTokenService.RotatedRefreshToken rotatedToken = refreshTokenService
                 .rotate(refreshToken);
 
+        User user = userRepository.findById(rotatedToken.userId())
+                .orElseThrow(InvalidRefreshTokenException::new);
+
         String accessToken = tokenService.createAccessToken(
-                rotatedToken.userId());
+                user.getId(),
+                user.getRole());
 
         LOGGER.info(
                 "refresh token rotated userId={}",

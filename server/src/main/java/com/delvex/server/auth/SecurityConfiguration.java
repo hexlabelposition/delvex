@@ -8,6 +8,8 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
 import com.delvex.server.common.error.ApiAccessDeniedHandler;
@@ -39,10 +41,26 @@ public class SecurityConfiguration {
     }
 
     @Bean
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+        JwtGrantedAuthoritiesConverter authoritiesConverter =
+                new JwtGrantedAuthoritiesConverter();
+        authoritiesConverter.setAuthoritiesClaimName("role");
+        authoritiesConverter.setAuthorityPrefix("ROLE_");
+
+        JwtAuthenticationConverter authenticationConverter =
+                new JwtAuthenticationConverter();
+        authenticationConverter.setJwtGrantedAuthoritiesConverter(
+                authoritiesConverter);
+
+        return authenticationConverter;
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             ApiAuthenticationEntryPoint authenticationEntryPoint,
             ApiAccessDeniedHandler accessDeniedHandler,
+            JwtAuthenticationConverter jwtAuthenticationConverter,
             @Value("${springdoc.api-docs.enabled:false}")
             boolean apiDocsEnabled) throws Exception {
         return http
@@ -78,6 +96,9 @@ public class SecurityConfiguration {
                                 .permitAll();
                     }
 
+                    authorize.requestMatchers("/api/employee/**")
+                            .hasRole("EMPLOYEE");
+
                     // New routes are protected unless deliberately added to
                     // one of the public allowlists above.
                     authorize.anyRequest().authenticated();
@@ -85,7 +106,8 @@ public class SecurityConfiguration {
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler)
-                        .jwt(Customizer.withDefaults()))
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(
+                                jwtAuthenticationConverter)))
                 .build();
     }
 }

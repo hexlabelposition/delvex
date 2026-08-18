@@ -133,7 +133,7 @@ export function LandingPage() {
                       <CardDescription>Shipment overview</CardDescription>
                       <p className="mt-1 font-semibold">DVX-1048</p>
                     </div>
-                    <span className="bg-blue-50 text-blue-700 inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium dark:bg-blue-950/50 dark:text-blue-300">
+                    <span className="inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2.5 py-1.5 text-xs font-medium text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
                       <span className="size-1.5 rounded-full bg-current" />
                       In transit
                     </span>
@@ -199,7 +199,7 @@ export function LandingPage() {
                     </div>
 
                     <div className="mt-4 flex items-center">
-                      <span className="bg-primary flex size-6 items-center justify-center rounded-full text-primary-foreground">
+                      <span className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-full">
                         <CheckCircle2 className="size-3.5" aria-hidden="true" />
                       </span>
                       <span className="bg-primary h-0.5 flex-1" />

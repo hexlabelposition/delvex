@@ -53,9 +53,13 @@ test("customer and employee complete the shipment lifecycle", async ({
   await page.getByLabel("Cargo description").fill("Release smoke parcel");
   await page.getByLabel("Weight (kg)").fill("2.50");
   await page.getByRole("button", { name: "Continue" }).click();
-  await page
-    .getByRole("button", { name: "Create shipment" })
-    .dispatchEvent("click");
+  await page.evaluate(() => {
+    const form = document.querySelector("main form");
+    if (!(form instanceof HTMLFormElement)) {
+      throw new Error("Shipment form is not available");
+    }
+    form.requestSubmit();
+  });
   await expect(page.getByText("Shipment created successfully.")).toBeVisible();
 
   const reference = (

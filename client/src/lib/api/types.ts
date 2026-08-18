@@ -7,11 +7,14 @@ export interface ApiErrorBody {
   fieldErrors: Record<string, string>;
 }
 
+export type UserRole = "CUSTOMER" | "EMPLOYEE";
+
 export interface AuthUser {
   id: string;
   email: string;
   firstName: string;
   lastName: string;
+  role: UserRole;
 }
 
 export interface AuthResponse extends AuthUser {
@@ -28,7 +31,7 @@ export interface UserResponse extends AuthUser {
 }
 
 export type ShipmentStatus =
-  "CREATED" | "IN_TRANSIT" | "DELIVERED" | "CANCELLED";
+  "CREATED" | "ACCEPTED" | "IN_TRANSIT" | "DELIVERED" | "CANCELLED";
 
 export interface Shipment {
   id: string;
@@ -46,6 +49,7 @@ export interface Shipment {
   weightKg: number;
   pickupAt: string | null;
   deliveryAt: string | null;
+  version: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -56,6 +60,37 @@ export interface ShipmentPage {
   size: number;
   totalElements: number;
   totalPages: number;
+}
+
+export interface CustomerSummary {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+
+export interface EmployeeShipment {
+  shipment: Shipment;
+  customer: CustomerSummary;
+}
+
+export interface EmployeeShipmentPage {
+  content: EmployeeShipment[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+export interface ShipmentStatusEvent {
+  id: string;
+  previousStatus: ShipmentStatus;
+  newStatus: ShipmentStatus;
+  changedByUserId: string;
+  changedByFirstName: string;
+  changedByLastName: string;
+  changedByRole: UserRole;
+  changedAt: string;
 }
 
 export interface CreateShipmentPayload {

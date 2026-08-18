@@ -17,7 +17,7 @@ export function proxy(request: NextRequest) {
   }
 
   if (
-    ["/dashboard", "/shipments", "/create", "/profile"].some(
+    ["/dashboard", "/shipments", "/create", "/employee", "/profile"].some(
       (route) => pathname === route || pathname.startsWith(`${route}/`),
     ) &&
     !hasSession
@@ -36,6 +36,7 @@ export const config = {
     "/dashboard/:path*",
     "/shipments/:path*",
     "/create/:path*",
+    "/employee/:path*",
     "/profile/:path*",
   ],
 };

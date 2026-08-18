@@ -12,6 +12,7 @@ import { loginAction } from "@/features/auth/actions";
 import { useAuth } from "@/features/auth/auth-provider";
 import { AuthShell } from "@/features/auth/auth-shell";
 import { FormField } from "@/features/auth/form-field";
+import { homeForRole } from "@/features/auth/navigation";
 import { loginSchema } from "@/features/auth/schema";
 import { SubmitButton } from "@/features/auth/submit-button";
 
@@ -34,7 +35,7 @@ export function LoginForm() {
     }
 
     setSession(lastResult.session);
-    router.replace("/dashboard");
+    router.replace(homeForRole(lastResult.session.user.role));
   }, [lastResult?.session, router, setSession]);
 
   return (

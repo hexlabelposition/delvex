@@ -73,20 +73,49 @@ docker compose up --build server
 
 ## Application routes
 
-| Route          | Access        | Purpose                                                         |
-| -------------- | ------------- | --------------------------------------------------------------- |
-| **/**          | Public        | Product landing page; active sessions continue to the dashboard |
-| **/login**     | Guests        | Sign in to an existing account                                  |
-| **/register**  | Guests        | Create a new account                                            |
-| **/dashboard** | Authenticated | Review shipment activity and recent records                     |
-| **/shipments** | Authenticated | Browse and manage shipments                                     |
-| **/create**    | Authenticated | Create a shipment                                               |
-| **/profile**   | Authenticated | Review and update the current profile                           |
+| Route          | Access    | Purpose                                                      |
+| -------------- | --------- | ------------------------------------------------------------ |
+| **/**          | Public    | Product landing page; active sessions continue to their home |
+| **/login**     | Guests    | Sign in to an existing account                               |
+| **/register**  | Guests    | Create a customer account                                    |
+| **/dashboard** | CUSTOMER  | Review customer shipment activity and recent records         |
+| **/shipments** | CUSTOMER  | Browse and manage owned shipments                            |
+| **/create**    | CUSTOMER  | Create a shipment                                            |
+| **/employee**  | EMPLOYEE  | Search all shipments and manage their logistics lifecycle    |
+| **/profile**   | Signed in | Review and update the current profile                        |
 
 Authentication routing is enforced in **src/proxy.ts**. Guests can open the
 landing page, login, and registration routes. An active refresh session sends
-the root, login, and registration routes to the dashboard, while protected
-application routes send guests to login.
+the root, login, and registration routes into the application, while protected
+routes send guests to login. After session refresh, role-aware client routing
+sends customers to **/dashboard** and employees to **/employee**. The server
+remains the authorization boundary and returns HTTP 403 when a token has the
+wrong role.
+
+## Feature organization
+
+Route files in **src/app** coordinate navigation, session state, and page-level
+loading or error handling. Domain code lives next to the feature that owns it:
+
+- **src/features/shipments** contains shipment API calls, form validation and
+  fields, table and status components, display formatting, and location data.
+- **src/features/employee** contains the global shipment queue, lifecycle
+  actions, and status-history integration used by logistics employees.
+- **src/features/profile** contains profile-specific API calls.
+- **src/features/auth** owns authentication, session management, and auth forms.
+- **src/components** contains reusable application and UI primitives.
+- **src/lib** contains cross-feature API infrastructure, shared types, and
+  generic formatting helpers.
+
+The create and edit routes use the same shipment form schema, field renderer,
+and server-field-error mapping. Keep shipment-specific behavior in that feature
+module so later customer and employee surfaces can reuse it without duplicating
+validation or API contracts.
+
+The employee workspace uses the version returned with each shipment when it
+updates a status. A conflict response means another employee changed the record;
+reload the shipment before retrying. Every successful transition is displayed
+from the immutable server status history.
 
 ## Feature organization
 

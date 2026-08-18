@@ -3,6 +3,7 @@
 import {
   Box,
   CirclePlus,
+  ClipboardList,
   LayoutDashboard,
   LogOut,
   Package,
@@ -14,12 +15,17 @@ import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/features/auth/auth-provider";
+import { homeForRole } from "@/features/auth/navigation";
 import { cn } from "@/lib/utils";
 
-const navigation = [
+const customerNavigation = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/shipments", label: "Shipments", icon: Package },
   { href: "/create", label: "Create shipment", icon: CirclePlus },
+  { href: "/profile", label: "Profile", icon: UserRound },
+];
+const employeeNavigation = [
+  { href: "/employee", label: "Operations", icon: ClipboardList },
   { href: "/profile", label: "Profile", icon: UserRound },
 ];
 
@@ -31,20 +37,24 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { isLoading, logout, session } = useAuth();
   const user = session?.user;
+  const home = user === undefined ? "/dashboard" : homeForRole(user.role);
+  const navigation =
+    user?.role === "EMPLOYEE" ? employeeNavigation : customerNavigation;
 
   return (
     <div className="bg-background min-h-screen md:flex">
       <aside className="bg-sidebar border-sidebar-border flex shrink-0 flex-row items-center justify-between border-b px-4 py-3 md:min-h-screen md:w-64 md:flex-col md:items-stretch md:border-r md:border-b-0 md:px-3 md:py-5">
         <div>
           <Link
-            href="/dashboard"
+            href={home}
             className="flex items-center gap-2 px-2 text-lg font-semibold tracking-tight"
           >
             <Box className="size-5" /> Delvex
           </Link>
           <nav className="mt-0 flex gap-1 overflow-x-auto md:mt-8 md:flex-col">
             {navigation.map(({ href, label, icon: Icon }) => {
-              const active = pathname === href;
+              const active =
+                pathname === href || pathname.startsWith(`${href}/`);
               return (
                 <Link
                   key={href}
@@ -78,6 +88,11 @@ export function AppShell({ children }: { children: ReactNode }) {
               <span className="text-muted-foreground block truncate text-xs">
                 {user?.email}
               </span>
+              {user?.role === "EMPLOYEE" && (
+                <span className="text-muted-foreground block text-[11px] font-medium tracking-wide uppercase">
+                  Employee
+                </span>
+              )}
             </span>
           </Link>
           <Button

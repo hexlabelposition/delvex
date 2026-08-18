@@ -40,7 +40,10 @@ test("customer and employee complete the shipment lifecycle", async ({
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 
-  await page.getByRole("link", { name: "Create shipment" }).click();
+  await page
+    .getByRole("main")
+    .getByRole("link", { name: "Create shipment", exact: true })
+    .click();
   await page.getByLabel("Pickup point").selectOption("WROCLAW");
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByLabel("Delivery point").selectOption("WARSAW");

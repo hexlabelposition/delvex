@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type * as ApiClientModule from "@/lib/api/client";
+
 const mocks = vi.hoisted(() => ({
   asBackendCookie: vi.fn(),
   clearRefreshCookie: vi.fn(),
@@ -10,7 +12,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/api/client", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/api/client")>();
+  const actual = await importOriginal<typeof ApiClientModule>();
 
   return {
     ...actual,

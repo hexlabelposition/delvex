@@ -15,6 +15,7 @@ import { logoutAction, refreshSessionAction } from "@/features/auth/actions";
 import { canAccessRoleRoute, homeForRole } from "@/features/auth/navigation";
 import type { AuthSession } from "@/features/auth/types";
 
+const authRoutes = ["/login", "/register"];
 const protectedRoutes = [
   "/dashboard",
   "/shipments",
@@ -64,6 +65,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         matchesRoute(pathname, protectedRoutes)
       ) {
         router.replace("/login");
+      } else if (
+        refreshedSession !== null &&
+        matchesRoute(pathname, authRoutes)
+      ) {
+        router.replace(homeForRole(refreshedSession.user.role));
       } else if (
         refreshedSession !== null &&
         !canAccessRoleRoute(refreshedSession.user.role, pathname)

@@ -41,6 +41,17 @@ function failedSubmission<Schema, FormValue>(
   };
 }
 
+async function loadSession(accessToken: string): Promise<AuthSession> {
+  const userResponse = await apiClient.get<UserResponse>("/api/users/me", {
+    accessToken,
+  });
+
+  return {
+    accessToken,
+    user: userResponse.data,
+  };
+}
+
 export async function loginAction(
   _previousState: AuthFormState | null,
   formData: FormData,
@@ -56,15 +67,13 @@ export async function loginAction(
       "/api/auth/login",
       submission.value,
     );
+    const session = await loadSession(response.data.accessToken);
 
     await saveRefreshCookie(response.headers.get("set-cookie"));
 
     return {
       submission: submission.reply({ resetForm: true }),
-      session: {
-        accessToken: response.data.accessToken,
-        user: response.data,
-      },
+      session,
     };
   } catch (error) {
     return failedSubmission(submission, error);
@@ -86,15 +95,13 @@ export async function registerAction(
       "/api/auth/register",
       submission.value,
     );
+    const session = await loadSession(response.data.accessToken);
 
     await saveRefreshCookie(response.headers.get("set-cookie"));
 
     return {
       submission: submission.reply({ resetForm: true }),
-      session: {
-        accessToken: response.data.accessToken,
-        user: response.data,
-      },
+      session,
     };
   } catch (error) {
     return failedSubmission(submission, error);
@@ -117,14 +124,7 @@ export async function refreshSessionAction(): Promise<AuthSession | null> {
 
     await saveRefreshCookie(refreshResponse.headers.get("set-cookie"));
 
-    const userResponse = await apiClient.get<UserResponse>("/api/users/me", {
-      accessToken: refreshResponse.data.accessToken,
-    });
-
-    return {
-      accessToken: refreshResponse.data.accessToken,
-      user: userResponse.data,
-    };
+    return loadSession(refreshResponse.data.accessToken);
   } catch {
     await clearRefreshCookie();
     return null;

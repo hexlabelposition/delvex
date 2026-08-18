@@ -28,10 +28,7 @@ vi.mock("@/features/auth/session", () => ({
   saveRefreshCookie: mocks.saveRefreshCookie,
 }));
 
-import {
-  loginAction,
-  registerAction,
-} from "@/features/auth/actions";
+import { loginAction, registerAction } from "@/features/auth/actions";
 import type { AuthResponse, UserResponse } from "@/lib/api/types";
 
 const accessToken = "access-token";

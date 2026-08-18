@@ -64,10 +64,44 @@ test("customer and employee complete the shipment lifecycle", async ({
   await page.getByText(reference!, { exact: true }).click();
   await expect(page).toHaveURL(/\/employee\/shipments\//);
 
+  const employeeLoginResponse = await request.post(
+    `${apiBaseUrl}/api/auth/login`,
+    { data: { email: employeeEmail, password: employeePassword } },
+  );
+  expect(employeeLoginResponse.ok()).toBe(true);
+  const employee = (await employeeLoginResponse.json()) as {
+    accessToken: string;
+  };
+  const shipmentId = page.url().split("/").at(-1);
+  expect(shipmentId).toBeTruthy();
+  const employeeRecordResponse = await request.get(
+    `${apiBaseUrl}/api/employee/shipments/${shipmentId}`,
+    { headers: { Authorization: `Bearer ${employee.accessToken}` } },
+  );
+  expect(employeeRecordResponse.ok()).toBe(true);
+  const initialRecord = (await employeeRecordResponse.json()) as {
+    shipment: { id: string; version: number };
+  };
+
   await changeStatus(page, "Accept shipment", "Accepted");
   await changeStatus(page, "Mark in transit", "In transit");
   await changeStatus(page, "Mark delivered", "Delivered");
   await expect(page.getByText("Status history")).toBeVisible();
+
+  const staleUpdateResponse = await request.patch(
+    `${apiBaseUrl}/api/employee/shipments/${initialRecord.shipment.id}/status`,
+    {
+      data: { status: "CANCELLED", version: initialRecord.shipment.version },
+      headers: { Authorization: `Bearer ${employee.accessToken}` },
+    },
+  );
+  expect(staleUpdateResponse.status()).toBe(409);
+  const historyResponse = await request.get(
+    `${apiBaseUrl}/api/employee/shipments/${initialRecord.shipment.id}/status-events`,
+    { headers: { Authorization: `Bearer ${employee.accessToken}` } },
+  );
+  expect(historyResponse.ok()).toBe(true);
+  expect(((await historyResponse.json()) as unknown[]).length).toBe(3);
   await page.getByRole("button", { name: "Log out" }).click();
 
   await signIn(page, customerEmail, customerPassword);

@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - dev
+      - main
     paths:
       - "server/**"
       - ".github/workflows/server-ci.yml"
@@ -11,6 +12,7 @@ on:
   push:
     branches:
       - dev
+      - main
     paths:
       - "server/**"
       - ".github/workflows/server-ci.yml"
@@ -92,7 +94,6 @@ jobs:
           name: server-test-reports
           path: server/target/surefire-reports/
           if-no-files-found: ignore
-
 
   production-smoke:
     name: Production JAR smoke

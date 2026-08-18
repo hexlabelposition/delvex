@@ -2,9 +2,10 @@
 
 import { useRouter } from "next/navigation";
 
-import { formatDate, formatWeight } from "@/features/dashboard/format";
-import { StatusBadge } from "@/features/dashboard/status-badge";
+import { formatWeight } from "@/features/shipments/format";
+import { StatusBadge } from "@/features/shipments/status-badge";
 import type { Shipment } from "@/lib/api/types";
+import { formatDate } from "@/lib/format";
 
 export function ShipmentsTable({
   shipments,

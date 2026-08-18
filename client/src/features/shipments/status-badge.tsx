@@ -1,4 +1,4 @@
-import { statusLabel } from "@/features/dashboard/format";
+import { statusLabel } from "@/features/shipments/format";
 import type { ShipmentStatus } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 

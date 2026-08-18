@@ -4,6 +4,7 @@ import { ArrowRight, List, PackagePlus, Truck } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,9 +14,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useAuth } from "@/features/auth/auth-provider";
-import { getShipments } from "@/features/dashboard/api";
-import { EmptyState } from "@/features/dashboard/empty-state";
-import { ShipmentsTable } from "@/features/dashboard/shipments-table";
+import { getShipments } from "@/features/shipments/api";
+import { ShipmentsTable } from "@/features/shipments/shipments-table";
 import type { ShipmentPage } from "@/lib/api/types";
 
 export default function DashboardPage() {

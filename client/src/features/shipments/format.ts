@@ -1,13 +1,5 @@
 import type { ShipmentStatus } from "@/lib/api/types";
 
-export function formatDate(value: string | null | undefined) {
-  if (value === null || value === undefined) return "—";
-  return new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
-
 export function formatWeight(value: number) {
   return `${new Intl.NumberFormat("en", {
     maximumFractionDigits: 2,

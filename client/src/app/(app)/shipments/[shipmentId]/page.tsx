@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { EmptyState } from "@/components/empty-state";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,12 +17,12 @@ import {
 } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useAuth } from "@/features/auth/auth-provider";
-import { deleteShipment, getShipment } from "@/features/dashboard/api";
-import { EmptyState } from "@/features/dashboard/empty-state";
-import { formatDate, formatWeight } from "@/features/dashboard/format";
-import { StatusBadge } from "@/features/dashboard/status-badge";
+import { deleteShipment, getShipment } from "@/features/shipments/api";
+import { formatWeight } from "@/features/shipments/format";
+import { StatusBadge } from "@/features/shipments/status-badge";
 import { ApiClientError } from "@/lib/api/client";
 import type { Shipment } from "@/lib/api/types";
+import { formatDate } from "@/lib/format";
 
 type ConfirmationAction = "delete";
 

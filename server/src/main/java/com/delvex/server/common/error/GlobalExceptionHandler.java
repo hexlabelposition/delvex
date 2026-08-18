@@ -11,10 +11,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import com.delvex.server.auth.EmailAlreadyExistsException;
 import com.delvex.server.auth.InvalidCredentialsException;
@@ -23,6 +25,7 @@ import com.delvex.server.shipment.InvalidShipmentScheduleException;
 import com.delvex.server.shipment.InvalidShipmentLocationException;
 import com.delvex.server.shipment.InvalidShipmentStateException;
 import com.delvex.server.shipment.ShipmentNotFoundException;
+import com.delvex.server.shipment.StaleShipmentVersionException;
 import com.delvex.server.user.UserNotFoundException;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -178,6 +181,28 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(error);
     }
 
+    @ExceptionHandler({
+            StaleShipmentVersionException.class,
+            ObjectOptimisticLockingFailureException.class
+    })
+    public ResponseEntity<ApiError> handleConcurrentShipmentUpdate(
+            RuntimeException exception,
+            HttpServletRequest request) {
+        HttpStatus status = HttpStatus.CONFLICT;
+
+        logHandledException(status, exception, request);
+
+        ApiError error = new ApiError(
+                Instant.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                "Shipment was changed by another request; reload it and try again",
+                request.getRequestURI(),
+                Map.of());
+
+        return ResponseEntity.status(status).body(error);
+    }
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiError> handleUnreadableMessage(
             HttpMessageNotReadableException exception,
@@ -213,6 +238,35 @@ public class GlobalExceptionHandler {
                 message,
                 request.getRequestURI(),
                 fieldErrors);
+
+        return ResponseEntity.status(status).body(error);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiError> handleArgumentTypeMismatch(
+            MethodArgumentTypeMismatchException exception,
+            HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        Class<?> requiredType = exception.getRequiredType();
+        String fieldMessage = "Value has an invalid type";
+
+        if (requiredType != null && requiredType.isEnum()) {
+            String allowedValues = Arrays.stream(
+                            requiredType.getEnumConstants())
+                    .map(Object::toString)
+                    .collect(Collectors.joining(", "));
+            fieldMessage = "Must be one of: " + allowedValues;
+        }
+
+        logHandledException(status, exception, request);
+
+        ApiError error = new ApiError(
+                Instant.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                "Validation failed",
+                request.getRequestURI(),
+                Map.of(exception.getName(), fieldMessage));
 
         return ResponseEntity.status(status).body(error);
     }

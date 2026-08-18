@@ -4,12 +4,14 @@ import java.time.Instant;
 import java.util.UUID;
 
 import com.delvex.server.user.User;
+import com.delvex.server.user.UserRole;
 
 public record UserResponse(
         UUID id,
         String email,
         String firstName,
         String lastName,
+        UserRole role,
         Instant createdAt,
         Instant updatedAt) {
 
@@ -19,6 +21,7 @@ public record UserResponse(
                 user.getEmail(),
                 user.getFirstName(),
                 user.getLastName(),
+                user.getRole(),
                 user.getCreatedAt(),
                 user.getUpdatedAt());
     }

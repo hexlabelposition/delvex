@@ -45,6 +45,7 @@ class UserServiceTest {
         assertThat(response.email()).isEqualTo("john@example.com");
         assertThat(response.firstName()).isEqualTo("John");
         assertThat(response.lastName()).isEqualTo("Doe");
+        assertThat(response.role()).isEqualTo(UserRole.CUSTOMER);
     }
 
     @Test

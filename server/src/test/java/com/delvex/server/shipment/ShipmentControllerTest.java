@@ -56,5 +56,5 @@ class ShipmentControllerTest {
     }
 
     private org.springframework.test.web.servlet.request.RequestPostProcessor jwtFor(UUID userId) { return jwt().jwt(token -> token.subject(userId.toString()).claim("type", "access")); }
-    private ShipmentResponse response() { return new ShipmentResponse(UUID.randomUUID(), "DLX-11111111-1111-1111-1111-111111111111", ShipmentStatus.CREATED, "PL", "Warszawa", "00-001", "Marszałkowska 1", "PL", "Gdańsk", "80-001", "Długi Targ 1", "Books", new BigDecimal("1.00"), null, null, Instant.now(), Instant.now()); }
+    private ShipmentResponse response() { return new ShipmentResponse(UUID.randomUUID(), "DLX-11111111-1111-1111-1111-111111111111", ShipmentStatus.CREATED, "PL", "Warszawa", "00-001", "Marszałkowska 1", "PL", "Gdańsk", "80-001", "Długi Targ 1", "Books", new BigDecimal("1.00"), null, null, 0, Instant.now(), Instant.now()); }
 }

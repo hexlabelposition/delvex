@@ -30,8 +30,10 @@ PostgreSQL persistence, API documentation, security, and operational health.
 - refresh-session revocation and scheduled cleanup;
 - current-user profile retrieval and update;
 - shipment creation, pagination, retrieval, update, and deletion;
-- ownership checks for every shipment operation;
-- restricted shipment status transitions;
+- CUSTOMER and EMPLOYEE roles carried by signed access tokens;
+- ownership checks for customer shipment operations;
+- employee-wide shipment listing, filtering, retrieval, and status updates;
+- auditable shipment status history and optimistic concurrency protection;
 - consistent JSON errors for validation, malformed JSON, security, and domain
   failures;
 - configurable CORS and application logging;
@@ -94,6 +96,22 @@ modifies the production schema.
 | PATCH | **/api/shipments/{shipmentId}** | Update an owned shipment |
 | DELETE | **/api/shipments/{shipmentId}** | Delete an allowed shipment |
 
+### Employee endpoints
+
+Every endpoint under **/api/employee/** requires the EMPLOYEE role. A regular
+authenticated customer receives HTTP 403.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | **/api/employee/shipments** | List every shipment |
+| GET | **/api/employee/shipments/{shipmentId}** | Read any shipment and its customer |
+| GET | **/api/employee/shipments/{shipmentId}/status-events** | Read status history |
+| PATCH | **/api/employee/shipments/{shipmentId}/status** | Change shipment status |
+
+The employee list accepts the same **page** and **size** parameters as the
+customer list. It can also filter by an exact **status** and a case-insensitive
+partial **reference**.
+
 Send an access token as:
 
 ~~~http
@@ -108,18 +126,27 @@ size of 100, and returns **content**, **page**, **size**, **totalElements**, and
 
 | Current status | Allowed next status |
 | --- | --- |
-| CREATED | IN_TRANSIT, CANCELLED |
+| CREATED | ACCEPTED, CANCELLED |
+| ACCEPTED | IN_TRANSIT, CANCELLED |
 | IN_TRANSIT | DELIVERED, CANCELLED |
 | DELIVERED | none |
 | CANCELLED | none |
 
-Sending the current status again is idempotent. Only CREATED and CANCELLED
-shipments can be deleted.
+Customers can edit and delete only CREATED shipments; they cannot change
+status. Employees perform every lifecycle transition. Sending the current
+status again is idempotent and does not create an audit event.
+
+Every employee status request includes the shipment **version** returned by the
+API. A stale version returns HTTP 409 instead of silently overwriting a change
+made by another employee. Successful transitions append an immutable
+**shipment_status_events** record containing the previous and new status,
+employee, and timestamp.
 
 ## Authentication
 
 Access tokens are HS256 JWTs with a 15-minute lifetime. The API returns the
-access token in the response body.
+access token in the response body. Tokens include a signed **role** claim,
+which Spring Security maps to CUSTOMER or EMPLOYEE authority.
 
 Refresh tokens have a 30-day lifetime and are returned only through the
 **refresh_token** cookie. The cookie is HttpOnly, SameSite=Lax, scoped to
@@ -130,6 +157,22 @@ digest of each refresh token is stored in PostgreSQL. Refreshing revokes the
 current session and creates a replacement in the same transaction. Logout is
 idempotent, and expired or revoked sessions are removed by a scheduled cleanup
 job.
+
+### Provision an employee
+
+Public registration always creates a CUSTOMER and cannot request another role.
+For the first release, employee provisioning is an explicit database
+administration operation:
+
+~~~sql
+UPDATE users
+SET role = 'EMPLOYEE'
+WHERE email = 'employee@example.com';
+~~~
+
+The user must sign in again after promotion so a new access token contains the
+EMPLOYEE role. This keeps privilege assignment outside the public API until a
+future administrative workflow is introduced.
 
 ## Requirements
 
@@ -391,6 +434,9 @@ upload step on a successful run is expected.
   the server creates one and returns it in the response.
 - All routes are authenticated by default. Only explicitly listed health and
   authentication routes are public.
+- Public registration never grants the EMPLOYEE role.
+- Existing status history begins with the first transition after Flyway
+  migration V4; the migration does not invent events for older shipments.
 - Raw refresh tokens are never returned in JSON.
 - Database changes belong in a new Flyway migration.
 

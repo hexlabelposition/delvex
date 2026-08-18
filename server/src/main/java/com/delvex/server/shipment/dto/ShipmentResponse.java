@@ -23,6 +23,7 @@ public record ShipmentResponse(
         BigDecimal weightKg,
         Instant pickupAt,
         Instant deliveryAt,
+        long version,
         Instant createdAt,
         Instant updatedAt) {
 
@@ -43,6 +44,7 @@ public record ShipmentResponse(
                 shipment.getWeightKg(),
                 shipment.getPickupAt(),
                 shipment.getDeliveryAt(),
+                shipment.getVersion(),
                 shipment.getCreatedAt(),
                 shipment.getUpdatedAt());
     }

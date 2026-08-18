@@ -15,7 +15,10 @@ supports a complete containerized development stack.
 - user registration, login, token refresh, and logout;
 - current-user profile management;
 - shipment creation, pagination, retrieval, update, and deletion;
-- enforced shipment ownership and lifecycle transitions;
+- customer and employee roles with server-enforced access boundaries;
+- employee-wide shipment operations, lifecycle transitions, and status audit
+  history;
+- enforced shipment ownership and optimistic concurrency protection;
 - consistent validation, security, and domain errors;
 - development OpenAPI documentation;
 - production-oriented security, health checks, and configuration validation.

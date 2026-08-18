@@ -12,7 +12,23 @@ import {
 } from "react";
 
 import { logoutAction, refreshSessionAction } from "@/features/auth/actions";
+import { homeForRole } from "@/features/auth/navigation";
 import type { AuthSession } from "@/features/auth/types";
+
+const protectedRoutes = [
+  "/dashboard",
+  "/shipments",
+  "/create",
+  "/employee",
+  "/profile",
+];
+const customerRoutes = ["/dashboard", "/shipments", "/create"];
+
+function matchesRoute(pathname: string, routes: readonly string[]) {
+  return routes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+}
 
 interface AuthContextValue {
   session: AuthSession | null;
@@ -43,15 +59,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setSessionState(refreshedSession);
       setIsLoading(false);
 
+      const pathname = window.location.pathname;
       if (
         refreshedSession === null &&
-        ["/dashboard", "/shipments", "/create", "/profile"].some(
-          (route) =>
-            window.location.pathname === route ||
-            window.location.pathname.startsWith(`${route}/`),
-        )
+        matchesRoute(pathname, protectedRoutes)
       ) {
         router.replace("/login");
+      } else if (
+        refreshedSession?.user.role === "EMPLOYEE" &&
+        matchesRoute(pathname, customerRoutes)
+      ) {
+        router.replace(homeForRole(refreshedSession.user.role));
+      } else if (
+        refreshedSession?.user.role === "CUSTOMER" &&
+        matchesRoute(pathname, ["/employee"])
+      ) {
+        router.replace(homeForRole(refreshedSession.user.role));
       }
     });
 

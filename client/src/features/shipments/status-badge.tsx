@@ -4,6 +4,8 @@ import { cn } from "@/lib/utils";
 
 const styles: Record<ShipmentStatus, string> = {
   CREATED: "bg-muted text-muted-foreground",
+  ACCEPTED:
+    "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300",
   IN_TRANSIT: "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300",
   DELIVERED:
     "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300",

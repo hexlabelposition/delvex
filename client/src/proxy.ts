@@ -8,10 +8,8 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasSession = request.cookies.has(REFRESH_COOKIE_NAME);
 
-  if (pathname === "/") {
-    return NextResponse.redirect(
-      new URL(hasSession ? "/dashboard" : "/login", request.url),
-    );
+  if (pathname === "/" && hasSession) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   if (authRoutes.has(pathname) && hasSession) {

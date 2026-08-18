@@ -51,7 +51,9 @@ test("customer and employee complete the shipment lifecycle", async ({
   await page.getByLabel("Cargo description").fill("Release smoke parcel");
   await page.getByLabel("Weight (kg)").fill("2.50");
   await page.getByRole("button", { name: "Continue" }).click();
-  await page.getByRole("button", { name: "Create shipment" }).click();
+  await page
+    .getByRole("button", { name: "Create shipment" })
+    .click({ noWaitAfter: true });
   await expect(page.getByText("Shipment created successfully.")).toBeVisible();
 
   const reference = (

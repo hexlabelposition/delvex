@@ -117,7 +117,10 @@ test("customer and employee complete the shipment lifecycle", async ({
 
   await signIn(page, customerEmail, customerPassword);
   await expect(page).toHaveURL(/\/dashboard$/);
-  await page.getByRole("link", { name: "Shipments" }).click();
+  await page
+    .getByRole("navigation")
+    .getByRole("link", { name: "Shipments", exact: true })
+    .click();
   const row = page.locator("tbody tr").filter({ hasText: reference! });
   await expect(row).toContainText("Delivered");
 

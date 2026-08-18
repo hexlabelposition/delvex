@@ -23,4 +23,3 @@ export function StatusBadge({ status }: { status: ShipmentStatus }) {
     </span>
   );
 }
-

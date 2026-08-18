@@ -5,4 +5,3 @@ export function formatDate(value: string | null | undefined) {
     timeStyle: "short",
   }).format(new Date(value));
 }
-

@@ -160,6 +160,7 @@ export default function EmployeeShipmentPage() {
     if (session === null || shipmentId === undefined) return;
     setLoading(true);
     setLoadError(null);
+    setActionError("");
     void loadEmployeeShipment(shipmentId, session.accessToken)
       .then((response) => {
         setRecord(response.record);
@@ -250,6 +251,14 @@ export default function EmployeeShipmentPage() {
               </div>
               <div className="flex flex-wrap items-center justify-end gap-2">
                 <StatusBadge status={shipment.status} />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={loading || actionLoading}
+                  onClick={reloadShipment}
+                >
+                  <RefreshCw /> Reload
+                </Button>
                 {nextStatuses.map((status) => (
                   <Button
                     key={status}

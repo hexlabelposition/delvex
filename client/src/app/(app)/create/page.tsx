@@ -17,11 +17,11 @@ import { useAuth } from "@/features/auth/auth-provider";
 import { createShipment } from "@/features/shipments/api";
 import {
   initialShipmentFormValues,
-  ShipmentFormFields,
   shipmentFormErrors,
+  type ShipmentFormField,
+  ShipmentFormFields,
   shipmentFormSchema,
   shipmentFormSteps,
-  type ShipmentFormField,
 } from "@/features/shipments/shipment-form";
 import { ApiClientError } from "@/lib/api/client";
 

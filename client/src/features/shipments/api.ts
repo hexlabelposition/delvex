@@ -4,7 +4,6 @@ import type {
   Shipment,
   ShipmentPage,
   UpdateShipmentPayload,
-  UserResponse,
 } from "@/lib/api/types";
 
 interface TokenOptions {
@@ -22,9 +21,7 @@ export async function getShipments(accessToken: string, page = 0, size = 10) {
 export async function getShipment(shipmentId: string, accessToken: string) {
   const response = await apiClient.get<Shipment>(
     `/api/shipments/${shipmentId}`,
-    {
-      accessToken,
-    },
+    { accessToken },
   );
   return response.data;
 }
@@ -61,16 +58,3 @@ export async function deleteShipment(
   });
 }
 
-export async function updateProfile(
-  payload: Pick<UserResponse, "firstName" | "lastName">,
-  { accessToken }: TokenOptions,
-) {
-  const response = await apiClient.patch<UserResponse>(
-    "/api/users/me",
-    payload,
-    {
-      accessToken,
-    },
-  );
-  return response.data;
-}

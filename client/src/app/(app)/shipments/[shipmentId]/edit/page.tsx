@@ -4,7 +4,6 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useState } from "react";
-import { z } from "zod";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -15,90 +14,29 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useAuth } from "@/features/auth/auth-provider";
-import { getShipment, updateShipment } from "@/features/dashboard/api";
+import { getShipment, updateShipment } from "@/features/shipments/api";
 import {
-  locationSelectOptions,
-  shipmentLocationIdSchema,
-} from "@/features/shipments/locations";
+  ShipmentFormFields,
+  shipmentFormErrors,
+  shipmentFormFields,
+  shipmentFormSchema,
+  shipmentToFormValues,
+  type ShipmentFormField,
+  type ShipmentFormValues,
+} from "@/features/shipments/shipment-form";
 import { ApiClientError } from "@/lib/api/client";
 import type { Shipment } from "@/lib/api/types";
-
-const formSchema = z
-  .object({
-    originLocationId: shipmentLocationIdSchema,
-    destinationLocationId: shipmentLocationIdSchema,
-    cargoDescription: z
-      .string()
-      .trim()
-      .min(1, "This field is required")
-      .max(500),
-    weightKg: z.coerce
-      .number()
-      .finite()
-      .min(0.01, "Weight must be at least 0.01 kg")
-      .multipleOf(0.01),
-    pickupAt: z.string(),
-    deliveryAt: z.string(),
-  })
-  .superRefine((value, context) => {
-    if (
-      value.pickupAt &&
-      value.deliveryAt &&
-      new Date(value.deliveryAt) < new Date(value.pickupAt)
-    )
-      context.addIssue({
-        code: "custom",
-        path: ["deliveryAt"],
-        message: "Delivery cannot be earlier than pickup",
-      });
-  });
-interface FormValues {
-  originLocationId: string;
-  destinationLocationId: string;
-  cargoDescription: string;
-  weightKg: string;
-  pickupAt: string;
-  deliveryAt: string;
-}
-type Field = keyof FormValues;
-
-function toDateTimeInput(value: string | null) {
-  if (!value) return "";
-  const date = new Date(value);
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
-    .toISOString()
-    .slice(0, 16);
-}
-function locationId(shipment: Shipment, prefix: "origin" | "destination") {
-  const city =
-    prefix === "origin" ? shipment.originCity : shipment.destinationCity;
-  return (
-    locationSelectOptions.find((option) => option.label.includes(city))
-      ?.value ?? ""
-  );
-}
-function errorsFor(values: FormValues) {
-  const result = formSchema.safeParse(values);
-  return result.success
-    ? {}
-    : Object.fromEntries(
-        result.error.issues.map((issue) => [
-          String(issue.path[0]),
-          issue.message,
-        ]),
-      );
-}
 
 export default function EditShipmentPage() {
   const router = useRouter();
   const { session } = useAuth();
   const { shipmentId } = useParams<{ shipmentId: string }>();
   const [shipment, setShipment] = useState<Shipment | null>(null);
-  const [values, setValues] = useState<FormValues | null>(null);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [values, setValues] = useState<ShipmentFormValues | null>(null);
+  const [errors, setErrors] = useState<
+    Partial<Record<ShipmentFormField, string>>
+  >({});
   const [submitError, setSubmitError] = useState("");
   const [loadingError, setLoadingError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -113,14 +51,7 @@ export default function EditShipmentPage() {
           return;
         }
         setShipment(response);
-        setValues({
-          originLocationId: locationId(response, "origin"),
-          destinationLocationId: locationId(response, "destination"),
-          cargoDescription: response.cargoDescription,
-          weightKg: String(response.weightKg),
-          pickupAt: toDateTimeInput(response.pickupAt),
-          deliveryAt: toDateTimeInput(response.deliveryAt),
-        });
+        setValues(shipmentToFormValues(response));
       })
       .catch((error: unknown) => {
         if (!cancelled)
@@ -132,15 +63,15 @@ export default function EditShipmentPage() {
       cancelled = true;
     };
   }, [router, session, shipmentId]);
-  const update = (field: Field, value: string) =>
+  const update = (field: ShipmentFormField, value: string) =>
     setValues((previous) => previous && { ...previous, [field]: value });
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!session || !shipment || !values) return;
-    const nextErrors = errorsFor(values);
+    const nextErrors = shipmentFormErrors(values);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
-    const payload = formSchema.parse(values);
+    const payload = shipmentFormSchema.parse(values);
     setSubmitting(true);
     setSubmitError("");
     try {
@@ -178,14 +109,6 @@ export default function EditShipmentPage() {
     );
   if (!values)
     return <p className="text-muted-foreground">Loading shipment…</p>;
-  const fields: Field[] = [
-    "originLocationId",
-    "destinationLocationId",
-    "cargoDescription",
-    "weightKg",
-    "pickupAt",
-    "deliveryAt",
-  ];
   return (
     <div className="mx-auto max-w-3xl">
       <Button
@@ -210,64 +133,12 @@ export default function EditShipmentPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 px-5 pb-5 sm:grid-cols-2">
-            {fields.map((field) => (
-              <div
-                key={field}
-                className={field === "cargoDescription" ? "sm:col-span-2" : ""}
-              >
-                <Label htmlFor={field}>
-                  {field === "originLocationId"
-                    ? "Pickup point"
-                    : field === "destinationLocationId"
-                      ? "Delivery point"
-                      : field === "cargoDescription"
-                        ? "Cargo description"
-                        : field === "weightKg"
-                          ? "Weight (kg)"
-                          : field === "pickupAt"
-                            ? "Pickup date and time"
-                            : "Delivery date and time"}
-                </Label>
-                {field.endsWith("LocationId") ? (
-                  <select
-                    id={field}
-                    className="border-input mt-2 h-8 w-full rounded-lg border bg-transparent px-2.5 text-sm"
-                    value={values[field]}
-                    onChange={(event) => update(field, event.target.value)}
-                  >
-                    <option value="">Select a point</option>
-                    {locationSelectOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                ) : field === "cargoDescription" ? (
-                  <textarea
-                    id={field}
-                    value={values[field]}
-                    maxLength={500}
-                    onChange={(event) => update(field, event.target.value)}
-                    className="border-input mt-2 min-h-24 w-full rounded-lg border bg-transparent px-3 py-2 text-sm"
-                  />
-                ) : (
-                  <Input
-                    id={field}
-                    className="mt-2"
-                    type={field === "weightKg" ? "number" : "datetime-local"}
-                    min={field === "weightKg" ? "0.01" : undefined}
-                    step={field === "weightKg" ? "0.01" : undefined}
-                    value={values[field]}
-                    onChange={(event) => update(field, event.target.value)}
-                  />
-                )}
-                {errors[field] && (
-                  <p className="text-destructive mt-1 text-xs">
-                    {errors[field]}
-                  </p>
-                )}
-              </div>
-            ))}
+            <ShipmentFormFields
+              fields={shipmentFormFields}
+              values={values}
+              errors={errors}
+              onChange={update}
+            />
           </CardContent>
         </Card>
         {submitError && (

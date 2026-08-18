@@ -9,9 +9,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/features/auth/auth-provider";
-import { updateProfile } from "@/features/dashboard/api";
-import { formatDate } from "@/features/dashboard/format";
+import { updateProfile } from "@/features/profile/api";
 import { ApiClientError } from "@/lib/api/client";
+import { formatDate } from "@/lib/format";
 
 export default function ProfilePage() {
   const { session, setSession, logout } = useAuth();
@@ -41,7 +41,7 @@ export default function ProfilePage() {
     try {
       const updated = await updateProfile(
         { firstName: firstName.trim(), lastName: lastName.trim() },
-        { accessToken: session.accessToken },
+        session.accessToken,
       );
       setSession({ ...session, user: updated });
       setEditing(false);

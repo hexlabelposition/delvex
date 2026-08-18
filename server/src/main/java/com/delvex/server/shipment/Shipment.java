@@ -19,6 +19,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 @Entity
 @Table(name = "shipments")
@@ -74,6 +75,10 @@ public class Shipment {
 
     @Column(name = "delivery_at")
     private Instant deliveryAt;
+
+    @Version
+    @Column(nullable = false)
+    private long version;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -145,6 +150,28 @@ public class Shipment {
             throw new InvalidShipmentStateException(
                     status + " shipments cannot be deleted");
         }
+    }
+
+    public ShipmentStatus changeStatus(
+            ShipmentStatus target,
+            long expectedVersion) {
+        if (version != expectedVersion) {
+            throw new StaleShipmentVersionException();
+        }
+
+        if (status == target) {
+            return null;
+        }
+
+        if (!status.canTransitionTo(target)) {
+            throw new InvalidShipmentStateException(
+                    status + " shipments cannot transition to " + target);
+        }
+
+        ShipmentStatus previousStatus = status;
+        status = target;
+
+        return previousStatus;
     }
 
     private void validateUpdate() {
@@ -240,6 +267,10 @@ public class Shipment {
 
     public Instant getDeliveryAt() {
         return deliveryAt;
+    }
+
+    public long getVersion() {
+        return version;
     }
 
     public Instant getCreatedAt() {

@@ -2,7 +2,6 @@
 
 [![Server CI](https://github.com/hexlabelposition/delvex/actions/workflows/server-ci.yml/badge.svg?branch=dev)](https://github.com/hexlabelposition/delvex/actions/workflows/server-ci.yml)
 [![Client CI](https://github.com/hexlabelposition/delvex/actions/workflows/client-ci.yml/badge.svg?branch=dev)](https://github.com/hexlabelposition/delvex/actions/workflows/client-ci.yml)
-[![Release validation](https://github.com/hexlabelposition/delvex/actions/workflows/release-validation.yml/badge.svg?branch=dev)](https://github.com/hexlabelposition/delvex/actions/workflows/release-validation.yml)
 
 Delvex is a logistics platform for managing users and shipments. The current
 MVP provides a production-oriented backend with authentication, shipment
@@ -189,10 +188,8 @@ create the production Next.js build, and build the production client image.
 Server and client workflows use path filters, so unchanged modules do not run
 unnecessary jobs.
 
-Release validation builds a clean production Compose stack, verifies Flyway
-from V1 through V4, and runs the critical Playwright customer and employee
-lifecycle through real HTTPS test origins. See [RELEASE.md](RELEASE.md) for
-local reproduction, merge order, and the final **1.0.0** checklist.
+See [RELEASE.md](RELEASE.md) for local verification commands and the final
+**1.0.0** checklist.
 
 Delvex currently uses one product version for the monorepo. Stable releases are
 tagged from **main** as **<major>.<minor>.<patch>**.

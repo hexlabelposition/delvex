@@ -12,7 +12,7 @@ test.skip(
 async function signIn(page: Page, email: string, password: string) {
   await page.goto("/login");
   await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
+  await page.locator('input[name="password"]').fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
 }
 
@@ -34,7 +34,7 @@ test("customer and employee complete the shipment lifecycle", async ({
 
   await page.goto("/register");
   await page.getByLabel("Email").fill(customerEmail);
-  await page.getByLabel("Password").fill(customerPassword);
+  await page.locator('input[name="password"]').fill(customerPassword);
   await page.getByLabel("First name").fill("Release");
   await page.getByLabel("Last name").fill("Customer");
   await page.getByRole("button", { name: "Create account" }).click();

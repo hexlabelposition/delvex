@@ -9,10 +9,9 @@ services:
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?Set NEXT_PUBLIC_SITE_URL}
     environment:
       NODE_ENV: ${NODE_ENV:-production}
-      # Keep Compose networking separate from the standalone client API_URL.
-      # The default service name works for the complete stack and remains
-      # overridable for custom container topologies.
-      API_URL: ${COMPOSE_API_URL:-http://server:8080}
+      # The complete stack uses Docker service discovery by default. Override
+      # API_URL only when the client container must reach a custom server.
+      API_URL: ${API_URL:-http://server:8080}
     ports:
       - "3000:3000"
     depends_on:

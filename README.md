@@ -79,11 +79,11 @@ client image, while **client/.env.local** is used by a Next.js process running
 on the host. The site URL supplies canonical and social-preview metadata. Public
 Next.js variables are visible in the browser and must never contain secrets.
 
-**COMPOSE_API_URL** belongs only to the root Compose environment and becomes the
-client container's server-only **API_URL**. It defaults to the internal
-**server** service. The standalone client instead reads **API_URL** from
-**client/.env.local**, where **localhost** is correct because Next.js runs on the
-host.
+**API_URL** is intentionally present in both server boundaries. The root
+Compose environment uses **http://server:8080** because Next.js runs inside the
+client container, while **client/.env.local** uses **http://localhost:8080**
+because standalone Next.js runs on the host. Compose defaults to its internal
+server address when the root value is omitted.
 
 **NODE_ENV** in the root file applies only to the running client container and
 stays **production**. The client image contains a production build, so a

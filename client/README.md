@@ -117,24 +117,6 @@ updates a status. A conflict response means another employee changed the record;
 reload the shipment before retrying. Every successful transition is displayed
 from the immutable server status history.
 
-## Feature organization
-
-Route files in **src/app** coordinate navigation, session state, and page-level
-loading or error handling. Domain code lives next to the feature that owns it:
-
-- **src/features/shipments** contains shipment API calls, form validation and
-  fields, table and status components, display formatting, and location data.
-- **src/features/profile** contains profile-specific API calls.
-- **src/features/auth** owns authentication, session management, and auth forms.
-- **src/components** contains reusable application and UI primitives.
-- **src/lib** contains cross-feature API infrastructure, shared types, and
-  generic formatting helpers.
-
-The create and edit routes use the same shipment form schema, field renderer,
-and server-field-error mapping. Keep shipment-specific behavior in that feature
-module so later customer and employee surfaces can reuse it without duplicating
-validation or API contracts.
-
 ## UI components
 
 The client uses shadcn/ui with the compact **Nova** style, **Base UI**
@@ -160,15 +142,33 @@ Run the same quality checks used by CI:
 bun run format:check
 bun run lint
 bun run typecheck
+bun run test
 bun run build
 ```
 
 The Client CI workflow runs these checks for client changes targeting **dev**.
 It installs dependencies with `bun install --frozen-lockfile`, uses the Bun
 version declared in **.bun-version**, and then builds the production Docker
-image. No automated test command is included yet because the client does not
-currently have a test suite; tests can be added to the workflow together with
-the first client test framework.
+image. Vitest covers shipment form validation, authentication and role routing,
+employee status transitions, API error handling and filters, navigation, and
+critical loading states. Use `bun run test:watch` while developing.
+
+The Playwright critical-flow scenario is prepared for a running full stack. It
+requires a clean test environment and a pre-provisioned employee account:
+
+```bash
+PLAYWRIGHT_BASE_URL=http://127.0.0.1:3000 \
+E2E_API_BASE_URL=http://127.0.0.1:8080 \
+E2E_EMPLOYEE_EMAIL=employee@example.test \
+E2E_EMPLOYEE_PASSWORD=test-password \
+bun run test:e2e
+```
+
+The browser scenario registers a customer, creates a shipment, completes the
+employee lifecycle, verifies the customer-visible final status, and checks both
+the employee route and API authorization boundary. The release validation
+workflow starts PostgreSQL, the production server, and the production client
+before invoking it.
 
 The project enables Next.js **standalone** output. The generated
 **.next/standalone** directory contains the minimal traced runtime required by

@@ -22,6 +22,10 @@ export class ApiClientError extends Error {
   }
 }
 
+export function isConflictError(error: unknown): error is ApiClientError {
+  return error instanceof ApiClientError && error.status === 409;
+}
+
 export class ApiClient {
   constructor(private readonly baseUrl: string) {}
 

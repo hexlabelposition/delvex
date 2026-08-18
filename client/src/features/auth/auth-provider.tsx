@@ -12,7 +12,7 @@ import {
 } from "react";
 
 import { logoutAction, refreshSessionAction } from "@/features/auth/actions";
-import { homeForRole } from "@/features/auth/navigation";
+import { canAccessRoleRoute, homeForRole } from "@/features/auth/navigation";
 import type { AuthSession } from "@/features/auth/types";
 
 const protectedRoutes = [
@@ -22,7 +22,6 @@ const protectedRoutes = [
   "/employee",
   "/profile",
 ];
-const customerRoutes = ["/dashboard", "/shipments", "/create"];
 
 function matchesRoute(pathname: string, routes: readonly string[]) {
   return routes.some(
@@ -66,13 +65,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       ) {
         router.replace("/login");
       } else if (
-        refreshedSession?.user.role === "EMPLOYEE" &&
-        matchesRoute(pathname, customerRoutes)
-      ) {
-        router.replace(homeForRole(refreshedSession.user.role));
-      } else if (
-        refreshedSession?.user.role === "CUSTOMER" &&
-        matchesRoute(pathname, ["/employee"])
+        refreshedSession !== null &&
+        !canAccessRoleRoute(refreshedSession.user.role, pathname)
       ) {
         router.replace(homeForRole(refreshedSession.user.role));
       }

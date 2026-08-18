@@ -3,6 +3,7 @@
 import type { Submission } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod/v4";
 
+import { authFieldErrors } from "@/features/auth/errors";
 import { loginSchema, registerSchema } from "@/features/auth/schema";
 import {
   asBackendCookie,
@@ -23,18 +24,12 @@ function failedSubmission<Schema, FormValue>(
   error: unknown,
 ): AuthFormState {
   if (error instanceof ApiClientError) {
-    const hasFieldErrors = Object.keys(error.fieldErrors).length > 0;
-    const fieldErrors = Object.fromEntries(
-      Object.entries(error.fieldErrors).map(([field, message]) => [
-        field,
-        [message],
-      ]),
-    );
+    const fieldErrors = authFieldErrors(error);
 
     return {
       submission: submission.reply({
-        fieldErrors: hasFieldErrors ? fieldErrors : undefined,
-        formErrors: hasFieldErrors ? undefined : [error.message],
+        fieldErrors,
+        formErrors: fieldErrors === undefined ? [error.message] : undefined,
       }),
     };
   }

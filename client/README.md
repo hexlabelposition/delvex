@@ -71,6 +71,23 @@ host, start these services from the repository root:
 docker compose up --build server
 ```
 
+## Application routes
+
+| Route | Access | Purpose |
+| --- | --- | --- |
+| **/** | Public | Product landing page; active sessions continue to the dashboard |
+| **/login** | Guests | Sign in to an existing account |
+| **/register** | Guests | Create a new account |
+| **/dashboard** | Authenticated | Review shipment activity and recent records |
+| **/shipments** | Authenticated | Browse and manage shipments |
+| **/create** | Authenticated | Create a shipment |
+| **/profile** | Authenticated | Review and update the current profile |
+
+Authentication routing is enforced in **src/proxy.ts**. Guests can open the
+landing page, login, and registration routes. An active refresh session sends
+the root, login, and registration routes to the dashboard, while protected
+application routes send guests to login.
+
 ## UI components
 
 The client uses shadcn/ui with the compact **Nova** style, **Base UI**

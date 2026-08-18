@@ -11,6 +11,7 @@ supports a complete containerized development stack.
 
 ## Product capabilities
 
+- public landing page with login and registration entry points;
 - user registration, login, token refresh, and logout;
 - current-user profile management;
 - shipment creation, pagination, retrieval, update, and deletion;

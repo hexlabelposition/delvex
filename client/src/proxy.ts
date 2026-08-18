@@ -2,22 +2,20 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { REFRESH_COOKIE_NAME } from "@/features/auth/session";
 
-const authRoutes = new Set(["/login", "/register"]);
+const protectedRoutes = [
+  "/dashboard",
+  "/shipments",
+  "/create",
+  "/employee",
+  "/profile",
+];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasSession = request.cookies.has(REFRESH_COOKIE_NAME);
 
-  if (pathname === "/" && hasSession) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
-
-  if (authRoutes.has(pathname) && hasSession) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
-
   if (
-    ["/dashboard", "/shipments", "/create", "/employee", "/profile"].some(
+    protectedRoutes.some(
       (route) => pathname === route || pathname.startsWith(`${route}/`),
     ) &&
     !hasSession
@@ -30,9 +28,6 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/",
-    "/login",
-    "/register",
     "/dashboard/:path*",
     "/shipments/:path*",
     "/create/:path*",

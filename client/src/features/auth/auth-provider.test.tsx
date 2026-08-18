@@ -31,6 +31,8 @@ const customerSession: AuthSession = {
     firstName: "Customer",
     lastName: "User",
     role: "CUSTOMER",
+    createdAt: "2026-08-01T10:00:00Z",
+    updatedAt: "2026-08-02T10:00:00Z",
   },
 };
 
@@ -63,6 +65,47 @@ describe("AuthProvider", () => {
     );
     expect(await screen.findByText("CUSTOMER")).toBeInTheDocument();
     expect(mocks.replace).not.toHaveBeenCalled();
+  });
+
+  it("keeps the public landing page available to signed-in users", async () => {
+    mocks.refreshSessionAction.mockResolvedValue(customerSession);
+    window.history.replaceState({}, "", "/");
+    render(
+      <AuthProvider>
+        <SessionProbe />
+      </AuthProvider>,
+    );
+    expect(await screen.findByText("CUSTOMER")).toBeInTheDocument();
+    expect(mocks.replace).not.toHaveBeenCalled();
+  });
+
+  it("redirects a signed-in customer away from auth pages", async () => {
+    mocks.refreshSessionAction.mockResolvedValue(customerSession);
+    window.history.replaceState({}, "", "/login");
+    render(
+      <AuthProvider>
+        <SessionProbe />
+      </AuthProvider>,
+    );
+    await waitFor(() =>
+      expect(mocks.replace).toHaveBeenCalledWith("/dashboard"),
+    );
+  });
+
+  it("redirects a signed-in employee away from auth pages", async () => {
+    mocks.refreshSessionAction.mockResolvedValue({
+      ...customerSession,
+      user: { ...customerSession.user, role: "EMPLOYEE" },
+    });
+    window.history.replaceState({}, "", "/register");
+    render(
+      <AuthProvider>
+        <SessionProbe />
+      </AuthProvider>,
+    );
+    await waitFor(() =>
+      expect(mocks.replace).toHaveBeenCalledWith("/employee"),
+    );
   });
 
   it("redirects an employee away from customer actions", async () => {

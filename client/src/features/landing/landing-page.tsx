@@ -63,11 +63,12 @@ export function LandingPage() {
             <Button
               variant="ghost"
               className="hidden sm:inline-flex"
+              nativeButton={false}
               render={<Link href="/login" />}
             >
               Sign in
             </Button>
-            <Button render={<Link href="/register" />}>
+            <Button nativeButton={false} render={<Link href="/register" />}>
               Get started <ArrowRight aria-hidden="true" />
             </Button>
           </nav>
@@ -102,6 +103,7 @@ export function LandingPage() {
                 <Button
                   size="lg"
                   className="sm:min-w-36"
+                  nativeButton={false}
                   render={<Link href="/register" />}
                 >
                   Create account <ArrowRight aria-hidden="true" />
@@ -110,6 +112,7 @@ export function LandingPage() {
                   size="lg"
                   variant="outline"
                   className="sm:min-w-28"
+                  nativeButton={false}
                   render={<Link href="/login" />}
                 >
                   Sign in
@@ -268,6 +271,7 @@ export function LandingPage() {
               variant="secondary"
               size="lg"
               className="shrink-0"
+              nativeButton={false}
               render={<Link href="/register" />}
             >
               Get started <ArrowRight aria-hidden="true" />

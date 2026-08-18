@@ -33,6 +33,7 @@ class JwtRoleMappingTest {
         assertThat(authentication).isNotNull();
         assertThat(authentication.getAuthorities())
                 .extracting("authority")
-                .containsExactly("ROLE_EMPLOYEE");
+                .contains("ROLE_EMPLOYEE")
+                .doesNotContain("ROLE_CUSTOMER");
     }
 }

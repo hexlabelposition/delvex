@@ -7,9 +7,6 @@ export function formatWeight(value: number) {
 }
 
 export function statusLabel(status: ShipmentStatus) {
-  return status
-    .toLowerCase()
-    .split("_")
-    .map((word) => word[0]?.toUpperCase() + word.slice(1))
-    .join(" ");
+  const [first, ...rest] = status.toLowerCase().split("_");
+  return [`${first[0]?.toUpperCase()}${first.slice(1)}`, ...rest].join(" ");
 }

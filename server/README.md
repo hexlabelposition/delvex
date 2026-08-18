@@ -46,7 +46,7 @@ PostgreSQL persistence, API documentation, security, and operational health.
 
 ## Module structure
 
-~~~text
+```text
 server/
 ├── .env.example                      # standalone JVM configuration
 ├── Dockerfile                        # multi-stage production image
@@ -63,7 +63,7 @@ server/
     │       ├── application-prod.yaml
     │       └── db/migration/         # Flyway migrations
     └── test/java/                    # unit and integration tests
-~~~
+```
 
 Controllers handle HTTP concerns, services contain transactional business
 logic, repositories provide persistence, and Flyway is the only source of
@@ -74,39 +74,39 @@ modifies the production schema.
 
 ### Public endpoints
 
-| Method | Path | Purpose |
-| --- | --- | --- |
-| GET | **/api/health/live** | Process liveness |
-| GET | **/api/health** | Database-backed readiness |
-| GET | **/api/health/ready** | Database-backed readiness |
-| POST | **/api/auth/register** | Register and issue tokens |
-| POST | **/api/auth/login** | Authenticate and issue tokens |
-| POST | **/api/auth/refresh** | Rotate the refresh session |
-| POST | **/api/auth/logout** | Revoke the refresh session |
+| Method | Path                   | Purpose                       |
+| ------ | ---------------------- | ----------------------------- |
+| GET    | **/api/health/live**   | Process liveness              |
+| GET    | **/api/health**        | Database-backed readiness     |
+| GET    | **/api/health/ready**  | Database-backed readiness     |
+| POST   | **/api/auth/register** | Register and issue tokens     |
+| POST   | **/api/auth/login**    | Authenticate and issue tokens |
+| POST   | **/api/auth/refresh**  | Rotate the refresh session    |
+| POST   | **/api/auth/logout**   | Revoke the refresh session    |
 
 ### Protected endpoints
 
-| Method | Path | Purpose |
-| --- | --- | --- |
-| GET | **/api/users/me** | Read the current profile |
-| PATCH | **/api/users/me** | Update the current profile |
-| POST | **/api/shipments** | Create a shipment |
-| GET | **/api/shipments?page=0&size=20** | List owned shipments |
-| GET | **/api/shipments/{shipmentId}** | Read an owned shipment |
-| PATCH | **/api/shipments/{shipmentId}** | Update an owned shipment |
-| DELETE | **/api/shipments/{shipmentId}** | Delete an allowed shipment |
+| Method | Path                              | Purpose                    |
+| ------ | --------------------------------- | -------------------------- |
+| GET    | **/api/users/me**                 | Read the current profile   |
+| PATCH  | **/api/users/me**                 | Update the current profile |
+| POST   | **/api/shipments**                | Create a shipment          |
+| GET    | **/api/shipments?page=0&size=20** | List owned shipments       |
+| GET    | **/api/shipments/{shipmentId}**   | Read an owned shipment     |
+| PATCH  | **/api/shipments/{shipmentId}**   | Update an owned shipment   |
+| DELETE | **/api/shipments/{shipmentId}**   | Delete an allowed shipment |
 
 ### Employee endpoints
 
 Every endpoint under **/api/employee/** requires the EMPLOYEE role. A regular
 authenticated customer receives HTTP 403.
 
-| Method | Path | Purpose |
-| --- | --- | --- |
-| GET | **/api/employee/shipments** | List every shipment |
-| GET | **/api/employee/shipments/{shipmentId}** | Read any shipment and its customer |
-| GET | **/api/employee/shipments/{shipmentId}/status-events** | Read status history |
-| PATCH | **/api/employee/shipments/{shipmentId}/status** | Change shipment status |
+| Method | Path                                                   | Purpose                            |
+| ------ | ------------------------------------------------------ | ---------------------------------- |
+| GET    | **/api/employee/shipments**                            | List every shipment                |
+| GET    | **/api/employee/shipments/{shipmentId}**               | Read any shipment and its customer |
+| GET    | **/api/employee/shipments/{shipmentId}/status-events** | Read status history                |
+| PATCH  | **/api/employee/shipments/{shipmentId}/status**        | Change shipment status             |
 
 The employee list accepts the same **page** and **size** parameters as the
 customer list. It can also filter by an exact **status** and a case-insensitive
@@ -114,9 +114,9 @@ partial **reference**.
 
 Send an access token as:
 
-~~~http
+```http
 Authorization: Bearer <access-token>
-~~~
+```
 
 The shipment list is zero-based, defaults to 20 entries, accepts a maximum
 size of 100, and returns **content**, **page**, **size**, **totalElements**, and
@@ -124,13 +124,13 @@ size of 100, and returns **content**, **page**, **size**, **totalElements**, and
 
 ### Shipment lifecycle
 
-| Current status | Allowed next status |
-| --- | --- |
-| CREATED | ACCEPTED, CANCELLED |
-| ACCEPTED | IN_TRANSIT, CANCELLED |
-| IN_TRANSIT | DELIVERED, CANCELLED |
-| DELIVERED | none |
-| CANCELLED | none |
+| Current status | Allowed next status   |
+| -------------- | --------------------- |
+| CREATED        | ACCEPTED, CANCELLED   |
+| ACCEPTED       | IN_TRANSIT, CANCELLED |
+| IN_TRANSIT     | DELIVERED, CANCELLED  |
+| DELIVERED      | none                  |
+| CANCELLED      | none                  |
 
 Customers can edit and delete only CREATED shipments; they cannot change
 status. Employees perform every lifecycle transition. Sending the current
@@ -164,11 +164,11 @@ Public registration always creates a CUSTOMER and cannot request another role.
 For the first release, employee provisioning is an explicit database
 administration operation:
 
-~~~sql
+```sql
 UPDATE users
 SET role = 'EMPLOYEE'
 WHERE email = 'employee@example.com';
-~~~
+```
 
 The user must sign in again after promotion so a new access token contains the
 EMPLOYEE role. This keeps privilege assignment outside the public API until a
@@ -193,20 +193,20 @@ Boot directly on the host.
 
 From the repository root:
 
-~~~bash
+```bash
 cp .env.example .env
 docker compose up -d postgres redis
-~~~
+```
 
 Fill the root **.env** before startup. Compose uses it to initialize the
 database and starts an ephemeral Redis instance for rate-limit counters.
 
 ### 2. Prepare the server environment
 
-~~~bash
+```bash
 cd server
 cp .env.example .env
-~~~
+```
 
 Keep **POSTGRES_DB**, **POSTGRES_USER**, and **POSTGRES_PASSWORD** equal to the
 root **.env** values. Keep **POSTGRES_HOST=localhost** because the JVM connects
@@ -214,18 +214,18 @@ through the port published by Compose.
 
 Generate an access-token secret if needed:
 
-~~~bash
+```bash
 openssl rand -base64 32
-~~~
+```
 
 ### 3. Start Spring Boot
 
 From the **server** directory:
 
-~~~bash
+```bash
 chmod +x mvnw
 ./mvnw spring-boot:run
-~~~
+```
 
 Spring-Dotenv reads **server/.env**, parses dotenv syntax including optional
 quoted values, and exposes it as a low-priority Spring property source. Real
@@ -253,29 +253,29 @@ disabled and unreachable in production.
 
 ## Environment variables
 
-| Variable | Default | Notes |
-| --- | --- | --- |
-| SPRING_PROFILES_ACTIVE | none | Use dev locally or prod when deployed |
-| POSTGRES_HOST | localhost outside prod | Required explicitly in prod |
-| POSTGRES_PORT | 5432 | PostgreSQL port |
-| POSTGRES_DB | none | Required database name |
-| POSTGRES_SCHEMA | public | JDBC current schema |
-| POSTGRES_USER | none | Required database user |
-| POSTGRES_PASSWORD | none | Required database password |
-| REDIS_HOST | localhost outside prod | Required explicitly in prod |
-| REDIS_PORT | 6379 | Redis port |
-| REDIS_CONNECT_TIMEOUT | 2s | Redis connection timeout |
-| REDIS_TIMEOUT | 2s | Redis command timeout |
-| ACCESS_TOKEN_SECRET | none | Base64 value with at least 32 decoded bytes |
-| CORS_ALLOWED_ORIGINS | empty; localhost in dev | Comma-separated exact origins |
-| LOG_LEVEL | INFO | Log level for com.delvex.server |
-| REFRESH_SESSION_CLEANUP_INTERVAL | 1h | Delay between cleanup runs |
-| REFRESH_SESSION_CLEANUP_INITIAL_DELAY | 1h | Delay before the first cleanup |
-| AUTH_RATE_LIMIT_WINDOW | 1m | Fixed rate-limit window |
-| AUTH_RATE_LIMIT_REGISTER_REQUESTS | 5 | Registration attempts per client/window |
-| AUTH_RATE_LIMIT_LOGIN_REQUESTS | 10 | Login attempts per client/window |
-| AUTH_RATE_LIMIT_REFRESH_REQUESTS | 30 | Refresh attempts per client/window |
-| AUTH_RATE_LIMIT_TRUSTED_PROXY_CIDRS | empty | Trusted proxy networks |
+| Variable                              | Default                 | Notes                                       |
+| ------------------------------------- | ----------------------- | ------------------------------------------- |
+| SPRING_PROFILES_ACTIVE                | none                    | Use dev locally or prod when deployed       |
+| POSTGRES_HOST                         | localhost outside prod  | Required explicitly in prod                 |
+| POSTGRES_PORT                         | 5432                    | PostgreSQL port                             |
+| POSTGRES_DB                           | none                    | Required database name                      |
+| POSTGRES_SCHEMA                       | public                  | JDBC current schema                         |
+| POSTGRES_USER                         | none                    | Required database user                      |
+| POSTGRES_PASSWORD                     | none                    | Required database password                  |
+| REDIS_HOST                            | localhost outside prod  | Required explicitly in prod                 |
+| REDIS_PORT                            | 6379                    | Redis port                                  |
+| REDIS_CONNECT_TIMEOUT                 | 2s                      | Redis connection timeout                    |
+| REDIS_TIMEOUT                         | 2s                      | Redis command timeout                       |
+| ACCESS_TOKEN_SECRET                   | none                    | Base64 value with at least 32 decoded bytes |
+| CORS_ALLOWED_ORIGINS                  | empty; localhost in dev | Comma-separated exact origins               |
+| LOG_LEVEL                             | INFO                    | Log level for com.delvex.server             |
+| REFRESH_SESSION_CLEANUP_INTERVAL      | 1h                      | Delay between cleanup runs                  |
+| REFRESH_SESSION_CLEANUP_INITIAL_DELAY | 1h                      | Delay before the first cleanup              |
+| AUTH_RATE_LIMIT_WINDOW                | 1m                      | Fixed rate-limit window                     |
+| AUTH_RATE_LIMIT_REGISTER_REQUESTS     | 5                       | Registration attempts per client/window     |
+| AUTH_RATE_LIMIT_LOGIN_REQUESTS        | 10                      | Login attempts per client/window            |
+| AUTH_RATE_LIMIT_REFRESH_REQUESTS      | 30                      | Refresh attempts per client/window          |
+| AUTH_RATE_LIMIT_TRUSTED_PROXY_CIDRS   | empty                   | Trusted proxy networks                      |
 
 There is intentionally no **REFRESH_COOKIE_SECURE** variable. Cookies are
 secure by default, disabled only by the development profile, and enforced in
@@ -289,17 +289,17 @@ paths, queries, and fragments are rejected.
 
 Correct:
 
-~~~dotenv
+```dotenv
 CORS_ALLOWED_ORIGINS="https://app.example.com,https://admin.example.com"
-~~~
+```
 
 Incorrect:
 
-~~~dotenv
+```dotenv
 CORS_ALLOWED_ORIGINS="*"
 CORS_ALLOWED_ORIGINS="http://app.example.com"
 CORS_ALLOWED_ORIGINS="https://app.example.com/path"
-~~~
+```
 
 Do not include a trailing slash because an origin consists only of scheme,
 host, and optional port.
@@ -310,9 +310,9 @@ Forwarded headers are ignored by default because clients can forge them. If the
 server is reachable only through known reverse proxies, configure their
 networks explicitly:
 
-~~~dotenv
+```dotenv
 AUTH_RATE_LIMIT_TRUSTED_PROXY_CIDRS="10.0.0.0/8,172.16.0.0/12"
-~~~
+```
 
 The application trusts Forwarded or X-Forwarded-For only when the direct TCP
 peer belongs to one of these CIDRs. It walks the forwarded chain from right to
@@ -337,7 +337,7 @@ HTTP 503 instead of silently bypassing rate limiting.
 Production must use real environment variables rather than a committed or
 deployed dotenv file:
 
-~~~dotenv
+```dotenv
 SPRING_PROFILES_ACTIVE="prod"
 POSTGRES_HOST="database.internal"
 POSTGRES_PORT="5432"
@@ -352,7 +352,7 @@ REDIS_TIMEOUT="2s"
 ACCESS_TOKEN_SECRET="<base64-secret>"
 CORS_ALLOWED_ORIGINS="https://app.example.com"
 LOG_LEVEL="INFO"
-~~~
+```
 
 The application fails fast when production configuration is unsafe:
 
@@ -366,24 +366,24 @@ The production image runs as a non-root **delvex** user and exposes port 8080.
 
 Build it from the repository root:
 
-~~~bash
+```bash
 docker build -t delvex-server ./server
-~~~
+```
 
 ## Build and tests
 
 From the **server** directory, run the complete Maven suite:
 
-~~~bash
+```bash
 ./mvnw --batch-mode --no-transfer-progress test
-~~~
+```
 
 Build the executable JAR:
 
-~~~bash
+```bash
 ./mvnw --batch-mode --no-transfer-progress -DskipTests package
 java -jar target/server-1.0.0.jar
-~~~
+```
 
 Flyway migrations run automatically at startup. Startup fails if PostgreSQL is
 unavailable, a migration fails, or Hibernate detects a schema mismatch.
@@ -398,24 +398,24 @@ a final readiness check.
 It requires the **prod** environment, available disposable PostgreSQL and Redis
 instances, a free port 8080, and a packaged JAR:
 
-~~~bash
+```bash
 ./mvnw --batch-mode --no-transfer-progress -DskipTests package
 bash scripts/production-smoke.sh
-~~~
+```
 
 > The script creates real user, shipment, and refresh-session records. Never
 > run it against the production database.
 
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| SERVER_URL | http://127.0.0.1:8080 | Base URL used by HTTP requests |
-| SERVER_JAR | first target/server-*.jar | Explicit JAR path |
-| SERVER_LOG_FILE | target/production-smoke.log | Captured server log |
+| Variable        | Default                     | Purpose                        |
+| --------------- | --------------------------- | ------------------------------ |
+| SERVER_URL      | http://127.0.0.1:8080       | Base URL used by HTTP requests |
+| SERVER_JAR      | first target/server-*.jar   | Explicit JAR path              |
+| SERVER_LOG_FILE | target/production-smoke.log | Captured server log            |
 
 ## CI
 
 The Server CI workflow runs for backend, Compose, and workflow changes targeting
-**dev**.
+**dev** and **main**.
 
 - **Maven tests** executes the complete unit and integration suite against
   PostgreSQL and Redis.
@@ -424,6 +424,11 @@ The Server CI workflow runs for backend, Compose, and workflow changes targeting
 
 Surefire reports and production logs are uploaded only on failure. A skipped
 upload step on a successful run is expected.
+
+The repository-level Release validation workflow additionally builds the
+production server and client from a clean Compose database, verifies all Flyway
+migrations, and exercises the employee workflow through Playwright. See
+[RELEASE.md](../RELEASE.md) for the complete release contract.
 
 ## Operational notes
 
@@ -439,4 +444,3 @@ upload step on a successful run is expected.
   migration V4; the migration does not invent events for older shipments.
 - Raw refresh tokens are never returned in JSON.
 - Database changes belong in a new Flyway migration.
-

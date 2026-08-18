@@ -2,6 +2,7 @@
 
 [![Server CI](https://github.com/hexlabelposition/delvex/actions/workflows/server-ci.yml/badge.svg?branch=dev)](https://github.com/hexlabelposition/delvex/actions/workflows/server-ci.yml)
 [![Client CI](https://github.com/hexlabelposition/delvex/actions/workflows/client-ci.yml/badge.svg?branch=dev)](https://github.com/hexlabelposition/delvex/actions/workflows/client-ci.yml)
+[![Release validation](https://github.com/hexlabelposition/delvex/actions/workflows/release-validation.yml/badge.svg?branch=dev)](https://github.com/hexlabelposition/delvex/actions/workflows/release-validation.yml)
 
 Delvex is a logistics platform for managing users and shipments. The current
 MVP provides a production-oriented backend with authentication, shipment
@@ -25,7 +26,7 @@ supports a complete containerized development stack.
 
 ## Repository structure
 
-~~~text
+```text
 .
 ├── client/                     # Next.js web client
 │   ├── README.md               # client development and container guide
@@ -36,13 +37,13 @@ supports a complete containerized development stack.
 ├── compose.yaml                # client, server, PostgreSQL, and Redis stack
 ├── .env.example                # Docker Compose configuration
 └── .github/workflows/          # continuous integration
-~~~
+```
 
-| Module | Responsibility | Documentation |
-| --- | --- | --- |
-| **client** | Browser dashboard and server integration | [Client README](client/README.md) |
-| **server** | API, authentication, shipments, persistence, and operations | [Server README](server/README.md) |
-| **compose.yaml** | Local infrastructure and container orchestration | This README |
+| Module           | Responsibility                                              | Documentation                     |
+| ---------------- | ----------------------------------------------------------- | --------------------------------- |
+| **client**       | Browser dashboard and server integration                    | [Client README](client/README.md) |
+| **server**       | API, authentication, shipments, persistence, and operations | [Server README](server/README.md) |
+| **compose.yaml** | Local infrastructure and container orchestration            | This README                       |
 
 ## Technology overview
 
@@ -57,11 +58,11 @@ supports a complete containerized development stack.
 
 Delvex uses separate environment files for separate execution boundaries:
 
-| File | Used by | Purpose |
-| --- | --- | --- |
-| **/.env** | Docker Compose | Configures PostgreSQL, server, and the client image build |
-| **/server/.env** | Locally running JVM | Configures the standalone Spring Boot server |
-| **/client/.env.local** | Locally running Next.js | Configures the standalone client |
+| File                   | Used by                 | Purpose                                                   |
+| ---------------------- | ----------------------- | --------------------------------------------------------- |
+| **/.env**              | Docker Compose          | Configures PostgreSQL, server, and the client image build |
+| **/server/.env**       | Locally running JVM     | Configures the standalone Spring Boot server              |
+| **/client/.env.local** | Locally running Next.js | Configures the standalone client                          |
 
 Create each file from the example next to it. None of the real environment files
 belongs in Git.
@@ -88,24 +89,24 @@ for that instead.
 
 ### Prepare the Compose environment
 
-~~~bash
+```bash
 cp .env.example .env
-~~~
+```
 
 Choose **dev** as the local server profile, replace the database credentials,
 set the browser-reachable API URL, and generate an access-token secret:
 
-~~~bash
+```bash
 openssl rand -base64 32
-~~~
+```
 
 ### Start the complete stack
 
 Build and start the client, server, and PostgreSQL:
 
-~~~bash
+```bash
 docker compose up --build
-~~~
+```
 
 The services are available at:
 
@@ -119,18 +120,18 @@ Redis readiness.
 
 ### Start only infrastructure
 
-~~~bash
+```bash
 docker compose up -d postgres redis
-~~~
+```
 
 This is the recommended infrastructure mode when running both application
 modules directly on the host.
 
 ### Start infrastructure and the server
 
-~~~bash
+```bash
 docker compose up --build server
-~~~
+```
 
 Use this mode when running the Next.js client directly with Bun. Complete
 module-specific instructions are available in the
@@ -139,15 +140,15 @@ module-specific instructions are available in the
 
 ### Stop services
 
-~~~bash
+```bash
 docker compose down
-~~~
+```
 
 To delete the local PostgreSQL data volume as well:
 
-~~~bash
+```bash
 docker compose down -v
-~~~
+```
 
 > The **-v** option permanently deletes the local database volume.
 
@@ -155,14 +156,14 @@ docker compose down -v
 
 Build the production images independently from the repository root:
 
-~~~bash
+```bash
 docker build \
   --build-arg NEXT_PUBLIC_API_URL=http://localhost:8080 \
   --tag delvex-client \
   ./client
 
 docker build --tag delvex-server ./server
-~~~
+```
 
 The client uses Next.js standalone output and runs as a non-root user. Public
 **NEXT_PUBLIC_** values are fixed during the client build, so rebuild the image
@@ -172,23 +173,29 @@ Compose does not rebuild an existing image when a build argument changes, so
 editing **NEXT_PUBLIC_API_URL** in the root **.env** has no effect on a plain
 **docker compose up**. Rebuild the client explicitly:
 
-~~~bash
+```bash
 docker compose up --build client
-~~~
+```
 
 ## CI and releases
 
-Server changes targeting **dev** run Maven tests, package and start the
+Server changes targeting **dev** or **main** run Maven tests, package and start the
 production JAR against PostgreSQL and Redis, execute the real HTTP smoke
 scenario, and build the production server image.
 
-Client changes targeting **dev** install the locked Bun dependencies, verify
-Prettier formatting, run ESLint and TypeScript checks, create the production
-Next.js build, and build the production client image. Server and client
-workflows use path filters, so unchanged modules do not run unnecessary jobs.
+Client changes targeting **dev** or **main** install the locked Bun dependencies,
+verify Prettier formatting, run ESLint, TypeScript, unit, and component tests,
+create the production Next.js build, and build the production client image.
+Server and client workflows use path filters, so unchanged modules do not run
+unnecessary jobs.
+
+Release validation builds a clean production Compose stack, verifies Flyway
+from V1 through V4, and runs the critical Playwright customer and employee
+lifecycle through real HTTPS test origins. See [RELEASE.md](RELEASE.md) for
+local reproduction, merge order, and the final **1.0.0** checklist.
 
 Delvex currently uses one product version for the monorepo. Stable releases are
-tagged from **main** as **v<major>.<minor>.<patch>**.
+tagged from **main** as **<major>.<minor>.<patch>**.
 
 ## Module documentation
 
@@ -198,4 +205,3 @@ standalone output, and container usage.
 See [server/README.md](server/README.md) for API routes, authentication,
 configuration variables, OpenAPI, database migrations, testing, production
 startup, security, and operational behavior.
-

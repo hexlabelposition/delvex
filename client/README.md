@@ -146,7 +146,8 @@ bun run test
 bun run build
 ```
 
-The Client CI workflow runs these checks for client changes targeting **dev**.
+The Client CI workflow runs these checks for client changes targeting **dev**
+and **main**.
 It installs dependencies with `bun install --frozen-lockfile`, uses the Bun
 version declared in **.bun-version**, and then builds the production Docker
 image. Vitest covers shipment form validation, authentication and role routing,
@@ -169,6 +170,12 @@ employee lifecycle, verifies the customer-visible final status, and checks both
 the employee route and API authorization boundary. The release validation
 workflow starts PostgreSQL, the production server, and the production client
 before invoking it.
+
+Production release validation uses generated HTTPS test origins because the
+prod profile requires Secure refresh cookies and an explicit HTTPS CORS origin.
+Set `PLAYWRIGHT_IGNORE_HTTPS_ERRORS=true` only for an isolated local gateway
+using a disposable self-signed certificate; never disable TLS verification for
+a deployed environment.
 
 The project enables Next.js **standalone** output. The generated
 **.next/standalone** directory contains the minimal traced runtime required by

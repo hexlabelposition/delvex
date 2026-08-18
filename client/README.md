@@ -117,6 +117,24 @@ updates a status. A conflict response means another employee changed the record;
 reload the shipment before retrying. Every successful transition is displayed
 from the immutable server status history.
 
+## Feature organization
+
+Route files in **src/app** coordinate navigation, session state, and page-level
+loading or error handling. Domain code lives next to the feature that owns it:
+
+- **src/features/shipments** contains shipment API calls, form validation and
+  fields, table and status components, display formatting, and location data.
+- **src/features/profile** contains profile-specific API calls.
+- **src/features/auth** owns authentication, session management, and auth forms.
+- **src/components** contains reusable application and UI primitives.
+- **src/lib** contains cross-feature API infrastructure, shared types, and
+  generic formatting helpers.
+
+The create and edit routes use the same shipment form schema, field renderer,
+and server-field-error mapping. Keep shipment-specific behavior in that feature
+module so later customer and employee surfaces can reuse it without duplicating
+validation or API contracts.
+
 ## UI components
 
 The client uses shadcn/ui with the compact **Nova** style, **Base UI**

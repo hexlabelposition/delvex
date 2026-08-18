@@ -9,9 +9,15 @@ class ShipmentStatusTest {
     @Test
     void shouldAllowForwardAndCancellationTransitions() {
         assertThat(ShipmentStatus.CREATED.canTransitionTo(
-                ShipmentStatus.IN_TRANSIT))
+                ShipmentStatus.ACCEPTED))
                 .isTrue();
         assertThat(ShipmentStatus.CREATED.canTransitionTo(
+                ShipmentStatus.CANCELLED))
+                .isTrue();
+        assertThat(ShipmentStatus.ACCEPTED.canTransitionTo(
+                ShipmentStatus.IN_TRANSIT))
+                .isTrue();
+        assertThat(ShipmentStatus.ACCEPTED.canTransitionTo(
                 ShipmentStatus.CANCELLED))
                 .isTrue();
         assertThat(ShipmentStatus.IN_TRANSIT.canTransitionTo(
@@ -24,6 +30,9 @@ class ShipmentStatusTest {
 
     @Test
     void shouldRejectSkippedBackwardAndTerminalTransitions() {
+        assertThat(ShipmentStatus.CREATED.canTransitionTo(
+                ShipmentStatus.IN_TRANSIT))
+                .isFalse();
         assertThat(ShipmentStatus.CREATED.canTransitionTo(
                 ShipmentStatus.DELIVERED))
                 .isFalse();
@@ -43,11 +52,13 @@ class ShipmentStatusTest {
         assertThat(ShipmentStatus.DELIVERED.isTerminal()).isTrue();
         assertThat(ShipmentStatus.CANCELLED.isTerminal()).isTrue();
         assertThat(ShipmentStatus.CREATED.isTerminal()).isFalse();
+        assertThat(ShipmentStatus.ACCEPTED.isTerminal()).isFalse();
         assertThat(ShipmentStatus.IN_TRANSIT.isTerminal()).isFalse();
 
         assertThat(ShipmentStatus.CREATED.canBeDeleted()).isTrue();
         assertThat(ShipmentStatus.CANCELLED.canBeDeleted()).isFalse();
         assertThat(ShipmentStatus.IN_TRANSIT.canBeDeleted()).isFalse();
+        assertThat(ShipmentStatus.ACCEPTED.canBeDeleted()).isFalse();
         assertThat(ShipmentStatus.DELIVERED.canBeDeleted()).isFalse();
     }
 }

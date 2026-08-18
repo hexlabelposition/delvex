@@ -50,6 +50,7 @@ class UserControllerTest {
                         "john@example.com",
                         "John",
                         "Doe",
+                        UserRole.CUSTOMER,
                         createdAt,
                         updatedAt));
 
@@ -62,6 +63,7 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.email").value("john@example.com"))
                 .andExpect(jsonPath("$.firstName").value("John"))
                 .andExpect(jsonPath("$.lastName").value("Doe"))
+                .andExpect(jsonPath("$.role").value("CUSTOMER"))
                 .andExpect(jsonPath("$.createdAt").value(createdAt.toString()))
                 .andExpect(jsonPath("$.updatedAt").value(updatedAt.toString()));
     }
@@ -78,6 +80,7 @@ class UserControllerTest {
                         "john@example.com",
                         "Jonathan",
                         "Doe",
+                        UserRole.CUSTOMER,
                         null,
                         null));
 

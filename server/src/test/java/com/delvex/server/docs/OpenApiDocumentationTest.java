@@ -76,6 +76,12 @@ class OpenApiDocumentationTest {
                         "$.paths['/api/shipments'].post.security[0].bearerAuth")
                         .isArray())
                 .andExpect(jsonPath(
+                        "$.paths['/api/employee/shipments'].get.security[0].bearerAuth")
+                        .isArray())
+                .andExpect(jsonPath(
+                        "$.paths['/api/employee/shipments/{shipmentId}/status'].patch.security[0].bearerAuth")
+                        .isArray())
+                .andExpect(jsonPath(
                         "$.paths['/api/users/me'].get.security[0].bearerAuth")
                         .isArray())
                 .andExpect(jsonPath(

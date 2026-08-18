@@ -22,13 +22,11 @@ import {
   getShipmentStatusEvents,
   updateEmployeeShipmentStatus,
 } from "@/features/employee/api";
-import {
-  allowedNextStatuses,
-  statusActionLabel,
-} from "@/features/employee/status";
+import { statusActionLabel } from "@/features/employee/status";
+import { StatusActions } from "@/features/employee/status-actions";
 import { formatWeight, statusLabel } from "@/features/shipments/format";
 import { StatusBadge } from "@/features/shipments/status-badge";
-import { ApiClientError } from "@/lib/api/client";
+import { ApiClientError, isConflictError } from "@/lib/api/client";
 import type {
   EmployeeShipment,
   ShipmentStatus,
@@ -194,9 +192,11 @@ export default function EmployeeShipmentPage() {
       setPendingStatus(null);
     } catch (error) {
       setActionError(
-        error instanceof Error
-          ? error.message
-          : "Could not update shipment status",
+        isConflictError(error)
+          ? "This shipment was updated by someone else. Reload it and try again."
+          : error instanceof Error
+            ? error.message
+            : "Could not update shipment status",
       );
     } finally {
       setActionLoading(false);
@@ -205,9 +205,6 @@ export default function EmployeeShipmentPage() {
 
   const shipment = record?.shipment;
   const customer = record?.customer;
-  const nextStatuses =
-    shipment === undefined ? [] : allowedNextStatuses(shipment.status);
-
   return (
     <div className="mx-auto max-w-5xl">
       <Button variant="ghost" size="sm" render={<Link href="/employee" />}>
@@ -259,17 +256,11 @@ export default function EmployeeShipmentPage() {
                 >
                   <RefreshCw /> Reload
                 </Button>
-                {nextStatuses.map((status) => (
-                  <Button
-                    key={status}
-                    size="sm"
-                    variant={status === "CANCELLED" ? "destructive" : "default"}
-                    disabled={actionLoading}
-                    onClick={() => setPendingStatus(status)}
-                  >
-                    {statusActionLabel(status)}
-                  </Button>
-                ))}
+                <StatusActions
+                  status={shipment.status}
+                  disabled={actionLoading}
+                  onSelect={setPendingStatus}
+                />
               </div>
             </div>
 

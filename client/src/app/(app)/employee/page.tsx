@@ -1,15 +1,15 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, PackageSearch, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 
-import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/features/auth/auth-provider";
 import { getEmployeeShipments } from "@/features/employee/api";
+import { EmployeeShipmentsState } from "@/features/employee/employee-shipments-state";
 import { EmployeeShipmentsTable } from "@/features/employee/employee-shipments-table";
 import type { EmployeeShipmentPage, ShipmentStatus } from "@/lib/api/types";
 
@@ -149,66 +149,59 @@ export default function EmployeePage() {
       </Card>
 
       <div className="mt-6">
-        {error ? (
-          <EmptyState
-            icon={PackageSearch}
-            title="Couldn’t load shipments"
-            description="The server is unavailable. Please try again in a moment."
-          />
-        ) : loading && data === null ? (
-          <p className="text-muted-foreground">Loading shipments…</p>
-        ) : data !== null && data.content.length > 0 ? (
-          <>
-            <div className="mb-3 flex items-center justify-between gap-4">
-              <p className="text-muted-foreground text-sm">
-                {data.totalElements} shipment
-                {data.totalElements === 1 ? "" : "s"}
-                {loading ? " · Refreshing…" : ""}
-              </p>
-            </div>
-            <EmployeeShipmentsTable shipments={data.content} />
-            <div className="mt-4 flex items-center justify-between gap-4">
-              <p className="text-muted-foreground text-sm">
-                Showing {page * data.size + 1}–
-                {page * data.size + data.content.length} of {data.totalElements}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  disabled={page === 0 || loading}
-                  onClick={() => {
-                    setLoading(true);
-                    setError(false);
-                    setPage((value) => value - 1);
-                  }}
-                  aria-label="Previous page"
-                >
-                  <ChevronLeft />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  disabled={page >= data.totalPages - 1 || loading}
-                  onClick={() => {
-                    setLoading(true);
-                    setError(false);
-                    setPage((value) => value + 1);
-                  }}
-                  aria-label="Next page"
-                >
-                  <ChevronRight />
-                </Button>
+        <EmployeeShipmentsState
+          error={error}
+          loading={loading && data === null}
+          hasShipments={data !== null && data.content.length > 0}
+        >
+          {data !== null && data.content.length > 0 ? (
+            <>
+              <div className="mb-3 flex items-center justify-between gap-4">
+                <p className="text-muted-foreground text-sm">
+                  {data.totalElements} shipment
+                  {data.totalElements === 1 ? "" : "s"}
+                  {loading ? " · Refreshing…" : ""}
+                </p>
               </div>
-            </div>
-          </>
-        ) : (
-          <EmptyState
-            icon={PackageSearch}
-            title="No matching shipments"
-            description="Try changing the reference or status filter."
-          />
-        )}
+              <EmployeeShipmentsTable shipments={data.content} />
+              <div className="mt-4 flex items-center justify-between gap-4">
+                <p className="text-muted-foreground text-sm">
+                  Showing {page * data.size + 1}–
+                  {page * data.size + data.content.length} of{" "}
+                  {data.totalElements}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon-sm"
+                    disabled={page === 0 || loading}
+                    onClick={() => {
+                      setLoading(true);
+                      setError(false);
+                      setPage((value) => value - 1);
+                    }}
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon-sm"
+                    disabled={page >= data.totalPages - 1 || loading}
+                    onClick={() => {
+                      setLoading(true);
+                      setError(false);
+                      setPage((value) => value + 1);
+                    }}
+                    aria-label="Next page"
+                  >
+                    <ChevronRight />
+                  </Button>
+                </div>
+              </div>
+            </>
+          ) : null}
+        </EmployeeShipmentsState>
       </div>
     </div>
   );

@@ -38,12 +38,12 @@ cp .env.example .env.local
 The default local values are **http://localhost:8080** for the API and
 **http://localhost:3000** for the client.
 
-For standalone development, both variables point to **http://localhost:8080**.
-Compose fixes **API_URL** to **http://server:8080** so Server Actions always reach
-Spring Boot through Docker service discovery, while the public URL remains
-browser-reachable. A host or local client value such as **http://localhost:8080**
-is intentionally ignored by Compose because `localhost` inside the client
-container points back to that container.
+For standalone development, both API variables point to
+**http://localhost:8080**. Compose maps its separate **COMPOSE_API_URL** setting
+to the client container's **API_URL** and defaults it to
+**http://server:8080** for Docker service discovery. This prevents a standalone
+client value from leaking into the container while keeping custom container
+topologies configurable.
 
 Variables prefixed with **NEXT_PUBLIC_** are exposed to browser code. Never put
 credentials, tokens, or other secrets in them. Next.js embeds public variables

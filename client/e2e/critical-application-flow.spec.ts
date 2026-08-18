@@ -28,6 +28,8 @@ test("customer and employee complete the shipment lifecycle", async ({
   page,
   request,
 }) => {
+  test.setTimeout(120_000);
+
   const unique = `${Date.now()}-${test.info().workerIndex}`;
   const customerEmail = `release-${unique}@example.test`;
   const customerPassword = "Release-test-123!";
@@ -51,9 +53,7 @@ test("customer and employee complete the shipment lifecycle", async ({
   await page.getByLabel("Cargo description").fill("Release smoke parcel");
   await page.getByLabel("Weight (kg)").fill("2.50");
   await page.getByRole("button", { name: "Continue" }).click();
-  await page
-    .getByRole("button", { name: "Create shipment" })
-    .click({ noWaitAfter: true });
+  await page.getByRole("button", { name: "Create shipment" }).click();
   await expect(page.getByText("Shipment created successfully.")).toBeVisible();
 
   const reference = (

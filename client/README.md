@@ -13,7 +13,7 @@ server module.
 - TypeScript
 - Tailwind CSS 4
 - shadcn/ui with Base UI and Lucide icons
-- Bun
+- Bun 1.3.14
 - Docker
 
 ## Requirements
@@ -90,17 +90,21 @@ The existing **Button** component verifies the configured generation workflow.
 
 ## Checks and production build
 
-Run linting:
+Run the same quality checks used by CI:
 
 ```bash
+bun run format:check
 bun run lint
-```
-
-Create a production build:
-
-```bash
+bun run typecheck
 bun run build
 ```
+
+The Client CI workflow runs these checks for client changes targeting **dev**.
+It installs dependencies with `bun install --frozen-lockfile`, uses the Bun
+version declared in **.bun-version**, and then builds the production Docker
+image. No automated test command is included yet because the client does not
+currently have a test suite; tests can be added to the workflow together with
+the first client test framework.
 
 The project enables Next.js **standalone** output. The generated
 **.next/standalone** directory contains the minimal traced runtime required by

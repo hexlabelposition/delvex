@@ -425,10 +425,8 @@ The Server CI workflow runs for backend, Compose, and workflow changes targeting
 Surefire reports and production logs are uploaded only on failure. A skipped
 upload step on a successful run is expected.
 
-The repository-level Release validation workflow additionally builds the
-production server and client from a clean Compose database, verifies all Flyway
-migrations, and exercises the employee workflow through Playwright. See
-[RELEASE.md](../RELEASE.md) for the complete release contract.
+See [RELEASE.md](../RELEASE.md) for local verification commands and the complete
+release checklist.
 
 ## Operational notes
 

@@ -167,12 +167,12 @@ bun run test:e2e
 
 The browser scenario registers a customer, creates a shipment, completes the
 employee lifecycle, verifies the customer-visible final status, and checks both
-the employee route and API authorization boundary. The release validation
-workflow starts PostgreSQL, the production server, and the production client
+the employee route and API authorization boundary. Start PostgreSQL, the
+production server, and the production client in an isolated test environment
 before invoking it.
 
-Production release validation uses generated HTTPS test origins because the
-prod profile requires Secure refresh cookies and an explicit HTTPS CORS origin.
+When the browser flow uses the prod profile, use generated HTTPS test origins
+because Secure refresh cookies and an explicit HTTPS CORS origin are required.
 Set `PLAYWRIGHT_IGNORE_HTTPS_ERRORS=true` only for an isolated local gateway
 using a disposable self-signed certificate; never disable TLS verification for
 a deployed environment.

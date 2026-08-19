@@ -17,7 +17,7 @@ Local CI-equivalent commands are:
 cd server
 ./mvnw --batch-mode --no-transfer-progress test
 ./mvnw --batch-mode --no-transfer-progress -DskipTests package
-./scripts/production-smoke.sh
+./mvnw --batch-mode --no-transfer-progress -Dtest=ProductionSmokeIT test
 
 cd ../client
 bun install --frozen-lockfile
@@ -46,4 +46,4 @@ documented in
 9. Create tag **1.0.0** and the GitHub Release only after explicit owner
    approval.
 
-Do not run the smoke scripts against production data.
+Do not run the production smoke test against production data.

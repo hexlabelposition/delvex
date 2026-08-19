@@ -151,14 +151,14 @@ jobs:
           cache: maven
           cache-dependency-path: server/pom.xml
 
-      - name: Make scripts executable
-        run: chmod +x mvnw scripts/production-smoke.sh
+      - name: Make Maven Wrapper executable
+        run: chmod +x mvnw
 
       - name: Package production JAR
         run: ./mvnw --batch-mode --no-transfer-progress -DskipTests package
 
       - name: Run production HTTP smoke
-        run: ./scripts/production-smoke.sh
+        run: ./mvnw --batch-mode --no-transfer-progress -Dtest=ProductionSmokeIT test
 
       - name: Build production container
         run: docker build --tag delvex-server:ci .

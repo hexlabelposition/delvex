@@ -52,8 +52,6 @@ server/
 ├── Dockerfile                        # multi-stage production image
 ├── pom.xml
 ├── mvnw
-├── scripts/
-│   └── production-smoke.sh           # real HTTP smoke scenario
 └── src/
     ├── main/
     │   ├── java/                     # application source
@@ -63,6 +61,8 @@ server/
     │       ├── application-prod.yaml
     │       └── db/migration/         # Flyway migrations
     └── test/java/                    # unit and integration tests
+        └── com/delvex/server/smoke/
+            └── ProductionSmokeIT.java # packaged JAR HTTP scenario
 ```
 
 Controllers handle HTTP concerns, services contain transactional business
@@ -179,8 +179,6 @@ future administrative workflow is introduced.
 - JDK 21
 - Docker with Docker Compose
 - PostgreSQL and Redis for local server execution
-- Bash
-- curl and jq only for the production smoke script
 
 A system Maven installation is not required.
 
@@ -390,21 +388,23 @@ unavailable, a migration fails, or Hibernate detects a schema mismatch.
 
 ## Production HTTP smoke
 
-The smoke script launches the packaged JAR, waits for readiness, and performs
-registration, shipment creation and retrieval, refresh rotation, shipment
-update, production documentation checks, logout, revoked-token rejection, and
-a final readiness check.
+The **ProductionSmokeIT** JUnit test launches the packaged JAR, waits for
+readiness, and performs registration, shipment creation and retrieval, refresh
+rotation, shipment update, production documentation checks, logout,
+revoked-token rejection, and a final readiness check.
 
-It requires the **prod** environment, available disposable PostgreSQL and Redis
+The **IT** suffix keeps this external-process scenario out of the regular
+Surefire test selection. Run it explicitly after packaging the application. It
+requires the **prod** environment, available disposable PostgreSQL and Redis
 instances, a free port 8080, and a packaged JAR:
 
 ```bash
 ./mvnw --batch-mode --no-transfer-progress -DskipTests package
-bash scripts/production-smoke.sh
+./mvnw --batch-mode --no-transfer-progress -Dtest=ProductionSmokeIT test
 ```
 
-> The script creates real user, shipment, and refresh-session records. Never
-> run it against the production database.
+> The test creates real user, shipment, and refresh-session records. Never run
+> it against the production database.
 
 | Variable        | Default                     | Purpose                        |
 | --------------- | --------------------------- | ------------------------------ |
@@ -419,8 +419,8 @@ The Server CI workflow runs for backend, Compose, and workflow changes targeting
 
 - **Maven tests** executes the complete unit and integration suite against
   PostgreSQL and Redis.
-- **Production JAR smoke** packages the executable JAR, starts it with the prod
-  profile, performs the real HTTP scenario, and builds the production image.
+- **Production JAR smoke** packages the executable JAR, runs
+  **ProductionSmokeIT** with the prod profile, and builds the production image.
 
 Surefire reports and production logs are uploaded only on failure. A skipped
 upload step on a successful run is expected.

@@ -29,7 +29,7 @@ class ProductionSmokeIT {
 
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
     private static final Pattern REFRESH_COOKIE_PATTERN = Pattern.compile(
-            "(?:^|;\\s*)refresh_token=([^;]+)",
+            "(?:^|;\\s*)refresh_token=([^;]*)",
             Pattern.CASE_INSENSITIVE);
 
     private final HttpClient httpClient = HttpClient.newBuilder()

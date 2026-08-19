@@ -60,8 +60,9 @@ class ProductionSmokeIT {
 
     private void runHttpFlow() throws Exception {
         String runId = environmentOrDefault("GITHUB_RUN_ID", "local");
+        String uniqueSuffix = UUID.randomUUID().toString().substring(0, 8);
         String email = "production-smoke-%s-%s@example.com"
-                .formatted(runId, UUID.randomUUID());
+                .formatted(runId, uniqueSuffix);
         String registrationPayload = """
                 {
                   "email": "%s",

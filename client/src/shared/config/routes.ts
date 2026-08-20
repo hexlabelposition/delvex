@@ -1,6 +1,11 @@
 import type { UserRole } from "@shared/api";
 
-const authRoutes = ["/login", "/register"];
+const authRoutes = [
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/reset-password",
+];
 const protectedRoutes = [
   "/dashboard",
   "/shipments",

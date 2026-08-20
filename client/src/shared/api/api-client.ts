@@ -88,10 +88,11 @@ export class ApiClient {
       throw new ApiClientError(error);
     }
 
+    const responseBody = await response.text();
     const data =
-      response.status === 204
+      responseBody.length === 0
         ? (undefined as T)
-        : ((await response.json()) as T);
+        : (JSON.parse(responseBody) as T);
 
     return { data, headers: response.headers, status: response.status };
   }

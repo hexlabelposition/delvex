@@ -23,6 +23,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "rate-limit.auth.login-requests=1",
         "rate-limit.auth.register-requests=10",
         "rate-limit.auth.refresh-requests=10",
+        "rate-limit.auth.forgot-password-requests=1",
+        "rate-limit.auth.reset-password-requests=10",
         "rate-limit.auth.trusted-proxy-cidrs=10.0.0.0/8"
 })
 @AutoConfigureMockMvc
@@ -98,6 +100,24 @@ class AuthRateLimitIntegrationTest {
                 .andExpect(status().isBadRequest());
         performLoginFromProxy("198.51.100.31")
                 .andExpect(status().isTooManyRequests());
+    }
+
+    @Test
+    void shouldLimitPasswordResetEmailRequests() throws Exception {
+        for (int attempt = 0; attempt < 2; attempt++) {
+            ResultActions result = mockMvc.perform(
+                    post("/api/auth/forgot-password")
+                            .with(request -> {
+                                request.setRemoteAddr("192.0.2.20");
+                                return request;
+                            })
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"));
+
+            result.andExpect(attempt == 0
+                    ? status().isBadRequest()
+                    : status().isTooManyRequests());
+        }
     }
 
     private ResultActions

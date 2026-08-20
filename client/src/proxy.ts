@@ -155,5 +155,7 @@ export const config = {
     "/profile/:path*",
     "/login",
     "/register",
+    "/forgot-password",
+    "/reset-password",
   ],
 };

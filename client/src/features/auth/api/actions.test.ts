@@ -25,7 +25,13 @@ vi.mock("./session", () => ({
 
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
 
-import { loginAction, logoutAction, registerAction } from "./actions";
+import {
+  forgotPasswordAction,
+  loginAction,
+  logoutAction,
+  registerAction,
+  resetPasswordAction,
+} from "./actions";
 
 const accessToken = "access-token";
 const setCookie = "refresh_token=refresh-token; Path=/; HttpOnly";
@@ -140,5 +146,34 @@ describe("auth actions", () => {
 
     expect(mocks.clearSessionCookies).toHaveBeenCalledOnce();
     expect(mocks.redirect).toHaveBeenCalledWith("/login");
+  });
+
+  it("requests a reset without exposing whether the account exists", async () => {
+    mocks.post.mockResolvedValue(apiResponse(undefined));
+    const formData = new FormData();
+    formData.set("email", "user@example.com");
+
+    const result = await forgotPasswordAction(null, formData);
+
+    expect(mocks.post).toHaveBeenCalledWith("/api/auth/forgot-password", {
+      email: "user@example.com",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("resets the password and redirects to login", async () => {
+    mocks.post.mockResolvedValue(apiResponse(undefined));
+    const formData = new FormData();
+    formData.set("token", "reset-token");
+    formData.set("password", "new-password");
+    formData.set("confirmPassword", "new-password");
+
+    await resetPasswordAction(null, formData);
+
+    expect(mocks.post).toHaveBeenCalledWith("/api/auth/reset-password", {
+      token: "reset-token",
+      password: "new-password",
+    });
+    expect(mocks.redirect).toHaveBeenCalledWith("/login?passwordReset=success");
   });
 });

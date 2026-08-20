@@ -11,9 +11,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.delvex.server.auth.dto.LoginRequest;
 import com.delvex.server.auth.dto.LoginResponse;
+import com.delvex.server.auth.dto.ForgotPasswordRequest;
 import com.delvex.server.auth.dto.RefreshResponse;
 import com.delvex.server.auth.dto.RegisterRequest;
 import com.delvex.server.auth.dto.RegisterResponse;
+import com.delvex.server.auth.dto.ResetPasswordRequest;
 
 import jakarta.validation.Valid;
 
@@ -23,12 +25,33 @@ public class AuthController {
 
     private final AuthService authService;
     private final RefreshCookieService refreshCookieService;
+    private final PasswordResetService passwordResetService;
 
     public AuthController(
             AuthService authService,
-            RefreshCookieService refreshCookieService) {
+            RefreshCookieService refreshCookieService,
+            PasswordResetService passwordResetService) {
         this.authService = authService;
         this.refreshCookieService = refreshCookieService;
+        this.passwordResetService = passwordResetService;
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request) {
+        passwordResetService.requestReset(request.email());
+
+        return ResponseEntity.accepted().build();
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request) {
+        passwordResetService.resetPassword(
+                request.token(),
+                request.password());
+
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/register")

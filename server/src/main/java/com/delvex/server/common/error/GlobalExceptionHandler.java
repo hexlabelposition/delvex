@@ -20,6 +20,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import com.delvex.server.auth.EmailAlreadyExistsException;
 import com.delvex.server.auth.InvalidCredentialsException;
+import com.delvex.server.auth.InvalidPasswordResetTokenException;
 import com.delvex.server.auth.InvalidRefreshTokenException;
 import com.delvex.server.shipment.InvalidShipmentScheduleException;
 import com.delvex.server.shipment.InvalidShipmentLocationException;
@@ -80,6 +81,25 @@ public class GlobalExceptionHandler {
             InvalidRefreshTokenException exception,
             HttpServletRequest request) {
         HttpStatus status = HttpStatus.UNAUTHORIZED;
+
+        logHandledException(status, exception, request);
+
+        ApiError error = new ApiError(
+                Instant.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                exception.getMessage(),
+                request.getRequestURI(),
+                Map.of());
+
+        return ResponseEntity.status(status).body(error);
+    }
+
+    @ExceptionHandler(InvalidPasswordResetTokenException.class)
+    public ResponseEntity<ApiError> handleInvalidPasswordResetToken(
+            InvalidPasswordResetTokenException exception,
+            HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
 
         logHandledException(status, exception, request);
 

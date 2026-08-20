@@ -27,3 +27,16 @@ export const registerSchema = z.object({
   firstName: name("First"),
   lastName: name("Last"),
 });
+
+export const forgotPasswordSchema = z.object({ email });
+
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().min(1, "Password reset link is invalid"),
+    password,
+    confirmPassword: z.string({ error: "Confirm your password" }),
+  })
+  .refine(({ password, confirmPassword }) => password === confirmPassword, {
+    message: "Passwords must match",
+    path: ["confirmPassword"],
+  });

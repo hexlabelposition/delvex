@@ -28,4 +28,16 @@ public interface RefreshSessionRepository
                or session.revokedAt is not null
             """)
     int deleteInactiveSessions(@Param("now") Instant now);
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            update RefreshSession session
+            set session.revokedAt = :now
+            where session.userId = :userId
+              and session.revokedAt is null
+              and session.expiresAt > :now
+            """)
+    int revokeActiveByUserId(
+            @Param("userId") UUID userId,
+            @Param("now") Instant now);
 }

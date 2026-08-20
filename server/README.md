@@ -28,6 +28,7 @@ PostgreSQL persistence, API documentation, security, and operational health.
 - short-lived HS256 JWT access tokens;
 - rotating refresh tokens stored in an HttpOnly cookie;
 - refresh-session revocation and scheduled cleanup;
+- one-time password reset tokens and SMTP email delivery;
 - current-user profile retrieval and update;
 - shipment creation, pagination, retrieval, update, and deletion;
 - CUSTOMER and EMPLOYEE roles carried by signed access tokens;
@@ -83,6 +84,8 @@ modifies the production schema.
 | POST   | **/api/auth/login**    | Authenticate and issue tokens |
 | POST   | **/api/auth/refresh**  | Rotate the refresh session    |
 | POST   | **/api/auth/logout**   | Revoke the refresh session    |
+| POST   | **/api/auth/forgot-password** | Request a reset email  |
+| POST   | **/api/auth/reset-password**  | Set a new password     |
 
 ### Protected endpoints
 
@@ -158,6 +161,14 @@ current session and creates a replacement in the same transaction. Logout is
 idempotent, and expired or revoked sessions are removed by a scheduled cleanup
 job.
 
+Password recovery always returns HTTP 202 for a valid email-shaped request,
+whether or not the account exists. A known account receives a cryptographically
+random, single-use link whose SHA-256 digest is stored in PostgreSQL. The raw
+token exists only in the outgoing email. Reset links expire after 30 minutes by
+default, requesting another link invalidates earlier links, and a successful
+reset revokes every active refresh session for the user. An already issued
+access token can remain valid only until its normal 15-minute expiry.
+
 ### Provision an employee
 
 Public registration always creates a CUSTOMER and cannot request another role.
@@ -178,7 +189,7 @@ future administrative workflow is introduced.
 
 - JDK 21
 - Docker with Docker Compose
-- PostgreSQL and Redis for local server execution
+- PostgreSQL, Redis, and an SMTP server for local server execution
 
 A system Maven installation is not required.
 
@@ -193,11 +204,12 @@ From the repository root:
 
 ```bash
 cp .env.example .env
-docker compose up -d postgres redis
+docker compose up -d postgres redis mailpit
 ```
 
 Fill the root **.env** before startup. Compose uses it to initialize the
-database and starts an ephemeral Redis instance for rate-limit counters.
+database, starts an ephemeral Redis instance for rate-limit counters, and
+captures development email in Mailpit at http://localhost:8025.
 
 ### 2. Prepare the server environment
 
@@ -273,7 +285,20 @@ disabled and unreachable in production.
 | AUTH_RATE_LIMIT_REGISTER_REQUESTS     | 5                       | Registration attempts per client/window     |
 | AUTH_RATE_LIMIT_LOGIN_REQUESTS        | 10                      | Login attempts per client/window            |
 | AUTH_RATE_LIMIT_REFRESH_REQUESTS      | 30                      | Refresh attempts per client/window          |
+| AUTH_RATE_LIMIT_FORGOT_PASSWORD_REQUESTS | 5                    | Reset email requests per client/window      |
+| AUTH_RATE_LIMIT_RESET_PASSWORD_REQUESTS | 10                    | Password changes per client/window          |
 | AUTH_RATE_LIMIT_TRUSTED_PROXY_CIDRS   | empty                   | Trusted proxy networks                      |
+| PASSWORD_RESET_CLIENT_URL             | local reset page        | Absolute client reset-page URL              |
+| PASSWORD_RESET_TOKEN_TTL              | 30m                     | One-time reset token lifetime               |
+| PASSWORD_RESET_CLEANUP_INTERVAL       | 1h                      | Delay between token cleanup runs            |
+| PASSWORD_RESET_CLEANUP_INITIAL_DELAY  | 1h                      | Delay before first token cleanup            |
+| MAIL_HOST                             | localhost outside prod  | SMTP server; required explicitly in prod    |
+| MAIL_PORT                             | 1025 outside prod        | SMTP port                                   |
+| MAIL_USERNAME                         | empty outside prod       | SMTP username                               |
+| MAIL_PASSWORD                         | empty outside prod       | SMTP password                               |
+| MAIL_FROM                             | no-reply@delvex.local    | Password reset sender                       |
+| MAIL_SMTP_AUTH                        | false outside prod       | Enable SMTP authentication                  |
+| MAIL_SMTP_STARTTLS                    | false outside prod       | Enable SMTP STARTTLS                        |
 
 There is intentionally no **REFRESH_COOKIE_SECURE** variable. Cookies are
 secure by default, disabled only by the development profile, and enforced in
@@ -349,6 +374,14 @@ REDIS_CONNECT_TIMEOUT="2s"
 REDIS_TIMEOUT="2s"
 ACCESS_TOKEN_SECRET="<base64-secret>"
 CORS_ALLOWED_ORIGINS="https://app.example.com"
+PASSWORD_RESET_CLIENT_URL="https://app.example.com/reset-password"
+MAIL_HOST="smtp.example.com"
+MAIL_PORT="587"
+MAIL_USERNAME="<smtp-user>"
+MAIL_PASSWORD="<smtp-password>"
+MAIL_FROM="no-reply@example.com"
+MAIL_SMTP_AUTH="true"
+MAIL_SMTP_STARTTLS="true"
 LOG_LEVEL="INFO"
 ```
 
@@ -358,7 +391,8 @@ The application fails fast when production configuration is unsafe:
 - refresh cookies are not secure;
 - Swagger UI or OpenAPI JSON is enabled;
 - CORS origins are missing or unsafe;
-- required database, Redis, or authentication settings are missing or invalid.
+- required database, Redis, authentication, or mail settings are missing or
+  invalid.
 
 The production image runs as a non-root **delvex** user and exposes port 8080.
 

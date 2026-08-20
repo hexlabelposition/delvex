@@ -98,6 +98,12 @@ class OpenApiDocumentationTest {
                         .doesNotExist())
                 .andExpect(jsonPath(
                         "$.paths['/api/auth/login'].post.security")
+                        .doesNotExist())
+                .andExpect(jsonPath(
+                        "$.paths['/api/auth/forgot-password'].post.security")
+                        .doesNotExist())
+                .andExpect(jsonPath(
+                        "$.paths['/api/auth/reset-password'].post.security")
                         .doesNotExist());
     }
 }

@@ -9,3 +9,7 @@ export interface AuthSession {
 export interface AuthFormState {
   submission: SubmissionResult;
 }
+
+export interface ForgotPasswordFormState extends AuthFormState {
+  success?: boolean;
+}

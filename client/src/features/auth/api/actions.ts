@@ -8,8 +8,13 @@ import { homeForRole } from "@shared/config";
 import { redirect } from "next/navigation";
 
 import { authFieldErrors } from "../lib/errors";
-import { loginSchema, registerSchema } from "../model/schema";
-import type { AuthFormState } from "../model/types";
+import {
+  forgotPasswordSchema,
+  loginSchema,
+  registerSchema,
+  resetPasswordSchema,
+} from "../model/schema";
+import type { AuthFormState, ForgotPasswordFormState } from "../model/types";
 import {
   asBackendCookie,
   clearSessionCookies,
@@ -94,6 +99,47 @@ export async function registerAction(
   }
 
   redirect(homeForRole(user.role));
+}
+
+export async function forgotPasswordAction(
+  _previousState: ForgotPasswordFormState | null,
+  formData: FormData,
+): Promise<ForgotPasswordFormState> {
+  const submission = parseWithZod(formData, { schema: forgotPasswordSchema });
+
+  if (submission.status !== "success") {
+    return { submission: submission.reply() };
+  }
+
+  try {
+    await apiClient.post<void>("/api/auth/forgot-password", submission.value);
+  } catch (error) {
+    return failedSubmission(submission, error);
+  }
+
+  return { submission: submission.reply({ resetForm: true }), success: true };
+}
+
+export async function resetPasswordAction(
+  _previousState: AuthFormState | null,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const submission = parseWithZod(formData, { schema: resetPasswordSchema });
+
+  if (submission.status !== "success") {
+    return { submission: submission.reply() };
+  }
+
+  try {
+    await apiClient.post<void>("/api/auth/reset-password", {
+      token: submission.value.token,
+      password: submission.value.password,
+    });
+  } catch (error) {
+    return failedSubmission(submission, error);
+  }
+
+  redirect("/login?passwordReset=success");
 }
 
 export async function logoutAction() {

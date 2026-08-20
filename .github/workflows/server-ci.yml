@@ -68,6 +68,12 @@ jobs:
       POSTGRES_PASSWORD: test-password
       ACCESS_TOKEN_SECRET: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
       CORS_ALLOWED_ORIGINS: https://app.example.com
+      PASSWORD_RESET_CLIENT_URL: https://app.example.com/reset-password
+      MAIL_HOST: localhost
+      MAIL_PORT: 1025
+      MAIL_USERNAME: test-user
+      MAIL_PASSWORD: test-password
+      MAIL_FROM: no-reply@example.com
 
     steps:
       - name: Check out repository
@@ -138,6 +144,12 @@ jobs:
       POSTGRES_PASSWORD: smoke-password
       ACCESS_TOKEN_SECRET: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
       CORS_ALLOWED_ORIGINS: https://app.example.com
+      PASSWORD_RESET_CLIENT_URL: https://app.example.com/reset-password
+      MAIL_HOST: localhost
+      MAIL_PORT: 1025
+      MAIL_USERNAME: smoke-user
+      MAIL_PASSWORD: smoke-password
+      MAIL_FROM: no-reply@example.com
 
     steps:
       - name: Check out repository

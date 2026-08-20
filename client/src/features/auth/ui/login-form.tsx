@@ -12,7 +12,11 @@ import { AuthShell } from "./auth-shell";
 import { FormField } from "./form-field";
 import { SubmitButton } from "./submit-button";
 
-export function LoginForm() {
+export function LoginForm({
+  passwordReset = false,
+}: {
+  passwordReset?: boolean;
+}) {
   const [lastResult, action] = useActionState(loginAction, null);
   const [form, fields] = useForm({
     lastResult: lastResult?.submission,
@@ -28,6 +32,13 @@ export function LoginForm() {
       title="Sign in to Delvex"
       description="Enter your email and password to continue."
     >
+      {passwordReset && (
+        <Alert className="mb-4 rounded-md py-3 text-[13px]">
+          <AlertDescription>
+            Your password has been reset. You can sign in now.
+          </AlertDescription>
+        </Alert>
+      )}
       {form.errors !== undefined && (
         <Alert
           variant="destructive"
@@ -60,8 +71,9 @@ export function LoginForm() {
             />
             <SubmitButton pendingLabel="Signing in…">Sign in</SubmitButton>
             <p className="text-muted-foreground text-center text-xs">
-              Password recovery is not available yet — contact support if you
-              are locked out.
+              <Link href="/forgot-password" className="hover:underline">
+                Forgot your password?
+              </Link>
             </p>
           </form>
         </CardContent>

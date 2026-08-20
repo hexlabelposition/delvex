@@ -23,6 +23,7 @@ import jakarta.servlet.http.Cookie;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
@@ -49,6 +50,9 @@ class AuthControllerTest {
 
     @MockitoBean
     private RefreshCookieService refreshCookieService;
+
+    @MockitoBean
+    private PasswordResetService passwordResetService;
 
     @Test
     void shouldRegisterUserAndSetRefreshCookie() throws Exception {
@@ -300,5 +304,61 @@ class AuthControllerTest {
                 .logout(null);
     }
 
-}
+    @Test
+    void shouldAcceptPasswordResetRequestWithoutExposingAccountState()
+            throws Exception {
+        mockMvc.perform(post("/api/auth/forgot-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                          "email": "john@example.com"
+                        }
+                        """))
+                .andExpect(status().isAccepted())
+                .andExpect(content().string(""));
 
+        then(passwordResetService)
+                .should()
+                .requestReset("john@example.com");
+    }
+
+    @Test
+    void shouldResetPasswordWithValidRequest() throws Exception {
+        mockMvc.perform(post("/api/auth/reset-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                          "token": "reset-token",
+                          "password": "new-strong-password"
+                        }
+                        """))
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+
+        then(passwordResetService)
+                .should()
+                .resetPassword("reset-token", "new-strong-password");
+    }
+
+    @Test
+    void shouldRejectInvalidPasswordResetToken() throws Exception {
+        willThrow(new InvalidPasswordResetTokenException())
+                .given(passwordResetService)
+                .resetPassword(
+                        "invalid-token",
+                        "new-strong-password");
+
+        mockMvc.perform(post("/api/auth/reset-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                          "token": "invalid-token",
+                          "password": "new-strong-password"
+                        }
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message")
+                        .value("Password reset token is invalid or expired"));
+    }
+
+}

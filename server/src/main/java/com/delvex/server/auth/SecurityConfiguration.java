@@ -83,7 +83,9 @@ public class SecurityConfiguration {
                             "/api/auth/register",
                             "/api/auth/login",
                             "/api/auth/refresh",
-                            "/api/auth/logout")
+                            "/api/auth/logout",
+                            "/api/auth/forgot-password",
+                            "/api/auth/reset-password")
                             .permitAll();
 
                     // Documentation becomes public only in the profile that

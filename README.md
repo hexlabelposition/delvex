@@ -12,7 +12,7 @@ supports a complete containerized development stack.
 ## Product capabilities
 
 - public landing page with login and registration entry points;
-- user registration, login, token refresh, and logout;
+- user registration, login, password recovery, token refresh, and logout;
 - current-user profile management;
 - shipment creation, pagination, retrieval, update, and deletion;
 - customer and employee roles with server-enforced access boundaries;
@@ -33,7 +33,7 @@ supports a complete containerized development stack.
 ├── server/                     # Spring Boot API
 │   ├── README.md               # complete backend documentation
 │   └── .env.example            # standalone backend configuration
-├── compose.yaml                # client, server, PostgreSQL, and Redis stack
+├── compose.yaml                # application, data, and local email stack
 ├── .env.example                # Docker Compose configuration
 └── .github/workflows/          # continuous integration
 ```
@@ -50,6 +50,7 @@ supports a complete containerized development stack.
 - **Server:** Java 21, Spring Boot 4.1, Spring Security, Spring Data JPA,
   Flyway, and springdoc OpenAPI
 - **Data:** PostgreSQL 17 for durable data and Redis 8 for rate-limit counters
+- **Development email:** Mailpit captures password reset messages locally
 - **Infrastructure:** Docker and Docker Compose
 - **CI:** GitHub Actions
 
@@ -113,14 +114,16 @@ The services are available at:
 - API: http://localhost:8080
 - PostgreSQL: localhost:5432
 - Redis: localhost:6379
+- Mailpit: http://localhost:8025
 
 The client waits for server readiness, and the server waits for PostgreSQL and
-Redis readiness.
+Redis readiness. Password reset email is captured by Mailpit instead of being
+sent to a real mailbox.
 
 ### Start only infrastructure
 
 ```bash
-docker compose up -d postgres redis
+docker compose up -d postgres redis mailpit
 ```
 
 This is the recommended infrastructure mode when running both application

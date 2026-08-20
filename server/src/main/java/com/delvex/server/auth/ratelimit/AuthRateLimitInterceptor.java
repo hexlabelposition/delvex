@@ -18,6 +18,10 @@ public class AuthRateLimitInterceptor implements HandlerInterceptor {
     private static final String REGISTER_PATH = "/api/auth/register";
     private static final String LOGIN_PATH = "/api/auth/login";
     private static final String REFRESH_PATH = "/api/auth/refresh";
+    private static final String FORGOT_PASSWORD_PATH =
+            "/api/auth/forgot-password";
+    private static final String RESET_PASSWORD_PATH =
+            "/api/auth/reset-password";
 
     private final AuthRateLimiter rateLimiter;
     private final AuthRateLimitProperties properties;
@@ -93,6 +97,12 @@ public class AuthRateLimitInterceptor implements HandlerInterceptor {
             case REFRESH_PATH -> new RateLimitRule(
                     "refresh",
                     properties.getRefreshRequests());
+            case FORGOT_PASSWORD_PATH -> new RateLimitRule(
+                    "forgot-password",
+                    properties.getForgotPasswordRequests());
+            case RESET_PASSWORD_PATH -> new RateLimitRule(
+                    "reset-password",
+                    properties.getResetPasswordRequests());
             default -> null;
         };
     }

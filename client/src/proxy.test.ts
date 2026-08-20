@@ -61,6 +61,16 @@ describe("proxy session routing", () => {
     expect(location(response)).toBeNull();
   });
 
+  it("leaves an anonymous visitor on password recovery pages", async () => {
+    const forgotResponse = await proxy(request("/forgot-password"));
+    const resetResponse = await proxy(
+      request("/reset-password?token=reset-token"),
+    );
+
+    expect(location(forgotResponse)).toBeNull();
+    expect(location(resetResponse)).toBeNull();
+  });
+
   it("keeps a signed-in customer out of the employee workspace", async () => {
     const response = await proxy(
       request("/employee", {

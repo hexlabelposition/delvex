@@ -72,16 +72,16 @@ describe("EmployeeShipmentsTable", () => {
   it("renders branch context, permitted actions, and keyboard navigation", () => {
     render(<EmployeeShipmentsTable shipments={[record]} />);
 
-    expect(screen.getByText("WARSAW")).toBeInTheDocument();
-    expect(screen.getByText("GDANSK")).toBeInTheDocument();
+    const row = screen.getByText("DLX-100").closest("tr")!;
+
+    expect(row).toHaveTextContent("WARSAW");
+    expect(row).toHaveTextContent("GDANSK");
     expect(screen.getByText("Origin · WARSAW")).toBeInTheDocument();
     expect(
       screen.getByText("ACCEPTED_AT_ORIGIN,CANCELLED"),
     ).toBeInTheDocument();
 
-    fireEvent.keyDown(screen.getByText("DLX-100").closest("tr")!, {
-      key: "Enter",
-    });
+    fireEvent.keyDown(row, { key: "Enter" });
     expect(mocks.push).toHaveBeenCalledWith("/employee/shipments/shipment-id");
   });
 });

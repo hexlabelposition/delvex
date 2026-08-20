@@ -12,7 +12,11 @@ import { AuthShell } from "./auth-shell";
 import { FormField } from "./form-field";
 import { SubmitButton } from "./submit-button";
 
-export function LoginForm({ passwordReset = false }: { passwordReset?: boolean }) {
+export function LoginForm({
+  passwordReset = false,
+}: {
+  passwordReset?: boolean;
+}) {
   const [lastResult, action] = useActionState(loginAction, null);
   const [form, fields] = useForm({
     lastResult: lastResult?.submission,

@@ -115,10 +115,7 @@ export async function forgotPasswordAction(
   }
 
   try {
-    await apiClient.post<void>(
-      "/api/auth/forgot-password",
-      submission.value,
-    );
+    await apiClient.post<void>("/api/auth/forgot-password", submission.value);
   } catch (error) {
     return failedSubmission(submission, error);
   }

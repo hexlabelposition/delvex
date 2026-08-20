@@ -174,8 +174,6 @@ describe("auth actions", () => {
       token: "reset-token",
       password: "new-password",
     });
-    expect(mocks.redirect).toHaveBeenCalledWith(
-      "/login?passwordReset=success",
-    );
+    expect(mocks.redirect).toHaveBeenCalledWith("/login?passwordReset=success");
   });
 });

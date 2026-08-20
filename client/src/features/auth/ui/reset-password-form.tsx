@@ -30,7 +30,10 @@ export function ResetPasswordForm({ token }: { token?: string }) {
         title="Reset link is invalid"
         description="Request a new password reset link to continue."
       >
-        <Alert variant="destructive" className="mb-4 rounded-md py-3 text-[13px]">
+        <Alert
+          variant="destructive"
+          className="mb-4 rounded-md py-3 text-[13px]"
+        >
           <AlertDescription>
             This password reset link is missing or invalid.
           </AlertDescription>

@@ -13,6 +13,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.delvex.server.branch.Branch;
+import com.delvex.server.branch.EmployeeBranchRequiredException;
 import com.delvex.server.shipment.dto.EmployeeShipmentPageResponse;
 import com.delvex.server.shipment.dto.EmployeeShipmentResponse;
 import com.delvex.server.shipment.dto.ShipmentStatusEventResponse;
@@ -20,6 +22,7 @@ import com.delvex.server.shipment.dto.UpdateShipmentStatusRequest;
 import com.delvex.server.user.User;
 import com.delvex.server.user.UserNotFoundException;
 import com.delvex.server.user.UserRepository;
+import com.delvex.server.user.UserRole;
 
 @Service
 public class EmployeeShipmentService {
@@ -42,6 +45,7 @@ public class EmployeeShipmentService {
 
     @Transactional(readOnly = true)
     public EmployeeShipmentPageResponse findAll(
+            UUID employeeId,
             ShipmentStatus status,
             String reference,
             int page,
@@ -53,30 +57,19 @@ public class EmployeeShipmentService {
                         Sort.Direction.DESC,
                         TypedPropertyPath.path(Shipment::getCreatedAt)));
         String normalizedReference = normalizeReference(reference);
-        Page<Shipment> shipments;
-
-        if (status != null && normalizedReference != null) {
-            shipments = shipmentRepository
-                    .findAllByStatusAndReferenceNumberContainingIgnoreCase(
-                            status,
-                            normalizedReference,
-                            pageable);
-        } else if (status != null) {
-            shipments = shipmentRepository.findAllByStatus(
-                    status,
-                    pageable);
-        } else if (normalizedReference != null) {
-            shipments = shipmentRepository
-                    .findAllByReferenceNumberContainingIgnoreCase(
-                            normalizedReference,
-                            pageable);
-        } else {
-            shipments = shipmentRepository.findAll(pageable);
-        }
+        Branch employeeBranch = findEmployeeBranch(employeeId);
+        Page<Shipment> shipments = shipmentRepository.findAllForBranch(
+                employeeBranch.getId(),
+                status,
+                normalizedReference,
+                pageable);
 
         LOGGER.debug(
-                "employee shipments loaded status={} reference={} page={} "
-                        + "size={} count={} totalElements={}",
+                "employee shipments loaded employeeId={} branchId={} "
+                        + "status={} reference={} page={} size={} count={} "
+                        + "totalElements={}",
+                employeeId,
+                employeeBranch.getId(),
                 status,
                 normalizedReference,
                 page,
@@ -84,18 +77,28 @@ public class EmployeeShipmentService {
                 shipments.getNumberOfElements(),
                 shipments.getTotalElements());
 
-        return EmployeeShipmentPageResponse.from(shipments);
+        return EmployeeShipmentPageResponse.from(
+                shipments,
+                employeeBranch);
     }
 
     @Transactional(readOnly = true)
-    public EmployeeShipmentResponse findById(UUID shipmentId) {
-        return EmployeeShipmentResponse.from(findShipment(shipmentId));
+    public EmployeeShipmentResponse findById(
+            UUID employeeId,
+            UUID shipmentId) {
+        Branch employeeBranch = findEmployeeBranch(employeeId);
+
+        return EmployeeShipmentResponse.from(
+                findShipment(shipmentId, employeeBranch),
+                employeeBranch);
     }
 
     @Transactional(readOnly = true)
     public List<ShipmentStatusEventResponse> findStatusEvents(
+            UUID employeeId,
             UUID shipmentId) {
-        findShipment(shipmentId);
+        Branch employeeBranch = findEmployeeBranch(employeeId);
+        findShipment(shipmentId, employeeBranch);
 
         return eventRepository
                 .findAllByShipment_IdOrderByChangedAtAsc(shipmentId)
@@ -109,15 +112,18 @@ public class EmployeeShipmentService {
             UUID employeeId,
             UUID shipmentId,
             UpdateShipmentStatusRequest request) {
-        User employee = userRepository.findById(employeeId)
-                .orElseThrow(UserNotFoundException::new);
-        Shipment shipment = findShipment(shipmentId);
+        User employee = findEmployee(employeeId);
+        Branch employeeBranch = requireActiveBranch(employee);
+        Shipment shipment = findShipment(shipmentId, employeeBranch);
         ShipmentStatus previousStatus = shipment.changeStatus(
                 request.status(),
-                request.version());
+                request.version(),
+                employeeBranch);
 
         if (previousStatus == null) {
-            return EmployeeShipmentResponse.from(shipment);
+            return EmployeeShipmentResponse.from(
+                    shipment,
+                    employeeBranch);
         }
 
         Shipment savedShipment = shipmentRepository.saveAndFlush(shipment);
@@ -125,22 +131,51 @@ public class EmployeeShipmentService {
                 savedShipment,
                 previousStatus,
                 savedShipment.getStatus(),
-                employee));
+                employee,
+                employeeBranch));
 
         LOGGER.info(
-                "shipment status changed employeeId={} shipmentId={} "
-                        + "previousStatus={} newStatus={}",
+                "shipment status changed employeeId={} branchId={} "
+                        + "shipmentId={} previousStatus={} newStatus={}",
                 employeeId,
+                employeeBranch.getId(),
                 shipmentId,
                 previousStatus,
                 savedShipment.getStatus());
 
-        return EmployeeShipmentResponse.from(savedShipment);
+        return EmployeeShipmentResponse.from(
+                savedShipment,
+                employeeBranch);
     }
 
-    private Shipment findShipment(UUID shipmentId) {
-        return shipmentRepository.findById(shipmentId)
+    private Shipment findShipment(
+            UUID shipmentId,
+            Branch employeeBranch) {
+        return shipmentRepository.findByIdForBranch(
+                shipmentId,
+                employeeBranch.getId())
                 .orElseThrow(ShipmentNotFoundException::new);
+    }
+
+    private Branch findEmployeeBranch(UUID employeeId) {
+        return requireActiveBranch(findEmployee(employeeId));
+    }
+
+    private User findEmployee(UUID employeeId) {
+        return userRepository.findById(employeeId)
+                .orElseThrow(UserNotFoundException::new);
+    }
+
+    private Branch requireActiveBranch(User employee) {
+        Branch branch = employee.getBranch();
+
+        if (employee.getRole() != UserRole.EMPLOYEE
+                || branch == null
+                || !branch.isActive()) {
+            throw new EmployeeBranchRequiredException();
+        }
+
+        return branch;
     }
 
     private String normalizeReference(String reference) {

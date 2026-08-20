@@ -3,6 +3,7 @@ package com.delvex.server.shipment.dto;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.delvex.server.branch.dto.BranchSummaryResponse;
 import com.delvex.server.shipment.ShipmentStatus;
 import com.delvex.server.shipment.ShipmentStatusEvent;
 import com.delvex.server.user.UserRole;
@@ -15,6 +16,7 @@ public record ShipmentStatusEventResponse(
         String changedByFirstName,
         String changedByLastName,
         UserRole changedByRole,
+        BranchSummaryResponse branch,
         Instant changedAt) {
 
     public static ShipmentStatusEventResponse from(
@@ -27,6 +29,7 @@ public record ShipmentStatusEventResponse(
                 event.getChangedBy().getFirstName(),
                 event.getChangedBy().getLastName(),
                 event.getChangedBy().getRole(),
+                BranchSummaryResponse.from(event.getBranch()),
                 event.getChangedAt());
     }
 }

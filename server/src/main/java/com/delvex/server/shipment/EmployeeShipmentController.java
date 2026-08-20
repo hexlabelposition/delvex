@@ -38,6 +38,7 @@ public class EmployeeShipmentController {
 
     @GetMapping
     public EmployeeShipmentPageResponse findAll(
+            @AuthenticationPrincipal Jwt jwt,
             @RequestParam(required = false)
             ShipmentStatus status,
             @RequestParam(required = false)
@@ -53,6 +54,7 @@ public class EmployeeShipmentController {
             @Max(value = 100, message = "Size must not exceed 100")
             int size) {
         return shipmentService.findAll(
+                UUID.fromString(jwt.getSubject()),
                 status,
                 reference,
                 page,
@@ -61,14 +63,20 @@ public class EmployeeShipmentController {
 
     @GetMapping("/{shipmentId}")
     public EmployeeShipmentResponse findById(
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID shipmentId) {
-        return shipmentService.findById(shipmentId);
+        return shipmentService.findById(
+                UUID.fromString(jwt.getSubject()),
+                shipmentId);
     }
 
     @GetMapping("/{shipmentId}/status-events")
     public List<ShipmentStatusEventResponse> findStatusEvents(
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID shipmentId) {
-        return shipmentService.findStatusEvents(shipmentId);
+        return shipmentService.findStatusEvents(
+                UUID.fromString(jwt.getSubject()),
+                shipmentId);
     }
 
     @PatchMapping("/{shipmentId}/status")

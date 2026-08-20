@@ -12,6 +12,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.delvex.server.branch.Branch;
+import com.delvex.server.branch.BranchRepository;
 import com.delvex.server.shipment.dto.CreateShipmentRequest;
 import com.delvex.server.shipment.dto.ShipmentPageResponse;
 import com.delvex.server.shipment.dto.ShipmentResponse;
@@ -28,12 +30,15 @@ public class ShipmentService {
 
     private final ShipmentRepository shipmentRepository;
     private final UserRepository userRepository;
+    private final BranchRepository branchRepository;
 
     public ShipmentService(
             ShipmentRepository shipmentRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            BranchRepository branchRepository) {
         this.shipmentRepository = shipmentRepository;
         this.userRepository = userRepository;
+        this.branchRepository = branchRepository;
     }
 
     @Transactional
@@ -46,8 +51,8 @@ public class ShipmentService {
         Shipment shipment = new Shipment(
                 user,
                 createReferenceNumber(),
-                ShipmentLocation.fromId(request.originLocationId()),
-                ShipmentLocation.fromId(request.destinationLocationId()),
+                findBranch(request.originLocationId()),
+                findBranch(request.destinationLocationId()),
                 strip(request.cargoDescription()),
                 request.weightKg(),
                 request.pickupAt(),
@@ -109,14 +114,14 @@ public class ShipmentService {
             UpdateShipmentRequest request) {
         Shipment shipment = findOwnedShipment(userId, shipmentId);
 
-        ShipmentLocation originLocation = request.originLocationId() == null
-                ? null : ShipmentLocation.fromId(request.originLocationId());
-        ShipmentLocation destinationLocation = request.destinationLocationId() == null
-                ? null : ShipmentLocation.fromId(request.destinationLocationId());
+        Branch originBranch = request.originLocationId() == null
+                ? null : findBranch(request.originLocationId());
+        Branch destinationBranch = request.destinationLocationId() == null
+                ? null : findBranch(request.destinationLocationId());
 
         shipment.update(
-                originLocation,
-                destinationLocation,
+                originBranch,
+                destinationBranch,
                 strip(request.cargoDescription()),
                 request.weightKg(),
                 request.pickupAt(),
@@ -151,6 +156,11 @@ public class ShipmentService {
 
     private String createReferenceNumber() {
         return "DLX-" + UUID.randomUUID().toString().toUpperCase(Locale.ROOT);
+    }
+
+    private Branch findBranch(String code) {
+        return branchRepository.findByCodeAndActiveTrue(code)
+                .orElseThrow(() -> new InvalidShipmentLocationException(code));
     }
 
     private String strip(String value) {

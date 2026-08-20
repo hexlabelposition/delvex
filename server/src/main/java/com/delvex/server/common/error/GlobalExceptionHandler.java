@@ -22,6 +22,7 @@ import com.delvex.server.auth.EmailAlreadyExistsException;
 import com.delvex.server.auth.InvalidCredentialsException;
 import com.delvex.server.auth.InvalidPasswordResetTokenException;
 import com.delvex.server.auth.InvalidRefreshTokenException;
+import com.delvex.server.branch.EmployeeBranchRequiredException;
 import com.delvex.server.shipment.InvalidShipmentScheduleException;
 import com.delvex.server.shipment.InvalidShipmentLocationException;
 import com.delvex.server.shipment.InvalidShipmentStateException;
@@ -138,6 +139,25 @@ public class GlobalExceptionHandler {
             ShipmentNotFoundException exception,
             HttpServletRequest request) {
         HttpStatus status = HttpStatus.NOT_FOUND;
+
+        logHandledException(status, exception, request);
+
+        ApiError error = new ApiError(
+                Instant.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                exception.getMessage(),
+                request.getRequestURI(),
+                Map.of());
+
+        return ResponseEntity.status(status).body(error);
+    }
+
+    @ExceptionHandler(EmployeeBranchRequiredException.class)
+    public ResponseEntity<ApiError> handleEmployeeBranchRequired(
+            EmployeeBranchRequiredException exception,
+            HttpServletRequest request) {
+        HttpStatus status = HttpStatus.FORBIDDEN;
 
         logHandledException(status, exception, request);
 

@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.data.domain.Page;
 
+import com.delvex.server.branch.Branch;
 import com.delvex.server.shipment.Shipment;
 
 public record EmployeeShipmentPageResponse(
@@ -13,11 +14,15 @@ public record EmployeeShipmentPageResponse(
         long totalElements,
         int totalPages) {
 
-    public static EmployeeShipmentPageResponse from(Page<Shipment> shipments) {
+    public static EmployeeShipmentPageResponse from(
+            Page<Shipment> shipments,
+            Branch employeeBranch) {
         return new EmployeeShipmentPageResponse(
                 shipments.getContent()
                         .stream()
-                        .map(EmployeeShipmentResponse::from)
+                        .map(shipment -> EmployeeShipmentResponse.from(
+                                shipment,
+                                employeeBranch))
                         .toList(),
                 shipments.getNumber(),
                 shipments.getSize(),

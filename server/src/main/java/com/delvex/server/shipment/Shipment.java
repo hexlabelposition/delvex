@@ -2,8 +2,11 @@ package com.delvex.server.shipment;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
+import com.delvex.server.branch.Branch;
 import com.delvex.server.user.User;
 
 import jakarta.persistence.Column;
@@ -64,6 +67,18 @@ public class Shipment {
     @Column(name = "destination_address", nullable = false, length = 255)
     private String destinationAddress;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "origin_branch_id", nullable = false)
+    private Branch originBranch;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "destination_branch_id", nullable = false)
+    private Branch destinationBranch;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "current_branch_id")
+    private Branch currentBranch;
+
     @Column(name = "cargo_description", nullable = false, length = 500)
     private String cargoDescription;
 
@@ -92,8 +107,8 @@ public class Shipment {
     public Shipment(
             User user,
             String referenceNumber,
-            ShipmentLocation originLocation,
-            ShipmentLocation destinationLocation,
+            Branch originBranch,
+            Branch destinationBranch,
             String cargoDescription,
             BigDecimal weightKg,
             Instant pickupAt,
@@ -103,8 +118,9 @@ public class Shipment {
         this.user = user;
         this.referenceNumber = referenceNumber;
         this.status = ShipmentStatus.CREATED;
-        applyOriginLocation(originLocation);
-        applyDestinationLocation(destinationLocation);
+        applyOriginBranch(originBranch);
+        applyDestinationBranch(destinationBranch);
+        this.currentBranch = originBranch;
         this.cargoDescription = cargoDescription;
         this.weightKg = weightKg;
         this.pickupAt = pickupAt;
@@ -124,8 +140,8 @@ public class Shipment {
     }
 
     public void update(
-            ShipmentLocation originLocation,
-            ShipmentLocation destinationLocation,
+            Branch originBranch,
+            Branch destinationBranch,
             String cargoDescription,
             BigDecimal weightKg,
             Instant pickupAt,
@@ -137,8 +153,13 @@ public class Shipment {
 
         validateSchedule(updatedPickupAt, updatedDeliveryAt);
 
-        if (originLocation != null) applyOriginLocation(originLocation);
-        if (destinationLocation != null) applyDestinationLocation(destinationLocation);
+        if (originBranch != null) {
+            applyOriginBranch(originBranch);
+            currentBranch = originBranch;
+        }
+        if (destinationBranch != null) {
+            applyDestinationBranch(destinationBranch);
+        }
         this.cargoDescription = valueOrCurrent(cargoDescription, this.cargoDescription);
         this.weightKg = valueOrCurrent(weightKg, this.weightKg);
         this.pickupAt = updatedPickupAt;
@@ -154,7 +175,8 @@ public class Shipment {
 
     public ShipmentStatus changeStatus(
             ShipmentStatus target,
-            long expectedVersion) {
+            long expectedVersion,
+            Branch employeeBranch) {
         if (version != expectedVersion) {
             throw new StaleShipmentVersionException();
         }
@@ -168,8 +190,15 @@ public class Shipment {
                     status + " shipments cannot transition to " + target);
         }
 
+        validateBranchTransition(target, employeeBranch);
+
         ShipmentStatus previousStatus = status;
         status = target;
+        currentBranch = switch (target) {
+            case IN_TRANSIT -> null;
+            case ARRIVED_AT_DESTINATION, DELIVERED -> destinationBranch;
+            default -> currentBranch;
+        };
 
         return previousStatus;
     }
@@ -181,18 +210,61 @@ public class Shipment {
         }
     }
 
-    private void applyOriginLocation(ShipmentLocation location) {
-        originCountry = location.country();
-        originCity = location.city();
-        originPostalCode = location.postalCode();
-        originAddress = location.address();
+    public boolean belongsTo(Branch branch) {
+        return sameBranch(originBranch, branch)
+                || sameBranch(destinationBranch, branch);
     }
 
-    private void applyDestinationLocation(ShipmentLocation location) {
-        destinationCountry = location.country();
-        destinationCity = location.city();
-        destinationPostalCode = location.postalCode();
-        destinationAddress = location.address();
+    public List<ShipmentStatus> allowedTransitionsFor(Branch employeeBranch) {
+        return Arrays.stream(ShipmentStatus.values())
+                .filter(target -> target != status)
+                .filter(status::canTransitionTo)
+                .filter(target -> sameBranch(
+                        requiredBranchFor(target),
+                        employeeBranch))
+                .toList();
+    }
+
+    private void validateBranchTransition(
+            ShipmentStatus target,
+            Branch employeeBranch) {
+        Branch requiredBranch = requiredBranchFor(target);
+
+        if (requiredBranch != null
+                && !sameBranch(requiredBranch, employeeBranch)) {
+            throw new InvalidShipmentStateException(
+                    "Shipment transition is not allowed from this branch");
+        }
+    }
+
+    private Branch requiredBranchFor(ShipmentStatus target) {
+        return switch (target) {
+            case ACCEPTED_AT_ORIGIN, IN_TRANSIT, CANCELLED -> originBranch;
+            case ARRIVED_AT_DESTINATION, DELIVERED -> destinationBranch;
+            case CREATED -> null;
+        };
+    }
+
+    private boolean sameBranch(Branch first, Branch second) {
+        return first != null
+                && second != null
+                && first.getId().equals(second.getId());
+    }
+
+    private void applyOriginBranch(Branch branch) {
+        originBranch = branch;
+        originCountry = branch.getCountry();
+        originCity = branch.getCity();
+        originPostalCode = branch.getPostalCode();
+        originAddress = branch.getAddress();
+    }
+
+    private void applyDestinationBranch(Branch branch) {
+        destinationBranch = branch;
+        destinationCountry = branch.getCountry();
+        destinationCity = branch.getCity();
+        destinationPostalCode = branch.getPostalCode();
+        destinationAddress = branch.getAddress();
     }
 
     private void validateSchedule(Instant pickupAt, Instant deliveryAt) {
@@ -251,6 +323,18 @@ public class Shipment {
 
     public String getDestinationAddress() {
         return destinationAddress;
+    }
+
+    public Branch getOriginBranch() {
+        return originBranch;
+    }
+
+    public Branch getDestinationBranch() {
+        return destinationBranch;
+    }
+
+    public Branch getCurrentBranch() {
+        return currentBranch;
     }
 
     public String getCargoDescription() {

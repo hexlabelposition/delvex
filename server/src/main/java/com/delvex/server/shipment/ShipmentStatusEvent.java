@@ -3,6 +3,7 @@ package com.delvex.server.shipment;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.delvex.server.branch.Branch;
 import com.delvex.server.user.User;
 
 import jakarta.persistence.Column;
@@ -42,6 +43,10 @@ public class ShipmentStatusEvent {
     @JoinColumn(name = "changed_by_user_id", nullable = false)
     private User changedBy;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "branch_id")
+    private Branch branch;
+
     @Column(name = "changed_at", nullable = false, updatable = false)
     private Instant changedAt;
 
@@ -52,11 +57,13 @@ public class ShipmentStatusEvent {
             Shipment shipment,
             ShipmentStatus previousStatus,
             ShipmentStatus newStatus,
-            User changedBy) {
+            User changedBy,
+            Branch branch) {
         this.shipment = shipment;
         this.previousStatus = previousStatus;
         this.newStatus = newStatus;
         this.changedBy = changedBy;
+        this.branch = branch;
     }
 
     @PrePersist
@@ -82,6 +89,10 @@ public class ShipmentStatusEvent {
 
     public User getChangedBy() {
         return changedBy;
+    }
+
+    public Branch getBranch() {
+        return branch;
     }
 
     public Instant getChangedAt() {

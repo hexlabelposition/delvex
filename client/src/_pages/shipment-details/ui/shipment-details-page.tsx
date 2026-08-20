@@ -1,0 +1,188 @@
+import { formatWeight, getShipment, StatusBadge } from "@entities/shipment";
+import { requireSession } from "@features/auth/server";
+import { DeleteShipmentButton } from "@features/shipment-delete";
+import { ApiClientError, type Shipment } from "@shared/api";
+import { formatDate } from "@shared/lib";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+} from "@shared/ui";
+import { ArrowLeft, PackageOpen, Pencil } from "lucide-react";
+import Link from "next/link";
+
+interface ShipmentDetailsPageProps {
+  shipmentId: string;
+}
+
+function AddressCard({
+  title,
+  country,
+  city,
+  postalCode,
+  address,
+}: {
+  title: string;
+  country: string;
+  city: string;
+  postalCode: string;
+  address: string;
+}) {
+  return (
+    <Card className="gap-0 py-0">
+      <CardHeader className="px-5 pt-5">
+        <CardDescription>{title}</CardDescription>
+        <CardTitle className="mt-1 text-lg">
+          {city}, {country}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="text-muted-foreground px-5 pt-3 pb-5 text-sm">
+        <p>{address}</p>
+        <p className="mt-1">{postalCode}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ShipmentDetails({ shipment }: { shipment: Shipment }) {
+  return (
+    <>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="text-muted-foreground font-mono text-sm">
+            {shipment.referenceNumber}
+          </p>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight">
+            Shipment details
+          </h1>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusBadge status={shipment.status} />
+          {shipment.status === "CREATED" && (
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                render={<Link href={`/shipments/${shipment.id}/edit`} />}
+              >
+                <Pencil /> Edit
+              </Button>
+              <DeleteShipmentButton shipmentId={shipment.id} />
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-7 grid gap-3 md:grid-cols-2">
+        <AddressCard
+          title="Origin"
+          country={shipment.originCountry}
+          city={shipment.originCity}
+          postalCode={shipment.originPostalCode}
+          address={shipment.originAddress}
+        />
+        <AddressCard
+          title="Destination"
+          country={shipment.destinationCountry}
+          city={shipment.destinationCity}
+          postalCode={shipment.destinationPostalCode}
+          address={shipment.destinationAddress}
+        />
+      </div>
+
+      <div className="mt-5 grid gap-3 md:grid-cols-2">
+        <Card className="gap-0 py-0">
+          <CardHeader className="px-5 pt-5">
+            <CardDescription>Cargo</CardDescription>
+            <CardTitle className="mt-1 text-lg">Cargo information</CardTitle>
+          </CardHeader>
+          <CardContent className="px-5 pt-3 pb-5 text-sm">
+            <p>{shipment.cargoDescription}</p>
+            <p className="text-muted-foreground mt-3">
+              Weight: {formatWeight(shipment.weightKg)}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="gap-0 py-0">
+          <CardHeader className="px-5 pt-5">
+            <CardDescription>Schedule</CardDescription>
+            <CardTitle className="mt-1 text-lg">Pickup and delivery</CardTitle>
+          </CardHeader>
+          <CardContent className="text-muted-foreground grid gap-3 px-5 pt-3 pb-5 text-sm">
+            <p>
+              <span className="text-foreground font-medium">Pickup: </span>
+              {formatDate(shipment.pickupAt)}
+            </p>
+            <p>
+              <span className="text-foreground font-medium">Delivery: </span>
+              {formatDate(shipment.deliveryAt)}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="mt-5 gap-0 py-0">
+        <CardHeader className="px-5 pt-5">
+          <CardDescription>Record</CardDescription>
+        </CardHeader>
+        <CardContent className="text-muted-foreground grid gap-3 px-5 pt-3 pb-5 text-sm sm:grid-cols-2">
+          <p>
+            <span className="text-foreground font-medium">Created: </span>
+            {formatDate(shipment.createdAt)}
+          </p>
+          <p>
+            <span className="text-foreground font-medium">Last updated: </span>
+            {formatDate(shipment.updatedAt)}
+          </p>
+        </CardContent>
+      </Card>
+    </>
+  );
+}
+
+export async function ShipmentDetailsPage({
+  shipmentId,
+}: ShipmentDetailsPageProps) {
+  const { accessToken } = await requireSession();
+
+  let shipment: Shipment | null = null;
+  let error: "not-found" | "unavailable" | null = null;
+
+  try {
+    shipment = await getShipment(shipmentId, accessToken);
+  } catch (requestError) {
+    error =
+      requestError instanceof ApiClientError && requestError.status === 404
+        ? "not-found"
+        : "unavailable";
+  }
+
+  return (
+    <div className="mx-auto max-w-4xl">
+      <Button variant="ghost" size="sm" render={<Link href="/shipments" />}>
+        <ArrowLeft /> Back to shipments
+      </Button>
+      <div className="mt-5">
+        {error === "not-found" ? (
+          <EmptyState
+            icon={PackageOpen}
+            title="Shipment not found"
+            description="This shipment is unavailable or does not belong to your account."
+          />
+        ) : shipment === null ? (
+          <EmptyState
+            icon={PackageOpen}
+            title="Couldn’t load shipment"
+            description="The server is unavailable. Please try again in a moment."
+          />
+        ) : (
+          <ShipmentDetails shipment={shipment} />
+        )}
+      </div>
+    </div>
+  );
+}

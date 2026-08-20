@@ -1,12 +1,10 @@
 import "./globals.css";
 
+import { siteMetadata } from "@shared/config";
+import { cn } from "@shared/lib";
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
-
-import { AuthProvider } from "@/features/auth/auth-provider";
-import { siteMetadata } from "@/lib/metadata";
-import { cn } from "@/lib/utils";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -72,9 +70,9 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="en" className={cn("font-sans", inter.variable)}>
-      <body>
-        <AuthProvider>{children}</AuthProvider>
+    <html lang="en" className="scroll-smooth">
+      <body className={cn("font-sans antialiased", inter.variable)}>
+        {children}
       </body>
     </html>
   );

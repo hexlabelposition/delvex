@@ -26,6 +26,12 @@ public class AuthRateLimitProperties {
     @Min(1)
     private int refreshRequests = 30;
 
+    @Min(1)
+    private int forgotPasswordRequests = 5;
+
+    @Min(1)
+    private int resetPasswordRequests = 10;
+
     @NotNull
     private List<String> trustedProxyCidrs = List.of();
 
@@ -59,6 +65,22 @@ public class AuthRateLimitProperties {
 
     public void setRefreshRequests(int refreshRequests) {
         this.refreshRequests = refreshRequests;
+    }
+
+    public int getForgotPasswordRequests() {
+        return forgotPasswordRequests;
+    }
+
+    public void setForgotPasswordRequests(int forgotPasswordRequests) {
+        this.forgotPasswordRequests = forgotPasswordRequests;
+    }
+
+    public int getResetPasswordRequests() {
+        return resetPasswordRequests;
+    }
+
+    public void setResetPasswordRequests(int resetPasswordRequests) {
+        this.resetPasswordRequests = resetPasswordRequests;
     }
 
     public List<String> getTrustedProxyCidrs() {

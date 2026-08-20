@@ -127,6 +127,7 @@ class PasswordResetServiceTest {
                 PasswordResetService.hash("reset-token")))
                 .willReturn(Optional.of(resetToken));
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
+        given(user.getId()).willReturn(userId);
         given(passwordEncoder.encode("new-strong-password"))
                 .willReturn("{bcrypt}new-hash");
 

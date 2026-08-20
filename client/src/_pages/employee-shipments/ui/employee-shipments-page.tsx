@@ -18,10 +18,10 @@ const statuses: readonly ShipmentStatus[] = [
   "CANCELLED",
 ];
 
-const queueFilters: ReadonlyArray<{
+const queueFilters: readonly {
   label: string;
   status: ShipmentStatus | "";
-}> = [
+}[] = [
   { label: "All", status: "" },
   { label: "New intake", status: "CREATED" },
   { label: "Accepted", status: "ACCEPTED_AT_ORIGIN" },

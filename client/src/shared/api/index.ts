@@ -9,6 +9,7 @@ export type {
   ApiErrorBody,
   AuthResponse,
   AuthUser,
+  BranchSummary,
   CreateShipmentPayload,
   CustomerSummary,
   EmployeeShipment,

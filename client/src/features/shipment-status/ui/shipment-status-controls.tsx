@@ -15,6 +15,7 @@ interface ShipmentStatusControlsProps {
   status: ShipmentStatus;
   allowedStatuses?: ShipmentStatus[];
   version: number;
+  showReload?: boolean;
 }
 
 export function ShipmentStatusControls({
@@ -22,6 +23,7 @@ export function ShipmentStatusControls({
   status,
   allowedStatuses,
   version,
+  showReload = true,
 }: ShipmentStatusControlsProps) {
   const router = useRouter();
   const [pendingStatus, setPendingStatus] = useState<ShipmentStatus | null>(
@@ -46,17 +48,19 @@ export function ShipmentStatusControls({
 
   return (
     <>
-      <Button
-        size="sm"
-        variant="outline"
-        disabled={pending}
-        onClick={() => {
-          setError("");
-          router.refresh();
-        }}
-      >
-        <RefreshCw /> Reload
-      </Button>
+      {showReload && (
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={pending}
+          onClick={() => {
+            setError("");
+            router.refresh();
+          }}
+        >
+          <RefreshCw /> Reload
+        </Button>
+      )}
       <StatusActions
         status={status}
         allowedStatuses={allowedStatuses}

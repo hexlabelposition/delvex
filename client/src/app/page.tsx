@@ -1,5 +1,5 @@
-import { LandingPage } from "@/features/landing/landing-page";
-import { createPageMetadata } from "@/lib/metadata";
+import { LandingPage } from "@pages/landing";
+import { createPageMetadata } from "@shared/config";
 
 export const metadata = createPageMetadata({
   title: "Shipment management made clear",

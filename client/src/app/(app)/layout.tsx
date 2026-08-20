@@ -1,11 +1,12 @@
+import { AppShell } from "@widgets/app-shell";
 import type { ReactNode } from "react";
 
-import { AppShell } from "@/features/dashboard/app-shell";
+interface ApplicationLayoutProps {
+  children: ReactNode;
+}
 
 export default function ApplicationLayout({
   children,
-}: {
-  children: ReactNode;
-}) {
+}: ApplicationLayoutProps) {
   return <AppShell>{children}</AppShell>;
 }

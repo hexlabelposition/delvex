@@ -1,5 +1,12 @@
-import { LoginForm } from "@/features/auth/login-form";
+import { LoginPage } from "@pages/login";
+import { createPageMetadata } from "@shared/config";
 
-export default function LoginPage() {
-  return <LoginForm />;
+export const metadata = createPageMetadata({
+  title: "Log in",
+  description: "Log in to manage your Delvex shipments.",
+  path: "/login",
+});
+
+export default function Page() {
+  return <LoginPage />;
 }

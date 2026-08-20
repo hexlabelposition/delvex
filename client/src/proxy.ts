@@ -1,6 +1,5 @@
+import { REFRESH_COOKIE_NAME } from "@shared/config";
 import { type NextRequest, NextResponse } from "next/server";
-
-import { REFRESH_COOKIE_NAME } from "@/features/auth/session";
 
 const protectedRoutes = [
   "/dashboard",

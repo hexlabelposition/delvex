@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { canAccessRoleRoute, homeForRole } from "./navigation";
+import { canAccessRoleRoute, homeForRole } from "./routes";
 
 describe("role navigation", () => {
   it("selects a home route for each role", () => {

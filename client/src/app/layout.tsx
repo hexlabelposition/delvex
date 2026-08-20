@@ -1,6 +1,5 @@
 import "./globals.css";
 
-import { AuthProvider } from "@features/auth";
 import { siteMetadata } from "@shared/config";
 import { cn } from "@shared/lib";
 import type { Metadata, Viewport } from "next";
@@ -73,7 +72,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en" className="scroll-smooth">
       <body className={cn("font-sans antialiased", inter.variable)}>
-        <AuthProvider>{children}</AuthProvider>
+        {children}
       </body>
     </html>
   );

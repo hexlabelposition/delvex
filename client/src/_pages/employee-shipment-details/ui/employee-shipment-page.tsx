@@ -8,7 +8,7 @@ import {
   statusLabel,
   updateEmployeeShipmentStatus,
 } from "@entities/shipment";
-import { useAuth } from "@features/auth";
+import { useSession } from "@features/auth";
 import { statusActionLabel, StatusActions } from "@features/shipment-status";
 import {
   ApiClientError,
@@ -116,7 +116,7 @@ function StatusHistory({ events }: { events: ShipmentStatusEvent[] }) {
 }
 
 export function EmployeeShipmentPage() {
-  const { session } = useAuth();
+  const session = useSession();
   const { shipmentId } = useParams<{ shipmentId: string }>();
   const [record, setRecord] = useState<EmployeeShipment | null>(null);
   const [events, setEvents] = useState<ShipmentStatusEvent[]>([]);
@@ -131,7 +131,7 @@ export function EmployeeShipmentPage() {
   );
 
   useEffect(() => {
-    if (session === null || shipmentId === undefined) return;
+    if (shipmentId === undefined) return;
     let cancelled = false;
     void loadEmployeeShipment(shipmentId, session.accessToken)
       .then((response) => {
@@ -156,7 +156,7 @@ export function EmployeeShipmentPage() {
   }, [session, shipmentId]);
 
   const reloadShipment = () => {
-    if (session === null || shipmentId === undefined) return;
+    if (shipmentId === undefined) return;
     setLoading(true);
     setLoadError(null);
     setActionError("");
@@ -176,7 +176,7 @@ export function EmployeeShipmentPage() {
   };
 
   const confirmStatusUpdate = async () => {
-    if (session === null || record === null || pendingStatus === null) return;
+    if (record === null || pendingStatus === null) return;
     setActionLoading(true);
     setActionError("");
     try {

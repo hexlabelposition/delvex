@@ -1,7 +1,7 @@
 "use client";
 
 import { getEmployeeShipments } from "@entities/shipment";
-import { useAuth } from "@features/auth";
+import { useSession } from "@features/auth";
 import type { EmployeeShipmentPage, ShipmentStatus } from "@shared/api";
 import { Button, Card, CardContent, Input, Label } from "@shared/ui";
 import {
@@ -27,7 +27,7 @@ interface Filters {
 const initialFilters: Filters = { status: "", reference: "" };
 
 export function EmployeePage() {
-  const { session } = useAuth();
+  const session = useSession();
   const [page, setPage] = useState(0);
   const [filters, setFilters] = useState(initialFilters);
   const [appliedFilters, setAppliedFilters] = useState(initialFilters);
@@ -36,7 +36,6 @@ export function EmployeePage() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (session === null) return;
     let cancelled = false;
     void getEmployeeShipments(session.accessToken, {
       page,

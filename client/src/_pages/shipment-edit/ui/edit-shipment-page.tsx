@@ -1,7 +1,7 @@
 "use client";
 
 import { getShipment, updateShipment } from "@entities/shipment";
-import { useAuth } from "@features/auth";
+import { useSession } from "@features/auth";
 import {
   shipmentFormErrors,
   type ShipmentFormField,
@@ -29,7 +29,7 @@ import { type FormEvent, useEffect, useState } from "react";
 
 export function EditShipmentPage() {
   const router = useRouter();
-  const { session } = useAuth();
+  const session = useSession();
   const { shipmentId } = useParams<{ shipmentId: string }>();
   const [shipment, setShipment] = useState<Shipment | null>(null);
   const [values, setValues] = useState<ShipmentFormValues | null>(null);

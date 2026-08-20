@@ -2,17 +2,19 @@
 
 import type { Submission } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod/v4";
-import type { AuthResponse, RefreshResponse, UserResponse } from "@shared/api";
+import type { AuthResponse } from "@shared/api";
 import { apiClient, ApiClientError } from "@shared/api";
+import { homeForRole } from "@shared/config";
+import { redirect } from "next/navigation";
 
 import { authFieldErrors } from "../lib/errors";
 import { loginSchema, registerSchema } from "../model/schema";
-import type { AuthFormState, AuthSession } from "../model/types";
+import type { AuthFormState } from "../model/types";
 import {
   asBackendCookie,
-  clearRefreshCookie,
+  clearSessionCookies,
   getRefreshToken,
-  saveRefreshCookie,
+  saveSessionCookies,
 } from "./session";
 
 function failedSubmission<Schema, FormValue>(
@@ -37,15 +39,18 @@ function failedSubmission<Schema, FormValue>(
   };
 }
 
-async function loadSession(accessToken: string): Promise<AuthSession> {
-  const userResponse = await apiClient.get<UserResponse>("/api/users/me", {
-    accessToken,
-  });
+async function authenticate(
+  path: string,
+  credentials: unknown,
+): Promise<AuthResponse> {
+  const response = await apiClient.post<AuthResponse>(path, credentials);
 
-  return {
-    accessToken,
-    user: userResponse.data,
-  };
+  await saveSessionCookies(
+    response.data.accessToken,
+    response.headers.get("set-cookie"),
+  );
+
+  return response.data;
 }
 
 export async function loginAction(
@@ -58,22 +63,16 @@ export async function loginAction(
     return { submission: submission.reply() };
   }
 
+  let user: AuthResponse;
+
   try {
-    const response = await apiClient.post<AuthResponse>(
-      "/api/auth/login",
-      submission.value,
-    );
-    const session = await loadSession(response.data.accessToken);
-
-    await saveRefreshCookie(response.headers.get("set-cookie"));
-
-    return {
-      submission: submission.reply({ resetForm: true }),
-      session,
-    };
+    user = await authenticate("/api/auth/login", submission.value);
   } catch (error) {
     return failedSubmission(submission, error);
   }
+
+  // Outside the catch: `redirect` signals through an exception of its own.
+  redirect(homeForRole(user.role));
 }
 
 export async function registerAction(
@@ -86,45 +85,15 @@ export async function registerAction(
     return { submission: submission.reply() };
   }
 
+  let user: AuthResponse;
+
   try {
-    const response = await apiClient.post<AuthResponse>(
-      "/api/auth/register",
-      submission.value,
-    );
-    const session = await loadSession(response.data.accessToken);
-
-    await saveRefreshCookie(response.headers.get("set-cookie"));
-
-    return {
-      submission: submission.reply({ resetForm: true }),
-      session,
-    };
+    user = await authenticate("/api/auth/register", submission.value);
   } catch (error) {
     return failedSubmission(submission, error);
   }
-}
 
-export async function refreshSessionAction(): Promise<AuthSession | null> {
-  const refreshToken = await getRefreshToken();
-
-  if (refreshToken === undefined) {
-    return null;
-  }
-
-  try {
-    const refreshResponse = await apiClient.post<RefreshResponse>(
-      "/api/auth/refresh",
-      undefined,
-      { headers: { Cookie: asBackendCookie(refreshToken) } },
-    );
-
-    await saveRefreshCookie(refreshResponse.headers.get("set-cookie"));
-
-    return loadSession(refreshResponse.data.accessToken);
-  } catch {
-    await clearRefreshCookie();
-    return null;
-  }
+  redirect(homeForRole(user.role));
 }
 
 export async function logoutAction() {
@@ -136,7 +105,12 @@ export async function logoutAction() {
         headers: { Cookie: asBackendCookie(refreshToken) },
       });
     }
+  } catch {
+    // A failed revoke must not strand the user in a signed-in shell; the
+    // session dies with the cookies either way.
   } finally {
-    await clearRefreshCookie();
+    await clearSessionCookies();
   }
+
+  redirect("/login");
 }

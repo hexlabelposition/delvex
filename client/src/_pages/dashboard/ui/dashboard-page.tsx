@@ -1,7 +1,5 @@
-"use client";
-
 import { getShipments } from "@entities/shipment";
-import { useAuth } from "@features/auth";
+import { requireSession } from "@features/auth/server";
 import type { ShipmentPage } from "@shared/api";
 import {
   Button,
@@ -15,25 +13,22 @@ import {
 import { ShipmentsTable } from "@widgets/shipments-table";
 import { ArrowRight, List, PackagePlus, Truck } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
-export function DashboardPage() {
-  const { session, isLoading } = useAuth();
-  const [data, setData] = useState<ShipmentPage | null>(null);
-  const [error, setError] = useState(false);
+export async function DashboardPage() {
+  const { accessToken, user } = await requireSession();
 
-  useEffect(() => {
-    if (session === null) return;
-    void getShipments(session.accessToken, 0, 5)
-      .then(setData)
-      .catch(() => setError(true));
-  }, [session]);
+  let shipments: ShipmentPage | null = null;
 
-  const firstName = session?.user.firstName ?? "there";
+  try {
+    shipments = await getShipments(accessToken, 0, 5);
+  } catch {
+    shipments = null;
+  }
+
   return (
     <div className="mx-auto max-w-6xl">
       <h1 className="text-3xl font-semibold tracking-tight">
-        Good afternoon, {firstName}
+        Good afternoon, {user.firstName}
       </h1>
       <p className="text-muted-foreground mt-2">
         Here is where your shipments stand right now.
@@ -43,7 +38,7 @@ export function DashboardPage() {
           <CardHeader className="px-5 pt-5">
             <CardDescription>Total shipments</CardDescription>
             <CardTitle className="mt-1 text-4xl">
-              {data?.totalElements ?? (isLoading ? "—" : "0")}
+              {shipments?.totalElements ?? "—"}
             </CardTitle>
           </CardHeader>
           <CardContent className="text-muted-foreground px-5 pt-2 pb-5 text-sm">
@@ -76,7 +71,7 @@ export function DashboardPage() {
       <section className="mt-5">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Recently created</h2>
-          {data !== null && data.content.length > 0 && (
+          {shipments !== null && shipments.content.length > 0 && (
             <Button
               variant="ghost"
               size="sm"
@@ -86,14 +81,14 @@ export function DashboardPage() {
             </Button>
           )}
         </div>
-        {error ? (
+        {shipments === null ? (
           <EmptyState
             icon={Truck}
             title="Couldn’t load shipments"
             description="Please try again in a moment."
           />
-        ) : data !== null && data.content.length > 0 ? (
-          <ShipmentsTable shipments={data.content} compact />
+        ) : shipments.content.length > 0 ? (
+          <ShipmentsTable shipments={shipments.content} compact />
         ) : (
           <EmptyState
             icon={Truck}

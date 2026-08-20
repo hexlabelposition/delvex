@@ -1,7 +1,7 @@
 "use client";
 
 import { createShipment } from "@entities/shipment";
-import { useAuth } from "@features/auth";
+import { useSession } from "@features/auth";
 import {
   initialShipmentFormValues,
   shipmentFormErrors,
@@ -27,7 +27,7 @@ import { type FormEvent, useState } from "react";
 
 export function CreatePage() {
   const router = useRouter();
-  const { session } = useAuth();
+  const session = useSession();
   const [step, setStep] = useState(0);
   const [values, setValues] = useState(initialShipmentFormValues);
   const [errors, setErrors] = useState<
@@ -49,7 +49,7 @@ export function CreatePage() {
     event.preventDefault();
     const nextErrors = shipmentFormErrors(values);
     setErrors(nextErrors);
-    if (Object.keys(nextErrors).length || session === null) return;
+    if (Object.keys(nextErrors).length) return;
     const payload = shipmentFormSchema.parse(values);
     setSubmitting(true);
     setSubmitError("");

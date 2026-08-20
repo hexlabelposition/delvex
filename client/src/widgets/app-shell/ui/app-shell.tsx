@@ -1,6 +1,7 @@
 "use client";
 
-import { homeForRole, useAuth } from "@features/auth";
+import { logoutAction, useSession } from "@features/auth";
+import { homeForRole } from "@shared/config";
 import { cn } from "@shared/lib";
 import { Button } from "@shared/ui";
 import {
@@ -27,17 +28,16 @@ const employeeNavigation = [
   { href: "/profile", label: "Profile", icon: UserRound },
 ];
 
-function initials(firstName?: string, lastName?: string) {
-  return `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase() || "?";
+function initials(firstName: string, lastName: string) {
+  return `${firstName[0] ?? ""}${lastName[0] ?? ""}`.toUpperCase() || "?";
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { isLoading, logout, session } = useAuth();
-  const user = session?.user;
-  const home = user === undefined ? "/dashboard" : homeForRole(user.role);
+  const { user } = useSession();
+  const home = homeForRole(user.role);
   const navigation =
-    user?.role === "EMPLOYEE" ? employeeNavigation : customerNavigation;
+    user.role === "EMPLOYEE" ? employeeNavigation : customerNavigation;
 
   return (
     <div className="bg-background min-h-screen md:flex">
@@ -75,18 +75,16 @@ export function AppShell({ children }: { children: ReactNode }) {
             className="hover:bg-sidebar-accent mb-3 flex items-center gap-3 rounded-lg px-2 py-2"
           >
             <span className="bg-muted flex size-8 items-center justify-center rounded-full text-xs font-medium">
-              {initials(user?.firstName, user?.lastName)}
+              {initials(user.firstName, user.lastName)}
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-medium">
-                {isLoading
-                  ? "Loading…"
-                  : `${user?.firstName ?? ""} ${user?.lastName ?? ""}`}
+                {user.firstName} {user.lastName}
               </span>
               <span className="text-muted-foreground block truncate text-xs">
-                {user?.email}
+                {user.email}
               </span>
-              {user?.role === "EMPLOYEE" && (
+              {user.role === "EMPLOYEE" && (
                 <span className="text-muted-foreground block text-[11px] font-medium tracking-wide uppercase">
                   Employee
                 </span>
@@ -97,7 +95,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             variant="ghost"
             size="sm"
             className="text-muted-foreground w-full justify-start"
-            onClick={() => void logout()}
+            onClick={() => void logoutAction()}
           >
             <LogOut /> Log out
           </Button>

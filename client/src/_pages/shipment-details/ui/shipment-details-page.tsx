@@ -6,7 +6,7 @@ import {
   getShipment,
   StatusBadge,
 } from "@entities/shipment";
-import { useAuth } from "@features/auth";
+import { useSession } from "@features/auth";
 import { ApiClientError, type Shipment } from "@shared/api";
 import { formatDate } from "@shared/lib";
 import {
@@ -171,7 +171,7 @@ function ShipmentDetails({
 
 export function ShipmentDetailsPage() {
   const router = useRouter();
-  const { session } = useAuth();
+  const session = useSession();
   const { shipmentId } = useParams<{ shipmentId: string }>();
   const [shipment, setShipment] = useState<Shipment | null>(null);
   const [error, setError] = useState<"not-found" | "unavailable" | null>(null);
@@ -182,7 +182,7 @@ export function ShipmentDetailsPage() {
   );
 
   useEffect(() => {
-    if (session === null || shipmentId === undefined) return;
+    if (shipmentId === undefined) return;
 
     let cancelled = false;
 
@@ -205,7 +205,7 @@ export function ShipmentDetailsPage() {
   }, [session, shipmentId]);
 
   const confirmAction = async () => {
-    if (session === null || shipment === null || confirmation === null) return;
+    if (shipment === null || confirmation === null) return;
     setActionLoading(true);
     setActionError("");
     try {

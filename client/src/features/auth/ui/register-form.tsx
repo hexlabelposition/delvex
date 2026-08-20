@@ -4,20 +4,15 @@ import { getFormProps, useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod/v4";
 import { Alert, AlertDescription, Card, CardContent } from "@shared/ui";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useActionState, useEffect } from "react";
+import { useActionState } from "react";
 
 import { registerAction } from "../api/actions";
-import { homeForRole } from "../lib/navigation";
-import { useAuth } from "../model/auth-provider";
 import { registerSchema } from "../model/schema";
 import { AuthShell } from "./auth-shell";
 import { FormField } from "./form-field";
 import { SubmitButton } from "./submit-button";
 
 export function RegisterForm() {
-  const router = useRouter();
-  const { setSession } = useAuth();
   const [lastResult, action] = useActionState(registerAction, null);
   const [form, fields] = useForm({
     lastResult: lastResult?.submission,
@@ -27,15 +22,6 @@ export function RegisterForm() {
     shouldRevalidate: "onInput",
     shouldValidate: "onBlur",
   });
-
-  useEffect(() => {
-    if (lastResult?.session === undefined) {
-      return;
-    }
-
-    setSession(lastResult.session);
-    router.replace(homeForRole(lastResult.session.user.role));
-  }, [lastResult?.session, router, setSession]);
 
   return (
     <AuthShell

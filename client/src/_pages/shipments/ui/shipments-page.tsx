@@ -1,7 +1,7 @@
 "use client";
 
 import { getShipments } from "@entities/shipment";
-import { useAuth } from "@features/auth";
+import { useSession } from "@features/auth";
 import type { ShipmentPage } from "@shared/api";
 import { Button, EmptyState } from "@shared/ui";
 import { ShipmentsTable } from "@widgets/shipments-table";
@@ -11,14 +11,13 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
 function ShipmentsContent() {
-  const { session } = useAuth();
+  const session = useSession();
   const searchParams = useSearchParams();
   const [page, setPage] = useState(0);
   const [data, setData] = useState<ShipmentPage | null>(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (session === null) return;
     void getShipments(session.accessToken, page, 10)
       .then(setData)
       .catch(() => setError(true));

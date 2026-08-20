@@ -1,8 +1,6 @@
 "use client";
 
-import { updateProfile } from "@entities/user";
-import { useAuth } from "@features/auth";
-import { ApiClientError } from "@shared/api";
+import { logoutAction, useSession } from "@features/auth";
 import { formatDate } from "@shared/lib";
 import {
   Alert,
@@ -16,53 +14,41 @@ import {
 import { Check, Pencil } from "lucide-react";
 import { useState } from "react";
 
+import { updateProfileAction } from "../api/update-profile";
+
 export function ProfilePage() {
-  const { session, setSession, logout } = useAuth();
+  const { user } = useSession();
   const [editing, setEditing] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
-  const user = session?.user;
 
   const startEditing = () => {
-    setFirstName(user?.firstName ?? "");
-    setLastName(user?.lastName ?? "");
+    setFirstName(user.firstName);
+    setLastName(user.lastName);
     setErrors({});
     setMessage("");
     setEditing(true);
   };
   const save = async () => {
-    if (session === null) return;
     const nextErrors: Record<string, string> = {};
     if (!firstName.trim()) nextErrors.firstName = "First name is required";
     if (!lastName.trim()) nextErrors.lastName = "Last name is required";
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
     setSaving(true);
-    try {
-      const updated = await updateProfile(
-        { firstName: firstName.trim(), lastName: lastName.trim() },
-        session.accessToken,
-      );
-      setSession({ ...session, user: updated });
-      setEditing(false);
-      setMessage("Your name was updated.");
-    } catch (error) {
-      setErrors(error instanceof ApiClientError ? error.fieldErrors : {});
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : "Could not update your profile.",
-      );
-    } finally {
-      setSaving(false);
-    }
+    const result = await updateProfileAction({
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+    });
+    setErrors(result.fieldErrors);
+    setMessage(result.message);
+    setEditing(!result.ok);
+    setSaving(false);
   };
 
-  if (user === undefined)
-    return <div className="text-muted-foreground">Loading profile…</div>;
   const fullName = `${user.firstName} ${user.lastName}`;
   return (
     <div className="mx-auto max-w-3xl">
@@ -166,7 +152,7 @@ export function ProfilePage() {
               You will need to sign in again to see your shipments.
             </p>
           </div>
-          <Button variant="destructive" onClick={() => void logout()}>
+          <Button variant="destructive" onClick={() => void logoutAction()}>
             Log out
           </Button>
         </CardContent>

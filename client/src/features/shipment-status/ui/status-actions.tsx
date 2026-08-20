@@ -5,14 +5,18 @@ import { allowedNextStatuses, statusActionLabel } from "../model/status";
 
 export function StatusActions({
   status,
+  allowedStatuses,
   disabled,
   onSelect,
 }: {
   status: ShipmentStatus;
+  allowedStatuses?: readonly ShipmentStatus[];
   disabled?: boolean;
   onSelect: (status: ShipmentStatus) => void;
 }) {
-  return allowedNextStatuses(status).map((nextStatus) => (
+  const nextStatuses = allowedStatuses ?? allowedNextStatuses(status);
+
+  return nextStatuses.map((nextStatus) => (
     <Button
       key={nextStatus}
       size="sm"

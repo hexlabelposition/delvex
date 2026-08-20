@@ -51,6 +51,7 @@ class UserControllerTest {
                         "John",
                         "Doe",
                         UserRole.CUSTOMER,
+                        null,
                         createdAt,
                         updatedAt));
 
@@ -81,6 +82,7 @@ class UserControllerTest {
                         "Jonathan",
                         "Doe",
                         UserRole.CUSTOMER,
+                        null,
                         null,
                         null));
 

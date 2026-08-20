@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface ShipmentStatusEventRepository
         extends JpaRepository<ShipmentStatusEvent, UUID> {
 
-    @EntityGraph(attributePaths = "changedBy")
+    @EntityGraph(attributePaths = { "changedBy", "branch" })
     List<ShipmentStatusEvent> findAllByShipment_IdOrderByChangedAtAsc(
             UUID shipmentId);
 }

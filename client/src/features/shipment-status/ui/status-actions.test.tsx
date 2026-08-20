@@ -22,7 +22,7 @@ describe("StatusActions", () => {
     await userEvent.click(
       screen.getByRole("button", { name: "Accept shipment" }),
     );
-    expect(onSelect).toHaveBeenCalledWith("ACCEPTED");
+    expect(onSelect).toHaveBeenCalledWith("ACCEPTED_AT_ORIGIN");
   });
 
   it.each(["DELIVERED", "CANCELLED"] as const)(

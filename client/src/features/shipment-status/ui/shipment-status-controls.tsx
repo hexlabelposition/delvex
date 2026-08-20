@@ -13,12 +13,14 @@ import { StatusActions } from "./status-actions";
 interface ShipmentStatusControlsProps {
   shipmentId: string;
   status: ShipmentStatus;
+  allowedStatuses?: ShipmentStatus[];
   version: number;
 }
 
 export function ShipmentStatusControls({
   shipmentId,
   status,
+  allowedStatuses,
   version,
 }: ShipmentStatusControlsProps) {
   const router = useRouter();
@@ -57,6 +59,7 @@ export function ShipmentStatusControls({
       </Button>
       <StatusActions
         status={status}
+        allowedStatuses={allowedStatuses}
         disabled={pending}
         onSelect={(next) => {
           setError("");

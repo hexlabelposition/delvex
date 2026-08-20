@@ -7,6 +7,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface ShipmentRepository extends JpaRepository<Shipment, UUID> {
 
@@ -14,23 +16,48 @@ public interface ShipmentRepository extends JpaRepository<Shipment, UUID> {
 
     Optional<Shipment> findByIdAndUser_Id(UUID id, UUID userId);
 
-    @Override
-    @EntityGraph(attributePaths = "user")
-    Page<Shipment> findAll(Pageable pageable);
-
-    @EntityGraph(attributePaths = "user")
-    Page<Shipment> findAllByStatus(
-            ShipmentStatus status,
+    @EntityGraph(attributePaths = {
+            "user",
+            "originBranch",
+            "destinationBranch",
+            "currentBranch"
+    })
+    @Query("""
+            SELECT shipment
+            FROM Shipment shipment
+            WHERE (
+                shipment.originBranch.id = :branchId
+                OR shipment.destinationBranch.id = :branchId
+            )
+            AND (:status IS NULL OR shipment.status = :status)
+            AND (
+                :reference IS NULL
+                OR LOWER(shipment.referenceNumber)
+                    LIKE LOWER(CONCAT('%', :reference, '%'))
+            )
+            """)
+    Page<Shipment> findAllForBranch(
+            @Param("branchId") UUID branchId,
+            @Param("status") ShipmentStatus status,
+            @Param("reference") String reference,
             Pageable pageable);
 
-    @EntityGraph(attributePaths = "user")
-    Page<Shipment> findAllByReferenceNumberContainingIgnoreCase(
-            String reference,
-            Pageable pageable);
-
-    @EntityGraph(attributePaths = "user")
-    Page<Shipment> findAllByStatusAndReferenceNumberContainingIgnoreCase(
-            ShipmentStatus status,
-            String reference,
-            Pageable pageable);
+    @EntityGraph(attributePaths = {
+            "user",
+            "originBranch",
+            "destinationBranch",
+            "currentBranch"
+    })
+    @Query("""
+            SELECT shipment
+            FROM Shipment shipment
+            WHERE shipment.id = :shipmentId
+            AND (
+                shipment.originBranch.id = :branchId
+                OR shipment.destinationBranch.id = :branchId
+            )
+            """)
+    Optional<Shipment> findByIdForBranch(
+            @Param("shipmentId") UUID shipmentId,
+            @Param("branchId") UUID branchId);
 }

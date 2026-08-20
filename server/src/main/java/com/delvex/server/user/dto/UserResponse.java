@@ -3,6 +3,7 @@ package com.delvex.server.user.dto;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.delvex.server.branch.dto.BranchSummaryResponse;
 import com.delvex.server.user.User;
 import com.delvex.server.user.UserRole;
 
@@ -12,6 +13,7 @@ public record UserResponse(
         String firstName,
         String lastName,
         UserRole role,
+        BranchSummaryResponse branch,
         Instant createdAt,
         Instant updatedAt) {
 
@@ -22,6 +24,7 @@ public record UserResponse(
                 user.getFirstName(),
                 user.getLastName(),
                 user.getRole(),
+                BranchSummaryResponse.from(user.getBranch()),
                 user.getCreatedAt(),
                 user.getUpdatedAt());
     }

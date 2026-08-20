@@ -9,22 +9,22 @@ class ShipmentStatusTest {
     @Test
     void shouldAllowForwardAndCancellationTransitions() {
         assertThat(ShipmentStatus.CREATED.canTransitionTo(
-                ShipmentStatus.ACCEPTED))
+                ShipmentStatus.ACCEPTED_AT_ORIGIN))
                 .isTrue();
         assertThat(ShipmentStatus.CREATED.canTransitionTo(
                 ShipmentStatus.CANCELLED))
                 .isTrue();
-        assertThat(ShipmentStatus.ACCEPTED.canTransitionTo(
+        assertThat(ShipmentStatus.ACCEPTED_AT_ORIGIN.canTransitionTo(
                 ShipmentStatus.IN_TRANSIT))
                 .isTrue();
-        assertThat(ShipmentStatus.ACCEPTED.canTransitionTo(
+        assertThat(ShipmentStatus.ACCEPTED_AT_ORIGIN.canTransitionTo(
                 ShipmentStatus.CANCELLED))
                 .isTrue();
         assertThat(ShipmentStatus.IN_TRANSIT.canTransitionTo(
+                ShipmentStatus.ARRIVED_AT_DESTINATION))
+                .isTrue();
+        assertThat(ShipmentStatus.ARRIVED_AT_DESTINATION.canTransitionTo(
                 ShipmentStatus.DELIVERED))
-                .isTrue();
-        assertThat(ShipmentStatus.IN_TRANSIT.canTransitionTo(
-                ShipmentStatus.CANCELLED))
                 .isTrue();
     }
 
@@ -34,6 +34,9 @@ class ShipmentStatusTest {
                 ShipmentStatus.IN_TRANSIT))
                 .isFalse();
         assertThat(ShipmentStatus.CREATED.canTransitionTo(
+                ShipmentStatus.DELIVERED))
+                .isFalse();
+        assertThat(ShipmentStatus.IN_TRANSIT.canTransitionTo(
                 ShipmentStatus.DELIVERED))
                 .isFalse();
         assertThat(ShipmentStatus.IN_TRANSIT.canTransitionTo(
@@ -52,13 +55,15 @@ class ShipmentStatusTest {
         assertThat(ShipmentStatus.DELIVERED.isTerminal()).isTrue();
         assertThat(ShipmentStatus.CANCELLED.isTerminal()).isTrue();
         assertThat(ShipmentStatus.CREATED.isTerminal()).isFalse();
-        assertThat(ShipmentStatus.ACCEPTED.isTerminal()).isFalse();
+        assertThat(ShipmentStatus.ACCEPTED_AT_ORIGIN.isTerminal()).isFalse();
         assertThat(ShipmentStatus.IN_TRANSIT.isTerminal()).isFalse();
+        assertThat(ShipmentStatus.ARRIVED_AT_DESTINATION.isTerminal()).isFalse();
 
         assertThat(ShipmentStatus.CREATED.canBeDeleted()).isTrue();
         assertThat(ShipmentStatus.CANCELLED.canBeDeleted()).isFalse();
         assertThat(ShipmentStatus.IN_TRANSIT.canBeDeleted()).isFalse();
-        assertThat(ShipmentStatus.ACCEPTED.canBeDeleted()).isFalse();
+        assertThat(ShipmentStatus.ACCEPTED_AT_ORIGIN.canBeDeleted()).isFalse();
+        assertThat(ShipmentStatus.ARRIVED_AT_DESTINATION.canBeDeleted()).isFalse();
         assertThat(ShipmentStatus.DELIVERED.canBeDeleted()).isFalse();
     }
 }

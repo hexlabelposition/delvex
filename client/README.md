@@ -83,7 +83,7 @@ docker compose up --build server
 | **/dashboard**       | CUSTOMER  | Review customer shipment activity and recent records         |
 | **/shipments**       | CUSTOMER  | Browse and manage owned shipments                            |
 | **/create**          | CUSTOMER  | Create a shipment                                            |
-| **/employee**        | EMPLOYEE  | Search all shipments and manage their logistics lifecycle    |
+| **/employee**        | EMPLOYEE  | Manage shipments connected to the assigned branch            |
 | **/profile**         | Signed in | Review and update the current profile                        |
 
 Authentication routing is enforced in **src/proxy.ts**. Guests can open the
@@ -101,7 +101,7 @@ loading or error handling. Domain code lives next to the feature that owns it:
 
 - **src/features/shipments** contains shipment API calls, form validation and
   fields, table and status components, display formatting, and location data.
-- **src/features/employee** contains the global shipment queue, lifecycle
+- **src/features/employee** contains the branch shipment queue, lifecycle
   actions, and status-history integration used by logistics employees.
 - **src/features/profile** contains profile-specific API calls.
 - **src/features/auth** owns authentication, password recovery, session
@@ -116,9 +116,11 @@ module so later customer and employee surfaces can reuse it without duplicating
 validation or API contracts.
 
 The employee workspace uses the version returned with each shipment when it
-updates a status. A conflict response means another employee changed the record;
-reload the shipment before retrying. Every successful transition is displayed
-from the immutable server status history.
+updates a status. The server derives the employee branch from the authenticated
+account and returns only branch-allowed actions in **allowedStatuses**. A
+conflict response means another employee changed the record; reload the shipment
+before retrying. Every successful transition is displayed from the immutable
+server status history.
 
 ## UI components
 
@@ -163,16 +165,18 @@ requires a clean test environment and a pre-provisioned employee account:
 ```bash
 PLAYWRIGHT_BASE_URL=http://127.0.0.1:3000 \
 E2E_API_BASE_URL=http://127.0.0.1:8080 \
-E2E_EMPLOYEE_EMAIL=employee@example.test \
-E2E_EMPLOYEE_PASSWORD=test-password \
+E2E_ORIGIN_EMPLOYEE_EMAIL=origin-employee@example.test \
+E2E_ORIGIN_EMPLOYEE_PASSWORD=test-password \
+E2E_DESTINATION_EMPLOYEE_EMAIL=destination-employee@example.test \
+E2E_DESTINATION_EMPLOYEE_PASSWORD=test-password \
 bun run test:e2e
 ```
 
 The browser scenario registers a customer, creates a shipment, completes the
-employee lifecycle, verifies the customer-visible final status, and checks both
-the employee route and API authorization boundary. Start PostgreSQL, the
-production server, and the production client in an isolated test environment
-before invoking it.
+lifecycle through employees assigned to its origin and destination branches,
+verifies the customer-visible final status, and checks both the employee route
+and API authorization boundary. Start PostgreSQL, the production server, and
+the production client in an isolated test environment before invoking it.
 
 When the browser flow uses the prod profile, use generated HTTPS test origins
 because Secure refresh cookies and an explicit HTTPS CORS origin are required.

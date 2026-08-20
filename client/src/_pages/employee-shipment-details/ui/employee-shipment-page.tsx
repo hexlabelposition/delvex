@@ -166,6 +166,7 @@ export async function EmployeeShipmentPage({
                 <ShipmentStatusControls
                   shipmentId={record.shipment.id}
                   status={record.shipment.status}
+                  allowedStatuses={record.allowedStatuses}
                   version={record.shipment.version}
                 />
               </div>

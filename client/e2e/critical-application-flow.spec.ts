@@ -110,20 +110,12 @@ test("customer and employee complete the shipment lifecycle", async ({
   await changeStatus(page, "Mark in transit", "In transit");
   await page.getByRole("button", { name: "Log out" }).click();
 
-  await signIn(
-    page,
-    destinationEmployeeEmail!,
-    destinationEmployeePassword!,
-  );
+  await signIn(page, destinationEmployeeEmail!, destinationEmployeePassword!);
   await expect(page).toHaveURL(/\/employee$/);
   await page.getByLabel("Reference").fill(reference!);
   await page.getByRole("button", { name: "Apply" }).click();
   await page.getByText(reference!, { exact: true }).click();
-  await changeStatus(
-    page,
-    "Receive at destination",
-    "Arrived at destination",
-  );
+  await changeStatus(page, "Receive at destination", "Arrived at destination");
   await changeStatus(page, "Mark delivered", "Delivered");
   await expect(page.getByText("Status history")).toBeVisible();
 

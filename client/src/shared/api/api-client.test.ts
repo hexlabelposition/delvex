@@ -31,6 +31,20 @@ describe("ApiClient", () => {
     });
   });
 
+  it("accepts successful responses without a body", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response(null, { status: 202 })),
+    );
+
+    await expect(
+      new ApiClient("https://api.test").post<void>(
+        "/api/auth/forgot-password",
+        { email: "user@example.com" },
+      ),
+    ).resolves.toMatchObject({ data: undefined, status: 202 });
+  });
+
   it("identifies optimistic locking conflicts", () => {
     const conflict = new ApiClientError({
       timestamp: new Date(0).toISOString(),

@@ -33,7 +33,8 @@ PostgreSQL persistence, API documentation, security, and operational health.
 - shipment creation, pagination, retrieval, update, and deletion;
 - CUSTOMER and EMPLOYEE roles carried by signed access tokens;
 - ownership checks for customer shipment operations;
-- employee-wide shipment listing, filtering, retrieval, and status updates;
+- branch-scoped employee shipment listing, filtering, retrieval, and status
+  updates;
 - auditable shipment status history and optimistic concurrency protection;
 - consistent JSON errors for validation, malformed JSON, security, and domain
   failures;
@@ -101,19 +102,26 @@ modifies the production schema.
 
 ### Employee endpoints
 
-Every endpoint under **/api/employee/** requires the EMPLOYEE role. A regular
-authenticated customer receives HTTP 403.
+Every endpoint under **/api/employee/** requires the EMPLOYEE role and an
+active branch assignment. A regular authenticated customer or an employee
+without an active branch receives HTTP 403.
 
 | Method | Path                                                   | Purpose                            |
 | ------ | ------------------------------------------------------ | ---------------------------------- |
-| GET    | **/api/employee/shipments**                            | List every shipment                |
-| GET    | **/api/employee/shipments/{shipmentId}**               | Read any shipment and its customer |
-| GET    | **/api/employee/shipments/{shipmentId}/status-events** | Read status history                |
-| PATCH  | **/api/employee/shipments/{shipmentId}/status**        | Change shipment status             |
+| GET    | **/api/employee/shipments**                            | List branch shipments               |
+| GET    | **/api/employee/shipments/{shipmentId}**               | Read branch shipment and customer   |
+| GET    | **/api/employee/shipments/{shipmentId}/status-events** | Read branch shipment history        |
+| PATCH  | **/api/employee/shipments/{shipmentId}/status**        | Perform an allowed branch action    |
 
 The employee list accepts the same **page** and **size** parameters as the
 customer list. It can also filter by an exact **status** and a case-insensitive
 partial **reference**.
+
+The API derives the branch from the authenticated employee record. It never
+accepts a client-provided branch ID. A shipment belongs to both its origin and
+destination branches, but each response exposes only the transitions the
+current employee may perform through **allowedStatuses**. Direct access to a
+shipment outside the employee branch returns HTTP 404.
 
 Send an access token as:
 
@@ -127,13 +135,14 @@ size of 100, and returns **content**, **page**, **size**, **totalElements**, and
 
 ### Shipment lifecycle
 
-| Current status | Allowed next status   |
-| -------------- | --------------------- |
-| CREATED        | ACCEPTED, CANCELLED   |
-| ACCEPTED       | IN_TRANSIT, CANCELLED |
-| IN_TRANSIT     | DELIVERED, CANCELLED  |
-| DELIVERED      | none                  |
-| CANCELLED      | none                  |
+| Current status         | Allowed next status           | Responsible branch |
+| ---------------------- | ----------------------------- | ------------------ |
+| CREATED                | ACCEPTED_AT_ORIGIN, CANCELLED | Origin             |
+| ACCEPTED_AT_ORIGIN     | IN_TRANSIT, CANCELLED         | Origin             |
+| IN_TRANSIT             | ARRIVED_AT_DESTINATION        | Destination        |
+| ARRIVED_AT_DESTINATION | DELIVERED                     | Destination        |
+| DELIVERED              | none                          | —                  |
+| CANCELLED              | none                          | —                  |
 
 Customers can edit and delete only CREATED shipments; they cannot change
 status. Employees perform every lifecycle transition. Sending the current
@@ -143,7 +152,8 @@ Every employee status request includes the shipment **version** returned by the
 API. A stale version returns HTTP 409 instead of silently overwriting a change
 made by another employee. Successful transitions append an immutable
 **shipment_status_events** record containing the previous and new status,
-employee, and timestamp.
+employee, branch, and timestamp. The shipment **currentBranch** is the origin
+before dispatch, null while in transit, and the destination after arrival.
 
 ## Authentication
 
@@ -177,13 +187,21 @@ administration operation:
 
 ```sql
 UPDATE users
-SET role = 'EMPLOYEE'
+SET role = 'EMPLOYEE',
+    branch_id = (
+        SELECT id
+        FROM branches
+        WHERE code = 'WROCLAW'
+    )
 WHERE email = 'employee@example.com';
 ```
 
-The user must sign in again after promotion so a new access token contains the
-EMPLOYEE role. This keeps privilege assignment outside the public API until a
-future administrative workflow is introduced.
+The seeded branch codes are **WARSAW**, **KRAKOW**, **WROCLAW**, and
+**GDANSK**. The user must sign in again after promotion so a new access token
+contains the EMPLOYEE role. Branch authorization is always loaded from the
+database rather than trusted from the JWT. This keeps privilege and branch
+assignment outside the public API until a future administrative workflow is
+introduced.
 
 ## Requirements
 
@@ -474,5 +492,9 @@ release checklist.
 - Public registration never grants the EMPLOYEE role.
 - Existing status history begins with the first transition after Flyway
   migration V4; the migration does not invent events for older shipments.
+- Flyway migration V6 creates branches, connects existing shipments to their
+  matching seeded origin and destination branches, and renames ACCEPTED to
+  ACCEPTED_AT_ORIGIN. Historical status events keep a null branch because V6
+  does not invent their execution location.
 - Raw refresh tokens are never returned in JSON.
 - Database changes belong in a new Flyway migration.

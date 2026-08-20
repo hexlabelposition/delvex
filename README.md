@@ -16,8 +16,8 @@ supports a complete containerized development stack.
 - current-user profile management;
 - shipment creation, pagination, retrieval, update, and deletion;
 - customer and employee roles with server-enforced access boundaries;
-- employee-wide shipment operations, lifecycle transitions, and status audit
-  history;
+- branch-scoped employee operations with origin and destination lifecycle
+  responsibilities and status audit history;
 - enforced shipment ownership and optimistic concurrency protection;
 - consistent validation, security, and domain errors;
 - development OpenAPI documentation;

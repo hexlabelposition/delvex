@@ -14,10 +14,7 @@ import {
   registerSchema,
   resetPasswordSchema,
 } from "../model/schema";
-import type {
-  AuthFormState,
-  ForgotPasswordFormState,
-} from "../model/types";
+import type { AuthFormState, ForgotPasswordFormState } from "../model/types";
 import {
   asBackendCookie,
   clearSessionCookies,
@@ -120,10 +117,7 @@ export async function forgotPasswordAction(
     return failedSubmission(submission, error);
   }
 
-  return {
-    submission: submission.reply({ resetForm: true }),
-    success: true,
-  };
+  return { submission: submission.reply({ resetForm: true }), success: true };
 }
 
 export async function resetPasswordAction(

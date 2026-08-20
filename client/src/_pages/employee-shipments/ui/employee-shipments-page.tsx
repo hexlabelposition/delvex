@@ -11,8 +11,9 @@ import Link from "next/link";
 
 const statuses: readonly ShipmentStatus[] = [
   "CREATED",
-  "ACCEPTED",
+  "ACCEPTED_AT_ORIGIN",
   "IN_TRANSIT",
+  "ARRIVED_AT_DESTINATION",
   "DELIVERED",
   "CANCELLED",
 ];

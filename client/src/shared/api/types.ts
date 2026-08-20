@@ -26,12 +26,28 @@ export interface RefreshResponse {
 }
 
 export interface UserResponse extends AuthUser {
+  branch?: BranchSummary | null;
   createdAt: string;
   updatedAt: string;
 }
 
 export type ShipmentStatus =
-  "CREATED" | "ACCEPTED" | "IN_TRANSIT" | "DELIVERED" | "CANCELLED";
+  | "CREATED"
+  | "ACCEPTED_AT_ORIGIN"
+  | "IN_TRANSIT"
+  | "ARRIVED_AT_DESTINATION"
+  | "DELIVERED"
+  | "CANCELLED";
+
+export interface BranchSummary {
+  id: string;
+  code: string;
+  name: string;
+  country: string;
+  city: string;
+  postalCode: string;
+  address: string;
+}
 
 export interface Shipment {
   id: string;
@@ -72,6 +88,10 @@ export interface CustomerSummary {
 export interface EmployeeShipment {
   shipment: Shipment;
   customer: CustomerSummary;
+  originBranch?: BranchSummary;
+  destinationBranch?: BranchSummary;
+  currentBranch?: BranchSummary | null;
+  allowedStatuses?: ShipmentStatus[];
 }
 
 export interface EmployeeShipmentPage {
@@ -90,6 +110,7 @@ export interface ShipmentStatusEvent {
   changedByFirstName: string;
   changedByLastName: string;
   changedByRole: UserRole;
+  branch?: BranchSummary | null;
   changedAt: string;
 }
 

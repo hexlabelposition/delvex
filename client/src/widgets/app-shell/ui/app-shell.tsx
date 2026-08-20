@@ -1,13 +1,11 @@
 "use client";
 
 import { logoutAction, useSession } from "@features/auth";
-import { homeForRole } from "@shared/config";
 import { cn } from "@shared/lib";
 import { Button } from "@shared/ui";
 import {
   Box,
   CirclePlus,
-  ClipboardList,
   LayoutDashboard,
   LogOut,
   Package,
@@ -17,14 +15,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
-const customerNavigation = [
+const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/shipments", label: "Shipments", icon: Package },
   { href: "/create", label: "Create shipment", icon: CirclePlus },
-  { href: "/profile", label: "Profile", icon: UserRound },
-];
-const employeeNavigation = [
-  { href: "/employee", label: "Operations", icon: ClipboardList },
   { href: "/profile", label: "Profile", icon: UserRound },
 ];
 
@@ -35,16 +29,13 @@ function initials(firstName: string, lastName: string) {
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { user } = useSession();
-  const home = homeForRole(user.role);
-  const navigation =
-    user.role === "EMPLOYEE" ? employeeNavigation : customerNavigation;
 
   return (
     <div className="bg-background min-h-screen md:flex">
       <aside className="bg-sidebar border-sidebar-border flex shrink-0 flex-row items-center justify-between border-b px-4 py-3 md:min-h-screen md:w-64 md:flex-col md:items-stretch md:border-r md:border-b-0 md:px-3 md:py-5">
         <div>
           <Link
-            href={home}
+            href="/dashboard"
             className="flex items-center gap-2 px-2 text-lg font-semibold tracking-tight"
           >
             <Box className="size-5" /> Delvex
@@ -53,6 +44,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             {navigation.map(({ href, label, icon: Icon }) => {
               const active =
                 pathname === href || pathname.startsWith(`${href}/`);
+
               return (
                 <Link
                   key={href}
@@ -84,11 +76,6 @@ export function AppShell({ children }: { children: ReactNode }) {
               <span className="text-muted-foreground block truncate text-xs">
                 {user.email}
               </span>
-              {user.role === "EMPLOYEE" && (
-                <span className="text-muted-foreground block text-[11px] font-medium tracking-wide uppercase">
-                  Employee
-                </span>
-              )}
             </span>
           </Link>
           <Button

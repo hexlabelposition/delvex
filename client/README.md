@@ -73,18 +73,18 @@ docker compose up --build server
 
 ## Application routes
 
-| Route                  | Access    | Purpose                                                      |
-| ---------------------- | --------- | ------------------------------------------------------------ |
-| **/**                  | Public    | Product landing page; active sessions continue to their home |
-| **/login**             | Guests    | Sign in to an existing account                               |
-| **/register**          | Guests    | Create a customer account                                    |
-| **/forgot-password**   | Guests    | Request a password reset email                               |
-| **/reset-password**    | Guests    | Choose a new password from a one-time link                   |
-| **/dashboard**         | CUSTOMER  | Review customer shipment activity and recent records         |
-| **/shipments**         | CUSTOMER  | Browse and manage owned shipments                            |
-| **/create**            | CUSTOMER  | Create a shipment                                            |
-| **/employee**          | EMPLOYEE  | Search all shipments and manage their logistics lifecycle    |
-| **/profile**           | Signed in | Review and update the current profile                        |
+| Route                | Access    | Purpose                                                      |
+| -------------------- | --------- | ------------------------------------------------------------ |
+| **/**                | Public    | Product landing page; active sessions continue to their home |
+| **/login**           | Guests    | Sign in to an existing account                               |
+| **/register**        | Guests    | Create a customer account                                    |
+| **/forgot-password** | Guests    | Request a password reset email                               |
+| **/reset-password**  | Guests    | Choose a new password from a one-time link                   |
+| **/dashboard**       | CUSTOMER  | Review customer shipment activity and recent records         |
+| **/shipments**       | CUSTOMER  | Browse and manage owned shipments                            |
+| **/create**          | CUSTOMER  | Create a shipment                                            |
+| **/employee**        | EMPLOYEE  | Search all shipments and manage their logistics lifecycle    |
+| **/profile**         | Signed in | Review and update the current profile                        |
 
 Authentication routing is enforced in **src/proxy.ts**. Guests can open the
 landing page, login, registration, and password recovery routes. An active

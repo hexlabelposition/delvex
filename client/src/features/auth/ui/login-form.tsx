@@ -70,12 +70,11 @@ export function LoginForm({
               canTogglePassword
             />
             <SubmitButton pendingLabel="Signing in…">Sign in</SubmitButton>
-            <Link
-              href="/forgot-password"
-              className="text-muted-foreground text-center text-xs hover:text-foreground hover:underline"
-            >
-              Forgot your password?
-            </Link>
+            <p className="text-muted-foreground text-center text-xs">
+              <Link href="/forgot-password" className="hover:underline">
+                Forgot your password?
+              </Link>
+            </p>
           </form>
         </CardContent>
       </Card>

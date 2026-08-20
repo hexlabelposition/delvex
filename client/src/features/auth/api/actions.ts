@@ -120,7 +120,10 @@ export async function forgotPasswordAction(
     return failedSubmission(submission, error);
   }
 
-  return { submission: submission.reply({ resetForm: true }), success: true };
+  return {
+    submission: submission.reply({ resetForm: true }),
+    success: true,
+  };
 }
 
 export async function resetPasswordAction(

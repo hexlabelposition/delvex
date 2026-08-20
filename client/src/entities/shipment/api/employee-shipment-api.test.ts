@@ -15,12 +15,12 @@ describe("getEmployeeShipments", () => {
     await getEmployeeShipments("access-token", {
       page: 2,
       size: 50,
-      status: "ACCEPTED",
+      status: "ACCEPTED_AT_ORIGIN",
       reference: "  DLV-42  ",
     });
 
     expect(mocks.get).toHaveBeenCalledWith(
-      "/api/employee/shipments?page=2&size=50&status=ACCEPTED&reference=DLV-42",
+      "/api/employee/shipments?page=2&size=50&status=ACCEPTED_AT_ORIGIN&reference=DLV-42",
       { accessToken: "access-token" },
     );
   });

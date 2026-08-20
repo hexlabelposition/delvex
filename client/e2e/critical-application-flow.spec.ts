@@ -1,12 +1,19 @@
 import { expect, type Page, test } from "@playwright/test";
 
-const employeeEmail = process.env.E2E_EMPLOYEE_EMAIL;
-const employeePassword = process.env.E2E_EMPLOYEE_PASSWORD;
+const originEmployeeEmail = process.env.E2E_ORIGIN_EMPLOYEE_EMAIL;
+const originEmployeePassword = process.env.E2E_ORIGIN_EMPLOYEE_PASSWORD;
+const destinationEmployeeEmail = process.env.E2E_DESTINATION_EMPLOYEE_EMAIL;
+const destinationEmployeePassword =
+  process.env.E2E_DESTINATION_EMPLOYEE_PASSWORD;
 const apiBaseUrl = process.env.E2E_API_BASE_URL;
 
 test.skip(
-  !employeeEmail || !employeePassword || !apiBaseUrl,
-  "E2E employee credentials and API base URL are required",
+  !originEmployeeEmail ||
+    !originEmployeePassword ||
+    !destinationEmployeeEmail ||
+    !destinationEmployeePassword ||
+    !apiBaseUrl,
+  "E2E branch employee credentials and API base URL are required",
 );
 
 async function signIn(page: Page, email: string, password: string) {
@@ -68,7 +75,7 @@ test("customer and employee complete the shipment lifecycle", async ({
   expect(reference).toBeTruthy();
   await page.getByRole("button", { name: "Log out" }).click();
 
-  await signIn(page, employeeEmail!, employeePassword!);
+  await signIn(page, originEmployeeEmail!, originEmployeePassword!);
   await expect(page).toHaveURL(/\/employee$/);
   await page.getByLabel("Reference").fill(reference!);
   await page.getByRole("button", { name: "Apply" }).click();
@@ -77,7 +84,12 @@ test("customer and employee complete the shipment lifecycle", async ({
 
   const employeeLoginResponse = await request.post(
     `${apiBaseUrl}/api/auth/login`,
-    { data: { email: employeeEmail, password: employeePassword } },
+    {
+      data: {
+        email: originEmployeeEmail,
+        password: originEmployeePassword,
+      },
+    },
   );
   expect(employeeLoginResponse.ok()).toBe(true);
   const employee = (await employeeLoginResponse.json()) as {
@@ -94,25 +106,61 @@ test("customer and employee complete the shipment lifecycle", async ({
     shipment: { id: string; version: number };
   };
 
-  await changeStatus(page, "Accept shipment", "Accepted");
+  await changeStatus(page, "Accept shipment", "Accepted at origin");
   await changeStatus(page, "Mark in transit", "In transit");
+  await page.getByRole("button", { name: "Log out" }).click();
+
+  await signIn(
+    page,
+    destinationEmployeeEmail!,
+    destinationEmployeePassword!,
+  );
+  await expect(page).toHaveURL(/\/employee$/);
+  await page.getByLabel("Reference").fill(reference!);
+  await page.getByRole("button", { name: "Apply" }).click();
+  await page.getByText(reference!, { exact: true }).click();
+  await changeStatus(
+    page,
+    "Receive at destination",
+    "Arrived at destination",
+  );
   await changeStatus(page, "Mark delivered", "Delivered");
   await expect(page.getByText("Status history")).toBeVisible();
+
+  const destinationLoginResponse = await request.post(
+    `${apiBaseUrl}/api/auth/login`,
+    {
+      data: {
+        email: destinationEmployeeEmail,
+        password: destinationEmployeePassword,
+      },
+    },
+  );
+  expect(destinationLoginResponse.ok()).toBe(true);
+  const destinationEmployee = (await destinationLoginResponse.json()) as {
+    accessToken: string;
+  };
 
   const staleUpdateResponse = await request.patch(
     `${apiBaseUrl}/api/employee/shipments/${initialRecord.shipment.id}/status`,
     {
       data: { status: "CANCELLED", version: initialRecord.shipment.version },
-      headers: { Authorization: `Bearer ${employee.accessToken}` },
+      headers: {
+        Authorization: `Bearer ${destinationEmployee.accessToken}`,
+      },
     },
   );
   expect(staleUpdateResponse.status()).toBe(409);
   const historyResponse = await request.get(
     `${apiBaseUrl}/api/employee/shipments/${initialRecord.shipment.id}/status-events`,
-    { headers: { Authorization: `Bearer ${employee.accessToken}` } },
+    {
+      headers: {
+        Authorization: `Bearer ${destinationEmployee.accessToken}`,
+      },
+    },
   );
   expect(historyResponse.ok()).toBe(true);
-  expect(((await historyResponse.json()) as unknown[]).length).toBe(3);
+  expect(((await historyResponse.json()) as unknown[]).length).toBe(4);
   await page.getByRole("button", { name: "Log out" }).click();
 
   await signIn(page, customerEmail, customerPassword);

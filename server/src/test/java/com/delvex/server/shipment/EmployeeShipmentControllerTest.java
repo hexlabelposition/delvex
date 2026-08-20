@@ -16,6 +16,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.delvex.server.auth.SecurityConfiguration;
+import com.delvex.server.branch.dto.BranchSummaryResponse;
 import com.delvex.server.shipment.dto.EmployeeShipmentPageResponse;
 import com.delvex.server.shipment.dto.EmployeeShipmentResponse;
 import com.delvex.server.shipment.dto.EmployeeShipmentResponse.CustomerSummary;
@@ -46,11 +47,13 @@ class EmployeeShipmentControllerTest {
 
     @Test
     void shouldAllowEmployeeToListAllShipments() throws Exception {
+        UUID employeeId = UUID.randomUUID();
         EmployeeShipmentResponse shipment = response(
-                ShipmentStatus.ACCEPTED,
+                ShipmentStatus.ACCEPTED_AT_ORIGIN,
                 1);
         given(shipmentService.findAll(
-                ShipmentStatus.ACCEPTED,
+                employeeId,
+                ShipmentStatus.ACCEPTED_AT_ORIGIN,
                 "DLX-12",
                 0,
                 20))
@@ -62,12 +65,12 @@ class EmployeeShipmentControllerTest {
                         1));
 
         mockMvc.perform(get("/api/employee/shipments")
-                .param("status", "ACCEPTED")
+                .param("status", "ACCEPTED_AT_ORIGIN")
                 .param("reference", "DLX-12")
-                .with(employeeJwt(UUID.randomUUID())))
+                .with(employeeJwt(employeeId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].shipment.status")
-                        .value("ACCEPTED"))
+                        .value("ACCEPTED_AT_ORIGIN"))
                 .andExpect(jsonPath("$.content[0].customer.email")
                         .value("john@example.com"));
     }
@@ -80,7 +83,9 @@ class EmployeeShipmentControllerTest {
                 any(UUID.class),
                 any(UUID.class),
                 any(UpdateShipmentStatusRequest.class)))
-                .willReturn(response(ShipmentStatus.ACCEPTED, 1));
+                .willReturn(response(
+                        ShipmentStatus.ACCEPTED_AT_ORIGIN,
+                        1));
 
         mockMvc.perform(patch(
                 "/api/employee/shipments/{shipmentId}/status",
@@ -89,19 +94,20 @@ class EmployeeShipmentControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {
-                          "status": "ACCEPTED",
+                          "status": "ACCEPTED_AT_ORIGIN",
                           "version": 0
                         }
                         """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.shipment.status").value("ACCEPTED"))
+                .andExpect(jsonPath("$.shipment.status")
+                        .value("ACCEPTED_AT_ORIGIN"))
                 .andExpect(jsonPath("$.shipment.version").value(1));
 
         then(shipmentService).should().updateStatus(
                 employeeId,
                 shipmentId,
                 new UpdateShipmentStatusRequest(
-                        ShipmentStatus.ACCEPTED,
+                        ShipmentStatus.ACCEPTED_AT_ORIGIN,
                         0L));
     }
 
@@ -132,7 +138,7 @@ class EmployeeShipmentControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Validation failed"))
                 .andExpect(jsonPath("$.fieldErrors.status")
-                        .value("Must be one of: CREATED, ACCEPTED, IN_TRANSIT, DELIVERED, CANCELLED"));
+                        .value("Must be one of: CREATED, ACCEPTED_AT_ORIGIN, IN_TRANSIT, ARRIVED_AT_DESTINATION, DELIVERED, CANCELLED"));
 
         then(shipmentService).shouldHaveNoInteractions();
     }
@@ -185,6 +191,29 @@ class EmployeeShipmentControllerTest {
                 "John",
                 "Doe");
 
-        return new EmployeeShipmentResponse(shipment, customer);
+        BranchSummaryResponse originBranch = new BranchSummaryResponse(
+                UUID.randomUUID(),
+                "WARSAW",
+                "Warsaw Central",
+                "PL",
+                "Warszawa",
+                "00-001",
+                "Marszałkowska 1");
+        BranchSummaryResponse destinationBranch = new BranchSummaryResponse(
+                UUID.randomUUID(),
+                "GDANSK",
+                "Gdańsk Central",
+                "PL",
+                "Gdańsk",
+                "80-001",
+                "Długi Targ 1");
+
+        return new EmployeeShipmentResponse(
+                shipment,
+                customer,
+                originBranch,
+                destinationBranch,
+                originBranch,
+                List.of(ShipmentStatus.IN_TRANSIT));
     }
 }

@@ -78,6 +78,8 @@ docker compose up --build server
 | **/**          | Public    | Product landing page; active sessions continue to their home |
 | **/login**     | Guests    | Sign in to an existing account                               |
 | **/register**  | Guests    | Create a customer account                                    |
+| **/forgot-password** | Guests | Request a password reset email                           |
+| **/reset-password** | Guests | Choose a new password from a one-time link                |
 | **/dashboard** | CUSTOMER  | Review customer shipment activity and recent records         |
 | **/shipments** | CUSTOMER  | Browse and manage owned shipments                            |
 | **/create**    | CUSTOMER  | Create a shipment                                            |
@@ -85,9 +87,9 @@ docker compose up --build server
 | **/profile**   | Signed in | Review and update the current profile                        |
 
 Authentication routing is enforced in **src/proxy.ts**. Guests can open the
-landing page, login, and registration routes. An active refresh session sends
-the root, login, and registration routes into the application, while protected
-routes send guests to login. After session refresh, role-aware client routing
+landing page, login, registration, and password recovery routes. An active
+refresh session sends guest-only auth routes into the application, while
+protected routes send guests to login. After session refresh, role-aware routing
 sends customers to **/dashboard** and employees to **/employee**. The server
 remains the authorization boundary and returns HTTP 403 when a token has the
 wrong role.
@@ -102,7 +104,8 @@ loading or error handling. Domain code lives next to the feature that owns it:
 - **src/features/employee** contains the global shipment queue, lifecycle
   actions, and status-history integration used by logistics employees.
 - **src/features/profile** contains profile-specific API calls.
-- **src/features/auth** owns authentication, session management, and auth forms.
+- **src/features/auth** owns authentication, password recovery, session
+  management, and auth forms.
 - **src/components** contains reusable application and UI primitives.
 - **src/lib** contains cross-feature API infrastructure, shared types, and
   generic formatting helpers.

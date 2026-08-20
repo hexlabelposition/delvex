@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { canAccessRoleRoute, homeForRole } from "./routes";
+import {
+  canAccessRoleRoute,
+  homeForRole,
+  isAuthRoute,
+} from "./routes";
 
 describe("role navigation", () => {
   it("selects a home route for each role", () => {
@@ -21,5 +25,10 @@ describe("role navigation", () => {
     expect(canAccessRoleRoute("EMPLOYEE", "/create")).toBe(false);
     expect(canAccessRoleRoute("EMPLOYEE", "/shipments/id")).toBe(false);
     expect(canAccessRoleRoute("EMPLOYEE", "/profile")).toBe(true);
+  });
+
+  it("treats password recovery pages as authentication routes", () => {
+    expect(isAuthRoute("/forgot-password")).toBe(true);
+    expect(isAuthRoute("/reset-password")).toBe(true);
   });
 });

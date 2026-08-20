@@ -4,12 +4,10 @@ import type { ReactNode } from "react";
 
 export function EmployeeShipmentsState({
   error,
-  loading,
   hasShipments,
   children,
 }: {
   error: boolean;
-  loading: boolean;
   hasShipments: boolean;
   children: ReactNode;
 }) {
@@ -21,10 +19,6 @@ export function EmployeeShipmentsState({
         description="The server is unavailable. Please try again in a moment."
       />
     );
-  }
-
-  if (loading) {
-    return <p className="text-muted-foreground">Loading shipments…</p>;
   }
 
   if (!hasShipments) {

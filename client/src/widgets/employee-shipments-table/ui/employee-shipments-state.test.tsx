@@ -6,7 +6,7 @@ import { EmployeeShipmentsState } from "./employee-shipments-state";
 describe("EmployeeShipmentsState", () => {
   it("shows a useful loading error", () => {
     render(
-      <EmployeeShipmentsState error loading={false} hasShipments={false}>
+      <EmployeeShipmentsState error hasShipments={false}>
         shipments
       </EmployeeShipmentsState>,
     );
@@ -16,11 +16,7 @@ describe("EmployeeShipmentsState", () => {
 
   it("shows the empty state when filters have no matches", () => {
     render(
-      <EmployeeShipmentsState
-        error={false}
-        loading={false}
-        hasShipments={false}
-      >
+      <EmployeeShipmentsState error={false} hasShipments={false}>
         shipments
       </EmployeeShipmentsState>,
     );
@@ -29,7 +25,7 @@ describe("EmployeeShipmentsState", () => {
 
   it("renders results when shipments are available", () => {
     render(
-      <EmployeeShipmentsState error={false} loading={false} hasShipments>
+      <EmployeeShipmentsState error={false} hasShipments>
         <p>shipment results</p>
       </EmployeeShipmentsState>,
     );

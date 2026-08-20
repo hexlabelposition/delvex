@@ -1,23 +1,29 @@
 "use client";
 
-import { createContext, type ReactNode, use } from "react";
+import type { UserResponse } from "@shared/api";
+import { createContext, type ReactNode, use, useMemo } from "react";
 
-import type { AuthSession } from "./types";
+interface SessionContextValue {
+  user: UserResponse;
+}
 
-const SessionContext = createContext<AuthSession | null>(null);
+const SessionContext = createContext<SessionContextValue | null>(null);
 
 interface SessionProviderProps {
-  session: AuthSession;
+  user: UserResponse;
   children: ReactNode;
 }
 
 /**
- * Carries the session resolved on the server down to the client components that
- * need it. It never fetches and holds no state of its own: the server layout is
- * the single source of truth, and a changed session arrives through a re-render.
+ * Carries the signed-in user resolved on the server down to the client
+ * components that need it. It never fetches and holds no state of its own: the
+ * server layout is the single source of truth, and a changed user arrives
+ * through a re-render. The access token deliberately stays on the server.
  */
-export function SessionProvider({ session, children }: SessionProviderProps) {
-  return <SessionContext value={session}>{children}</SessionContext>;
+export function SessionProvider({ user, children }: SessionProviderProps) {
+  const value = useMemo(() => ({ user }), [user]);
+
+  return <SessionContext value={value}>{children}</SessionContext>;
 }
 
 export function useSession() {

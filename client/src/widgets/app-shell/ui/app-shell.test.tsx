@@ -30,7 +30,6 @@ describe("AppShell role navigation", () => {
 
   it("shows customer navigation only to customers", () => {
     mocks.useSession.mockReturnValue({
-      accessToken: "token",
       user: { ...baseUser, role: "CUSTOMER" },
     });
 
@@ -46,7 +45,6 @@ describe("AppShell role navigation", () => {
 
   it("shows employee navigation only to employees", () => {
     mocks.useSession.mockReturnValue({
-      accessToken: "token",
       user: { ...baseUser, role: "EMPLOYEE" },
     });
 

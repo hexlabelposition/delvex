@@ -1,32 +1,23 @@
-"use client";
-
-import {
-  deleteShipment,
-  formatWeight,
-  getShipment,
-  StatusBadge,
-} from "@entities/shipment";
-import { useSession } from "@features/auth";
+import { formatWeight, getShipment, StatusBadge } from "@entities/shipment";
+import { requireSession } from "@features/auth/server";
+import { DeleteShipmentButton } from "@features/shipment-delete";
 import { ApiClientError, type Shipment } from "@shared/api";
 import { formatDate } from "@shared/lib";
 import {
-  Alert,
-  AlertDescription,
   Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-  ConfirmDialog,
   EmptyState,
 } from "@shared/ui";
-import { ArrowLeft, PackageOpen, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, PackageOpen, Pencil } from "lucide-react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 
-type ConfirmationAction = "delete";
+interface ShipmentDetailsPageProps {
+  shipmentId: string;
+}
 
 function AddressCard({
   title,
@@ -57,15 +48,7 @@ function AddressCard({
   );
 }
 
-function ShipmentDetails({
-  shipment,
-  actionLoading,
-  onConfirm,
-}: {
-  shipment: Shipment;
-  actionLoading: boolean;
-  onConfirm: (action: ConfirmationAction) => void;
-}) {
+function ShipmentDetails({ shipment }: { shipment: Shipment }) {
   return (
     <>
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -80,24 +63,16 @@ function ShipmentDetails({
         <div className="flex flex-wrap items-center gap-2">
           <StatusBadge status={shipment.status} />
           {shipment.status === "CREATED" && (
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={actionLoading}
-              render={<Link href={`/shipments/${shipment.id}/edit`} />}
-            >
-              <Pencil /> Edit
-            </Button>
-          )}
-          {shipment.status === "CREATED" && (
-            <Button
-              size="sm"
-              variant="destructive"
-              disabled={actionLoading}
-              onClick={() => onConfirm("delete")}
-            >
-              <Trash2 /> Delete
-            </Button>
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                render={<Link href={`/shipments/${shipment.id}/edit`} />}
+              >
+                <Pencil /> Edit
+              </Button>
+              <DeleteShipmentButton shipmentId={shipment.id} />
+            </>
           )}
         </div>
       </div>
@@ -169,58 +144,22 @@ function ShipmentDetails({
   );
 }
 
-export function ShipmentDetailsPage() {
-  const router = useRouter();
-  const session = useSession();
-  const { shipmentId } = useParams<{ shipmentId: string }>();
-  const [shipment, setShipment] = useState<Shipment | null>(null);
-  const [error, setError] = useState<"not-found" | "unavailable" | null>(null);
-  const [actionError, setActionError] = useState("");
-  const [actionLoading, setActionLoading] = useState(false);
-  const [confirmation, setConfirmation] = useState<ConfirmationAction | null>(
-    null,
-  );
+export async function ShipmentDetailsPage({
+  shipmentId,
+}: ShipmentDetailsPageProps) {
+  const { accessToken } = await requireSession();
 
-  useEffect(() => {
-    if (shipmentId === undefined) return;
+  let shipment: Shipment | null = null;
+  let error: "not-found" | "unavailable" | null = null;
 
-    let cancelled = false;
-
-    void getShipment(shipmentId, session.accessToken)
-      .then((response) => {
-        if (!cancelled) setShipment(response);
-      })
-      .catch((requestError: unknown) => {
-        if (cancelled) return;
-        setError(
-          requestError instanceof ApiClientError && requestError.status === 404
-            ? "not-found"
-            : "unavailable",
-        );
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [session, shipmentId]);
-
-  const confirmAction = async () => {
-    if (shipment === null || confirmation === null) return;
-    setActionLoading(true);
-    setActionError("");
-    try {
-      await deleteShipment(shipment.id, { accessToken: session.accessToken });
-      router.push("/shipments?deleted=1");
-    } catch (requestError) {
-      setActionError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Could not update shipment",
-      );
-    } finally {
-      setActionLoading(false);
-    }
-  };
+  try {
+    shipment = await getShipment(shipmentId, accessToken);
+  } catch (requestError) {
+    error =
+      requestError instanceof ApiClientError && requestError.status === 404
+        ? "not-found"
+        : "unavailable";
+  }
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -234,40 +173,14 @@ export function ShipmentDetailsPage() {
             title="Shipment not found"
             description="This shipment is unavailable or does not belong to your account."
           />
-        ) : error === "unavailable" ? (
+        ) : shipment === null ? (
           <EmptyState
             icon={PackageOpen}
             title="Couldn’t load shipment"
             description="The server is unavailable. Please try again in a moment."
           />
-        ) : shipment === null ? (
-          <p className="text-muted-foreground">Loading shipment…</p>
         ) : (
-          <>
-            {actionError && (
-              <Alert variant="destructive" className="mb-5">
-                <AlertDescription>{actionError}</AlertDescription>
-              </Alert>
-            )}
-            <ShipmentDetails
-              shipment={shipment}
-              actionLoading={actionLoading}
-              onConfirm={setConfirmation}
-            />
-            <ConfirmDialog
-              open={confirmation !== null}
-              title="Delete shipment?"
-              description="This shipment will be permanently removed."
-              confirmLabel="Delete shipment"
-              confirming={actionLoading}
-              onOpenChange={(open) => {
-                if (!open && !actionLoading) setConfirmation(null);
-              }}
-              onConfirm={() => void confirmAction()}
-            >
-              <span />
-            </ConfirmDialog>
-          </>
+          <ShipmentDetails shipment={shipment} />
         )}
       </div>
     </div>

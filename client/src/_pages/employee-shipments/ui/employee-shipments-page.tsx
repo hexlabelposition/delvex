@@ -1,7 +1,5 @@
-"use client";
-
 import { getEmployeeShipments } from "@entities/shipment";
-import { useSession } from "@features/auth";
+import { requireSession } from "@features/auth/server";
 import type { EmployeeShipmentPage, ShipmentStatus } from "@shared/api";
 import { Button, Card, CardContent, Input, Label } from "@shared/ui";
 import {
@@ -9,7 +7,7 @@ import {
   EmployeeShipmentsTable,
 } from "@widgets/employee-shipments-table";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
-import { type FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
 
 const statuses: readonly ShipmentStatus[] = [
   "CREATED",
@@ -19,62 +17,45 @@ const statuses: readonly ShipmentStatus[] = [
   "CANCELLED",
 ];
 
-interface Filters {
+interface EmployeeShipmentsPageProps {
+  page: number;
   status: ShipmentStatus | "";
   reference: string;
 }
 
-const initialFilters: Filters = { status: "", reference: "" };
+function pageHref(page: number, status: string, reference: string) {
+  const search = new URLSearchParams();
 
-export function EmployeePage() {
-  const session = useSession();
-  const [page, setPage] = useState(0);
-  const [filters, setFilters] = useState(initialFilters);
-  const [appliedFilters, setAppliedFilters] = useState(initialFilters);
-  const [data, setData] = useState<EmployeeShipmentPage | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  if (page > 0) search.set("page", String(page));
+  if (status) search.set("status", status);
+  if (reference) search.set("reference", reference);
 
-  useEffect(() => {
-    let cancelled = false;
-    void getEmployeeShipments(session.accessToken, {
+  const query = search.toString();
+
+  return query ? `/employee?${query}` : "/employee";
+}
+
+export async function EmployeePage({
+  page,
+  status,
+  reference,
+}: EmployeeShipmentsPageProps) {
+  const { accessToken } = await requireSession();
+
+  let shipments: EmployeeShipmentPage | null = null;
+
+  try {
+    shipments = await getEmployeeShipments(accessToken, {
       page,
       size: 20,
-      status: appliedFilters.status || undefined,
-      reference: appliedFilters.reference || undefined,
-    })
-      .then((response) => {
-        if (!cancelled) setData(response);
-      })
-      .catch(() => {
-        if (!cancelled) setError(true);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [appliedFilters, page, session]);
-
-  const applyFilters = (event: FormEvent) => {
-    event.preventDefault();
-    setLoading(true);
-    setError(false);
-    setPage(0);
-    setAppliedFilters({
-      status: filters.status,
-      reference: filters.reference.trim(),
+      status: status || undefined,
+      reference: reference || undefined,
     });
-  };
+  } catch {
+    shipments = null;
+  }
 
-  const clearFilters = () => {
-    setLoading(true);
-    setError(false);
-    setFilters(initialFilters);
-    setAppliedFilters(initialFilters);
-    setPage(0);
-  };
+  const hasShipments = shipments !== null && shipments.content.length > 0;
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -90,43 +71,36 @@ export function EmployeePage() {
 
       <Card className="mt-7 gap-0 py-0">
         <CardContent className="p-5">
+          {/* A plain GET form: the filters live in the URL, so the page they
+              produce is shareable and rendered entirely on the server. */}
           <form
+            action="/employee"
+            method="get"
             className="grid items-end gap-4 md:grid-cols-[minmax(0,1fr)_220px_auto]"
-            onSubmit={applyFilters}
           >
             <div>
               <Label htmlFor="reference">Reference</Label>
               <Input
                 id="reference"
+                name="reference"
                 className="mt-2"
-                value={filters.reference}
+                defaultValue={reference}
                 maxLength={40}
                 placeholder="Search by reference"
-                onChange={(event) =>
-                  setFilters((previous) => ({
-                    ...previous,
-                    reference: event.target.value,
-                  }))
-                }
               />
             </div>
             <div>
               <Label htmlFor="status">Status</Label>
               <select
                 id="status"
+                name="status"
                 className="border-input mt-2 h-8 w-full rounded-lg border bg-transparent px-2.5 text-sm"
-                value={filters.status}
-                onChange={(event) =>
-                  setFilters((previous) => ({
-                    ...previous,
-                    status: event.target.value as ShipmentStatus | "",
-                  }))
-                }
+                defaultValue={status}
               >
                 <option value="">All statuses</option>
-                {statuses.map((status) => (
-                  <option key={status} value={status}>
-                    {status.replaceAll("_", " ")}
+                {statuses.map((option) => (
+                  <option key={option} value={option}>
+                    {option.replaceAll("_", " ")}
                   </option>
                 ))}
               </select>
@@ -135,8 +109,12 @@ export function EmployeePage() {
               <Button type="submit">
                 <Search /> Apply
               </Button>
-              {(filters.status || filters.reference) && (
-                <Button type="button" variant="outline" onClick={clearFilters}>
+              {(status || reference) && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  render={<Link href="/employee" />}
+                >
                   Clear
                 </Button>
               )}
@@ -147,53 +125,67 @@ export function EmployeePage() {
 
       <div className="mt-6">
         <EmployeeShipmentsState
-          error={error}
-          loading={loading && data === null}
-          hasShipments={data !== null && data.content.length > 0}
+          error={shipments === null}
+          hasShipments={hasShipments}
         >
-          {data !== null && data.content.length > 0 ? (
+          {shipments !== null && hasShipments ? (
             <>
               <div className="mb-3 flex items-center justify-between gap-4">
                 <p className="text-muted-foreground text-sm">
-                  {data.totalElements} shipment
-                  {data.totalElements === 1 ? "" : "s"}
-                  {loading ? " · Refreshing…" : ""}
+                  {shipments.totalElements} shipment
+                  {shipments.totalElements === 1 ? "" : "s"}
                 </p>
               </div>
-              <EmployeeShipmentsTable shipments={data.content} />
+              <EmployeeShipmentsTable shipments={shipments.content} />
               <div className="mt-4 flex items-center justify-between gap-4">
                 <p className="text-muted-foreground text-sm">
-                  Showing {page * data.size + 1}–
-                  {page * data.size + data.content.length} of{" "}
-                  {data.totalElements}
+                  Showing {page * shipments.size + 1}–
+                  {page * shipments.size + shipments.content.length} of{" "}
+                  {shipments.totalElements}
                 </p>
                 <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon-sm"
-                    disabled={page === 0 || loading}
-                    onClick={() => {
-                      setLoading(true);
-                      setError(false);
-                      setPage((value) => value - 1);
-                    }}
-                    aria-label="Previous page"
-                  >
-                    <ChevronLeft />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon-sm"
-                    disabled={page >= data.totalPages - 1 || loading}
-                    onClick={() => {
-                      setLoading(true);
-                      setError(false);
-                      setPage((value) => value + 1);
-                    }}
-                    aria-label="Next page"
-                  >
-                    <ChevronRight />
-                  </Button>
+                  {page === 0 ? (
+                    <Button
+                      variant="outline"
+                      size="icon-sm"
+                      disabled
+                      aria-label="Previous page"
+                    >
+                      <ChevronLeft />
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="icon-sm"
+                      aria-label="Previous page"
+                      render={
+                        <Link href={pageHref(page - 1, status, reference)} />
+                      }
+                    >
+                      <ChevronLeft />
+                    </Button>
+                  )}
+                  {page >= shipments.totalPages - 1 ? (
+                    <Button
+                      variant="outline"
+                      size="icon-sm"
+                      disabled
+                      aria-label="Next page"
+                    >
+                      <ChevronRight />
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="icon-sm"
+                      aria-label="Next page"
+                      render={
+                        <Link href={pageHref(page + 1, status, reference)} />
+                      }
+                    >
+                      <ChevronRight />
+                    </Button>
+                  )}
                 </div>
               </div>
             </>

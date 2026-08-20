@@ -1,16 +1,13 @@
 "use client";
 
-import { createShipment } from "@entities/shipment";
-import { useSession } from "@features/auth";
 import {
+  createShipmentAction,
   initialShipmentFormValues,
   shipmentFormErrors,
   type ShipmentFormField,
   ShipmentFormFields,
-  shipmentFormSchema,
   shipmentFormSteps,
 } from "@features/shipment-form";
-import { ApiClientError } from "@shared/api";
 import {
   Alert,
   AlertDescription,
@@ -22,19 +19,17 @@ import {
   CardTitle,
 } from "@shared/ui";
 import { ArrowLeft } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { type FormEvent, useState } from "react";
+import Link from "next/link";
+import { type FormEvent, useState, useTransition } from "react";
 
 export function CreatePage() {
-  const router = useRouter();
-  const session = useSession();
   const [step, setStep] = useState(0);
   const [values, setValues] = useState(initialShipmentFormValues);
   const [errors, setErrors] = useState<
     Partial<Record<ShipmentFormField, string>>
   >({});
   const [submitError, setSubmitError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [pending, startTransition] = useTransition();
   const update = (field: ShipmentFormField, value: string) =>
     setValues((previous) => ({ ...previous, [field]: value }));
   const next = () => {
@@ -45,37 +40,18 @@ export function CreatePage() {
     setErrors(nextErrors);
     if (!Object.keys(nextErrors).length) setStep((value) => value + 1);
   };
-  const submit = async (event: FormEvent) => {
+  const submit = (event: FormEvent) => {
     event.preventDefault();
     const nextErrors = shipmentFormErrors(values);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
-    const payload = shipmentFormSchema.parse(values);
-    setSubmitting(true);
     setSubmitError("");
-    try {
-      await createShipment(
-        {
-          ...payload,
-          cargoDescription: payload.cargoDescription.trim(),
-          pickupAt: payload.pickupAt
-            ? new Date(payload.pickupAt).toISOString()
-            : null,
-          deliveryAt: payload.deliveryAt
-            ? new Date(payload.deliveryAt).toISOString()
-            : null,
-        },
-        { accessToken: session.accessToken },
-      );
-      router.push("/shipments?created=1");
-    } catch (error) {
-      if (error instanceof ApiClientError) setErrors(error.fieldErrors);
-      setSubmitError(
-        error instanceof Error ? error.message : "Could not create shipment",
-      );
-    } finally {
-      setSubmitting(false);
-    }
+    startTransition(async () => {
+      // A successful create redirects, so this only resolves on failure.
+      const result = await createShipmentAction(values);
+      setErrors(result.fieldErrors);
+      setSubmitError(result.message);
+    });
   };
   const current = shipmentFormSteps[step];
   return (
@@ -98,7 +74,7 @@ export function CreatePage() {
           </div>
         ))}
       </div>
-      <form onSubmit={(event) => void submit(event)}>
+      <form onSubmit={submit}>
         <Card className="mt-5 gap-0 py-0">
           <CardHeader className="px-5 pt-5">
             <CardTitle>{current.title}</CardTitle>
@@ -122,7 +98,7 @@ export function CreatePage() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push("/shipments")}
+            render={<Link href="/shipments" />}
           >
             Cancel
           </Button>
@@ -141,8 +117,8 @@ export function CreatePage() {
                 Continue
               </Button>
             ) : (
-              <Button type="submit" disabled={submitting}>
-                {submitting ? "Creating…" : "Create shipment"}
+              <Button type="submit" disabled={pending}>
+                {pending ? "Creating…" : "Create shipment"}
               </Button>
             )}
           </div>

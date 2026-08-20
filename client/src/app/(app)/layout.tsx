@@ -15,7 +15,7 @@ export default async function ApplicationLayout({
   const session = await requireSession();
 
   return (
-    <SessionProvider session={session}>
+    <SessionProvider user={session.user}>
       <AppShell>{children}</AppShell>
     </SessionProvider>
   );

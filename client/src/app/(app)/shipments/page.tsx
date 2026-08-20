@@ -7,6 +7,18 @@ export const metadata = createPageMetadata({
   path: "/shipments",
 });
 
-export default function Page() {
-  return <ShipmentsPage />;
+interface PageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function Page({ searchParams }: PageProps) {
+  const { created, deleted, page } = await searchParams;
+
+  return (
+    <ShipmentsPage
+      page={Math.max(0, Number(page) || 0)}
+      created={created === "1"}
+      deleted={deleted === "1"}
+    />
+  );
 }

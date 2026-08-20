@@ -7,6 +7,12 @@ export const metadata = createPageMetadata({
   path: "/shipments",
 });
 
-export default function Page() {
-  return <ShipmentDetailsPage />;
+interface PageProps {
+  params: Promise<{ shipmentId: string }>;
+}
+
+export default async function Page({ params }: PageProps) {
+  const { shipmentId } = await params;
+
+  return <ShipmentDetailsPage shipmentId={shipmentId} />;
 }

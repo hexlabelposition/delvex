@@ -6,18 +6,18 @@ import { Alert, AlertDescription, Card, CardContent } from "@shared/ui";
 import Link from "next/link";
 import { useActionState } from "react";
 
-import { loginAction } from "../api/actions";
-import { loginSchema } from "../model/schema";
+import { forgotPasswordAction } from "../api/actions";
+import { forgotPasswordSchema } from "../model/schema";
 import { AuthShell } from "./auth-shell";
 import { FormField } from "./form-field";
 import { SubmitButton } from "./submit-button";
 
-export function LoginForm({ passwordReset = false }: { passwordReset?: boolean }) {
-  const [lastResult, action] = useActionState(loginAction, null);
+export function ForgotPasswordForm() {
+  const [lastResult, action] = useActionState(forgotPasswordAction, null);
   const [form, fields] = useForm({
     lastResult: lastResult?.submission,
     onValidate({ formData }) {
-      return parseWithZod(formData, { schema: loginSchema });
+      return parseWithZod(formData, { schema: forgotPasswordSchema });
     },
     shouldRevalidate: "onInput",
     shouldValidate: "onBlur",
@@ -25,13 +25,13 @@ export function LoginForm({ passwordReset = false }: { passwordReset?: boolean }
 
   return (
     <AuthShell
-      title="Sign in to Delvex"
-      description="Enter your email and password to continue."
+      title="Reset your password"
+      description="Enter your email and we’ll send you a secure reset link."
     >
-      {passwordReset && (
+      {lastResult?.success && (
         <Alert className="mb-4 rounded-md py-3 text-[13px]">
           <AlertDescription>
-            Your password has been reset. You can sign in now.
+            If an account exists for that email, a reset link has been sent.
           </AlertDescription>
         </Alert>
       )}
@@ -57,31 +57,19 @@ export function LoginForm({ passwordReset = false }: { passwordReset?: boolean }
               autoComplete="email"
               placeholder="you@company.com"
             />
-            <FormField
-              field={fields.password}
-              label="Password"
-              type="password"
-              autoComplete="current-password"
-              placeholder="Your password"
-              canTogglePassword
-            />
-            <SubmitButton pendingLabel="Signing in…">Sign in</SubmitButton>
-            <Link
-              href="/forgot-password"
-              className="text-muted-foreground text-center text-xs hover:text-foreground hover:underline"
-            >
-              Forgot your password?
-            </Link>
+            <SubmitButton pendingLabel="Sending reset link…">
+              Send reset link
+            </SubmitButton>
           </form>
         </CardContent>
       </Card>
       <p className="text-muted-foreground mt-[18px] text-center text-[13px]">
-        New to Delvex?{" "}
+        Remember your password?{" "}
         <Link
-          href="/register"
+          href="/login"
           className="text-foreground font-medium hover:underline"
         >
-          Create an account
+          Sign in
         </Link>
       </p>
     </AuthShell>

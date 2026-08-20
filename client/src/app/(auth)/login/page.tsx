@@ -7,6 +7,12 @@ export const metadata = createPageMetadata({
   path: "/login",
 });
 
-export default function Page() {
-  return <LoginPage />;
+interface PageProps {
+  searchParams: Promise<{ passwordReset?: string }>;
+}
+
+export default async function Page({ searchParams }: PageProps) {
+  const { passwordReset } = await searchParams;
+
+  return <LoginPage passwordReset={passwordReset === "success"} />;
 }

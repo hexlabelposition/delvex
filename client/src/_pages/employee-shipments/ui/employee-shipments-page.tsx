@@ -154,9 +154,7 @@ export async function EmployeePage({
               key={queue.label}
               size="sm"
               variant={status === queue.status ? "secondary" : "ghost"}
-              render={
-                <Link href={pageHref(0, queue.status, reference)} />
-              }
+              render={<Link href={pageHref(0, queue.status, reference)} />}
             >
               {queue.label}
             </Button>

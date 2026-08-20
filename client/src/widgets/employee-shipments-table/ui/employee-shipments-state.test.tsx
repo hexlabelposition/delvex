@@ -12,7 +12,9 @@ describe("EmployeeShipmentsState", () => {
     );
 
     expect(screen.getByText("Couldn’t load shipments")).toBeInTheDocument();
-    expect(screen.getByText(/branch queue is unavailable/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/branch queue is unavailable/i),
+    ).toBeInTheDocument();
   });
 
   it("shows the scanner-oriented empty state", () => {

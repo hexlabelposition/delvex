@@ -10,7 +10,9 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mocks.push }),
 }));
 vi.mock("@features/shipment-status", () => ({
-  ShipmentStatusControls: ({ allowedStatuses }: EmployeeShipment["shipment"] & {
+  ShipmentStatusControls: ({
+    allowedStatuses,
+  }: EmployeeShipment["shipment"] & {
     allowedStatuses?: string[];
   }) => <span>{allowedStatuses?.join(",")}</span>,
 }));
@@ -80,8 +82,6 @@ describe("EmployeeShipmentsTable", () => {
     fireEvent.keyDown(screen.getByText("DLX-100").closest("tr")!, {
       key: "Enter",
     });
-    expect(mocks.push).toHaveBeenCalledWith(
-      "/employee/shipments/shipment-id",
-    );
+    expect(mocks.push).toHaveBeenCalledWith("/employee/shipments/shipment-id");
   });
 });

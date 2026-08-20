@@ -83,7 +83,7 @@ docker compose up --build server
 | **/dashboard**       | CUSTOMER  | Review customer shipment activity and recent records         |
 | **/shipments**       | CUSTOMER  | Browse and manage owned shipments                            |
 | **/create**          | CUSTOMER  | Create a shipment                                            |
-| **/employee**        | EMPLOYEE  | Operate the assigned branch queue with scan-first search      |
+| **/employee**        | EMPLOYEE  | Operate the assigned branch queue with scan-first search     |
 | **/profile**         | Signed in | Review and update the current profile                        |
 
 Authentication routing is enforced in **src/proxy.ts**. Guests can open the

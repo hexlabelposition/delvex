@@ -52,8 +52,7 @@ supports a complete containerized development stack.
 - **Server:** Java 21, Spring Boot 4.1, Spring Security, Spring Data JPA,
   Flyway, and springdoc OpenAPI
 - **Data:** PostgreSQL 17 for durable data and Redis 8 for rate-limit counters
-- **Email:** Mailpit captures password reset messages locally; hosted runtimes
-  deliver them through the Resend HTTPS API
+- **Development email:** Mailpit captures password reset messages locally
 - **Infrastructure:** Docker and Docker Compose
 - **CI:** GitHub Actions
 
@@ -96,7 +95,7 @@ for that instead.
 cp .env.example .env
 ```
 
-The template selects the **local** server profile. Replace the database credentials,
+Choose **dev** as the local server profile, replace the database credentials,
 set the browser-reachable API URL, and generate an access-token secret:
 
 ```bash
@@ -121,8 +120,7 @@ The services are available at:
 
 The client waits for server readiness, and the server waits for PostgreSQL and
 Redis readiness. Password reset email is captured by Mailpit instead of being
-sent to a real mailbox. Mailpit is intentionally local-only and is not part of
-hosted Railway environments.
+sent to a real mailbox.
 
 ### Start only infrastructure
 
@@ -183,26 +181,6 @@ editing **NEXT_PUBLIC_API_URL** in the root **.env** has no effect on a plain
 docker compose up --build client
 ```
 
-## Runtime environments
-
-The Spring profiles map directly to the three execution environments:
-
-| Profile   | Runtime                | Email delivery          |
-| --------- | ---------------------- | ----------------------- |
-| **local** | IDE or Docker Compose  | Mailpit over SMTP       |
-| **dev**   | Railway Development    | Resend over HTTPS       |
-| **prod**  | Railway Production     | Resend over HTTPS       |
-
-The hosted profiles call the fixed Resend **POST /emails** API over HTTPS.
-Each Railway environment supplies only its own **RESEND_API_KEY**,
-**MAIL_FROM**, **PASSWORD_RESET_CLIENT_URL**, and the existing infrastructure
-variables. Local development never reads the Resend secret, and the local
-profile rejects non-Mailpit SMTP hosts.
-
-See the
-[server production configuration](server/README.md#production-configuration)
-for the complete hosted environment contract.
-
 ## CI and releases
 
 Server changes targeting **dev** or **main** run Maven tests, package and start the
@@ -211,7 +189,8 @@ scenario, and build the production server image.
 
 Client changes targeting **dev** or **main** install the locked Bun dependencies,
 verify Prettier formatting, run ESLint, TypeScript, unit, and component tests,
-create the production Next.js build, and build the production client image.
+discover the Playwright suite, create the production Next.js build, and build
+the production client image.
 Server and client workflows use path filters, so unchanged modules do not run
 unnecessary jobs.
 

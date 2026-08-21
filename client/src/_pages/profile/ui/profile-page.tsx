@@ -127,7 +127,6 @@ export function ProfilePage() {
             <dl className="mt-5 grid gap-x-12 gap-y-5 text-sm sm:grid-cols-2">
               <Info label="User ID" value={user.id} mono />
               <Info label="Email" value={user.email} />
-              <Info label="Role" value={user.role} />
               <Info label="First name" value={user.firstName} />
               <Info label="Last name" value={user.lastName} />
               <Info

@@ -82,9 +82,7 @@ export function CreatePage() {
           <div
             key={item.title}
             className={`rounded-lg border px-3 py-2 text-sm ${
-              index === step
-                ? "bg-muted font-medium"
-                : "text-muted-foreground"
+              index === step ? "bg-muted font-medium" : "text-muted-foreground"
             }`}
           >
             <span className="bg-foreground text-background mr-2 inline-flex size-5 items-center justify-center rounded-full text-[11px]">

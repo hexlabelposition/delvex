@@ -30,30 +30,46 @@ export function CreatePage() {
   >({});
   const [submitError, setSubmitError] = useState("");
   const [pending, startTransition] = useTransition();
+  const isLastStep = step === shipmentFormSteps.length - 1;
+
   const update = (field: ShipmentFormField, value: string) =>
     setValues((previous) => ({ ...previous, [field]: value }));
+
   const next = () => {
     const nextErrors = shipmentFormErrors(
       values,
       shipmentFormSteps[step].fields,
     );
     setErrors(nextErrors);
-    if (!Object.keys(nextErrors).length) setStep((value) => value + 1);
+
+    if (!Object.keys(nextErrors).length && !isLastStep) {
+      setStep((value) => value + 1);
+    }
   };
+
   const submit = (event: FormEvent) => {
     event.preventDefault();
+
+    // Never create from an intermediate step, even if a browser submits the
+    // form after pressing Enter in one of its fields.
+    if (!isLastStep) {
+      next();
+      return;
+    }
+
     const nextErrors = shipmentFormErrors(values);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
     setSubmitError("");
     startTransition(async () => {
-      // A successful create redirects, so this only resolves on failure.
       const result = await createShipmentAction(values);
       setErrors(result.fieldErrors);
       setSubmitError(result.message);
     });
   };
+
   const current = shipmentFormSteps[step];
+
   return (
     <div className="mx-auto max-w-3xl">
       <h1 className="text-3xl font-semibold tracking-tight">Create shipment</h1>
@@ -95,27 +111,17 @@ export function CreatePage() {
           </Alert>
         )}
         <div className="mt-5 flex items-center justify-between">
-          <Button
-            type="button"
-            variant="outline"
-            render={<Link href="/shipments" />}
-          >
+          <Button type="button" variant="outline" render={<Link href="/shipments" />}>
             Cancel
           </Button>
           <div className="flex gap-2">
             {step > 0 && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setStep((value) => value - 1)}
-              >
+              <Button type="button" variant="outline" onClick={() => setStep((value) => value - 1)}>
                 <ArrowLeft /> Back
               </Button>
             )}
-            {step < shipmentFormSteps.length - 1 ? (
-              <Button type="button" onClick={next}>
-                Continue
-              </Button>
+            {!isLastStep ? (
+              <Button type="button" onClick={next}>Continue</Button>
             ) : (
               <Button type="submit" disabled={pending}>
                 {pending ? "Creating…" : "Create shipment"}

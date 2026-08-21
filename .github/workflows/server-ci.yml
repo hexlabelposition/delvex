@@ -26,9 +26,73 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    name: Detect server changes
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.filter.outputs.changed }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changes in the current update
+        id: filter
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_ACTION: ${{ github.event.action }}
+          EVENT_BEFORE: ${{ github.event.before }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CURRENT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          head_sha="$CURRENT_SHA"
+          base_sha="$EVENT_BEFORE"
+          separator=".."
+
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            head_sha="$PR_HEAD_SHA"
+
+            if [[ "$EVENT_ACTION" == "synchronize" && -n "$EVENT_BEFORE" ]]; then
+              base_sha="$EVENT_BEFORE"
+            else
+              base_sha="$PR_BASE_SHA"
+              separator="..."
+            fi
+          fi
+
+          changed_files="$(mktemp)"
+          git fetch --no-tags origin "$base_sha" "$head_sha" || true
+
+          if ! git diff --name-only "${base_sha}${separator}${head_sha}" > "$changed_files"; then
+            if [[ "$EVENT_NAME" == "pull_request" ]]; then
+              git diff --name-only "${PR_BASE_SHA}...${PR_HEAD_SHA}" > "$changed_files"
+            else
+              echo "Unable to calculate the push diff; running server checks conservatively."
+              echo "server/" > "$changed_files"
+            fi
+          fi
+
+          echo "Changed files in this update:"
+          sed 's/^/- /' "$changed_files"
+
+          if grep -Eq '^(server/|\.github/workflows/server-ci\.yml$|compose\.yaml$)' "$changed_files"; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
   test:
     name: Maven tests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: changes
+    if: needs.changes.outputs.changed == 'true'
 
     defaults:
       run:
@@ -101,6 +165,9 @@ jobs:
   production-smoke:
     name: Production JAR smoke
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: changes
+    if: needs.changes.outputs.changed == 'true'
 
     defaults:
       run:
@@ -166,8 +233,18 @@ jobs:
       - name: Run production HTTP smoke
         run: ./mvnw --batch-mode --no-transfer-progress -Dtest=ProductionSmokeIT test
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build production container
-        run: docker build --tag delvex-server:ci .
+        uses: docker/build-push-action@v6
+        with:
+          context: server
+          file: server/Dockerfile
+          push: false
+          tags: delvex-server:ci
+          cache-from: type=gha,scope=server-production-image
+          cache-to: type=gha,mode=max,scope=server-production-image
 
       - name: Upload production smoke log
         if: failure()
@@ -176,3 +253,4 @@ jobs:
           name: server-production-smoke-log
           path: server/target/production-smoke.log
           if-no-files-found: ignore
+

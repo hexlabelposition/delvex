@@ -6,6 +6,9 @@ import java.util.Locale;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import jakarta.mail.internet.AddressException;
+import jakarta.mail.internet.InternetAddress;
+
 @Component
 @Profile("hosted")
 public class HostedEmailConfigurationValidator {
@@ -26,14 +29,26 @@ public class HostedEmailConfigurationValidator {
     }
 
     private static void requirePublicSender(String mailFrom) {
-        int separator = mailFrom == null ? -1 : mailFrom.lastIndexOf('@');
-        String domain = separator < 0
-                ? ""
-                : mailFrom.substring(separator + 1).toLowerCase(Locale.ROOT);
+        try {
+            InternetAddress address = new InternetAddress(mailFrom, true);
+            String emailAddress = address.getAddress();
+            int separator = emailAddress.lastIndexOf('@');
+            String domain = separator < 0
+                    ? ""
+                    : emailAddress
+                            .substring(separator + 1)
+                            .toLowerCase(Locale.ROOT);
 
-        if (domain.isBlank() || domain.endsWith(".local")) {
-            throw new IllegalStateException(
-                    "Hosted profiles require MAIL_FROM to use a verified public domain");
+            if (domain.isBlank() || domain.endsWith(".local")) {
+                throw invalidSender();
+            }
+        } catch (AddressException exception) {
+            throw invalidSender();
         }
+    }
+
+    private static IllegalStateException invalidSender() {
+        return new IllegalStateException(
+                "Hosted profiles require MAIL_FROM to use a verified public domain");
     }
 }

@@ -42,7 +42,9 @@ class ResendPasswordResetEmailSenderTest {
                         }
                         """))
                 .andRespond(withSuccess(
-                        "{"id":"email-id"}",
+                        """
+                        {"id":"email-id"}
+                        """,
                         MediaType.APPLICATION_JSON));
 
         sender.send(email());
@@ -62,7 +64,9 @@ class ResendPasswordResetEmailSenderTest {
         server.expect(requestTo("https://api.resend.com/emails"))
                 .andRespond(withStatus(HttpStatus.UNPROCESSABLE_ENTITY)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body("{"message":"Invalid from field"}"));
+                        .body("""
+                                {"message":"Invalid from field"}
+                                """));
 
         assertThatThrownBy(() -> sender.send(email()))
                 .isInstanceOf(EmailDeliveryException.class)

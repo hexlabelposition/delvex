@@ -12,11 +12,16 @@ class HostedEmailConfigurationValidatorTest {
 
     @Test
     void shouldAcceptHostedEmailConfiguration() {
-        assertThatCode(() -> new HostedEmailConfigurationValidator(
-                properties(
-                        "https://dev.delvex.example/reset-password",
-                        "no-reply@delvex.example")))
-                .doesNotThrowAnyException();
+        for (String mailFrom : new String[] {
+                "no-reply@delvex.example",
+                "Delvex <no-reply@delvex.example>"
+        }) {
+            assertThatCode(() -> new HostedEmailConfigurationValidator(
+                    properties(
+                            "https://dev.delvex.example/reset-password",
+                            mailFrom)))
+                    .doesNotThrowAnyException();
+        }
     }
 
     @Test
@@ -32,13 +37,18 @@ class HostedEmailConfigurationValidatorTest {
 
     @Test
     void shouldRequireVerifiedPublicSender() {
-        assertThatThrownBy(() -> new HostedEmailConfigurationValidator(
-                properties(
-                        "https://dev.delvex.example/reset-password",
-                        "no-reply@delvex.local")))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage(
-                        "Hosted profiles require MAIL_FROM to use a verified public domain");
+        for (String mailFrom : new String[] {
+                "no-reply@delvex.local",
+                "Delvex <no-reply@delvex.local>"
+        }) {
+            assertThatThrownBy(() -> new HostedEmailConfigurationValidator(
+                    properties(
+                            "https://dev.delvex.example/reset-password",
+                            mailFrom)))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage(
+                            "Hosted profiles require MAIL_FROM to use a verified public domain");
+        }
     }
 
     private static PasswordResetProperties properties(

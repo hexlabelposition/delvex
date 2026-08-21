@@ -19,10 +19,6 @@ cors:
 auth:
   refresh-cookie-secure: true
 
-password-reset:
-  client-url: ${PASSWORD_RESET_CLIENT_URL}
-  mail-from: ${MAIL_FROM:no-reply@delvex.local}
-
 springdoc:
   api-docs:
     enabled: false

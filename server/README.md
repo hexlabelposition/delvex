@@ -306,7 +306,7 @@ disabled and unreachable in production.
 | AUTH_RATE_LIMIT_FORGOT_PASSWORD_REQUESTS | 5                    | Reset email requests per client/window      |
 | AUTH_RATE_LIMIT_RESET_PASSWORD_REQUESTS | 10                    | Password changes per client/window          |
 | AUTH_RATE_LIMIT_TRUSTED_PROXY_CIDRS   | empty                   | Trusted proxy networks                      |
-| PASSWORD_RESET_CLIENT_URL             | local reset page        | Absolute client reset-page URL              |
+| PASSWORD_RESET_CLIENT_URL             | local reset page        | Required when SMTP delivery is enabled      |
 | PASSWORD_RESET_TOKEN_TTL              | 30m                     | One-time reset token lifetime               |
 | PASSWORD_RESET_CLEANUP_INTERVAL       | 1h                      | Delay between token cleanup runs            |
 | PASSWORD_RESET_CLEANUP_INITIAL_DELAY  | 1h                      | Delay before first token cleanup            |
@@ -392,7 +392,6 @@ REDIS_CONNECT_TIMEOUT="2s"
 REDIS_TIMEOUT="2s"
 ACCESS_TOKEN_SECRET="<base64-secret>"
 CORS_ALLOWED_ORIGINS="https://app.example.com"
-PASSWORD_RESET_CLIENT_URL="https://app.example.com/reset-password"
 LOG_LEVEL="INFO"
 ```
 
@@ -404,6 +403,7 @@ Configure the following variables when Resend or another SMTP provider is
 ready:
 
 ```dotenv
+PASSWORD_RESET_CLIENT_URL="https://app.example.com/reset-password"
 MAIL_HOST="smtp.example.com"
 MAIL_PORT="587"
 MAIL_USERNAME="<smtp-user>"

@@ -310,13 +310,13 @@ disabled and unreachable in production.
 | PASSWORD_RESET_TOKEN_TTL              | 30m                     | One-time reset token lifetime               |
 | PASSWORD_RESET_CLEANUP_INTERVAL       | 1h                      | Delay between token cleanup runs            |
 | PASSWORD_RESET_CLEANUP_INITIAL_DELAY  | 1h                      | Delay before first token cleanup            |
-| MAIL_HOST                             | localhost outside prod  | SMTP server; omit in prod to disable mail   |
-| MAIL_PORT                             | 1025 outside prod        | SMTP port when delivery is enabled          |
-| MAIL_USERNAME                         | empty outside prod       | SMTP username when required                 |
-| MAIL_PASSWORD                         | empty outside prod       | SMTP password when required                 |
-| MAIL_FROM                             | no-reply@delvex.local    | Sender when delivery is enabled             |
-| MAIL_SMTP_AUTH                        | false outside prod       | Enable SMTP authentication                  |
-| MAIL_SMTP_STARTTLS                    | false outside prod       | Enable SMTP STARTTLS                        |
+| MAIL_HOST                             | localhost outside prod  | Mailpit locally; smtp.resend.com when hosted |
+| MAIL_PORT                             | 1025 outside prod        | Mailpit locally; 587 for Resend              |
+| MAIL_USERNAME                         | empty outside prod       | Literal resend for Resend SMTP               |
+| MAIL_PASSWORD                         | empty outside prod       | Resend API key; never commit                 |
+| MAIL_FROM                             | no-reply@delvex.local    | Verified public sender when hosted           |
+| MAIL_SMTP_AUTH                        | false outside prod       | Must be true for Resend                      |
+| MAIL_SMTP_STARTTLS                    | false outside prod       | Must be true for Resend on port 587          |
 
 There is intentionally no **REFRESH_COOKIE_SECURE** variable. Cookies are
 secure by default, disabled only by the development profile, and enforced in
@@ -396,22 +396,34 @@ LOG_LEVEL="INFO"
 ```
 
 SMTP is optional in a deployed environment. Without **MAIL_HOST**, password
-reset tokens are still issued, but email delivery is skipped. Local Compose is
-unchanged and continues to set **MAIL_HOST=mailpit** automatically.
+reset tokens are still issued, but email delivery is skipped. Mailpit remains a
+local-only dependency: Compose sets **MAIL_HOST=mailpit** and never reads hosted
+SMTP credentials.
 
-Configure the following variables when Resend or another SMTP provider is
-ready:
+Railway development and production environments use Resend SMTP. Configure the
+following variables on the server service in each environment:
 
 ```dotenv
 PASSWORD_RESET_CLIENT_URL="https://app.example.com/reset-password"
-MAIL_HOST="smtp.example.com"
+MAIL_HOST="smtp.resend.com"
 MAIL_PORT="587"
-MAIL_USERNAME="<smtp-user>"
-MAIL_PASSWORD="<smtp-password>"
+MAIL_USERNAME="resend"
+MAIL_PASSWORD="<Resend API key>"
 MAIL_FROM="no-reply@example.com"
 MAIL_SMTP_AUTH="true"
 MAIL_SMTP_STARTTLS="true"
 ```
+
+Use a separate Resend API key for each hosted environment. The sender domain
+must be verified in Resend, and **PASSWORD_RESET_CLIENT_URL** must point to the
+matching public client deployment. Never expose **MAIL_PASSWORD** to the client
+service or commit it to an environment file.
+
+When **MAIL_HOST** is set, production startup validates the complete hosted mail
+contract. Resend additionally requires its SMTP host, port 587, the literal
+username **resend**, authentication, and STARTTLS. The application fails before
+serving traffic when a credential is missing, the reset URL is not public HTTPS,
+or the sender still uses the local development domain.
 
 The application fails fast when production configuration is unsafe:
 
@@ -419,7 +431,8 @@ The application fails fast when production configuration is unsafe:
 - refresh cookies are not secure;
 - Swagger UI or OpenAPI JSON is enabled;
 - CORS origins are missing or unsafe;
-- required database, Redis, or authentication settings are missing or invalid.
+- required database, Redis, or authentication settings are missing or invalid;
+- hosted SMTP is only partially configured or unsafe.
 
 The production image runs as a non-root **delvex** user and exposes port 8080.
 

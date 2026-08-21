@@ -118,7 +118,8 @@ The services are available at:
 
 The client waits for server readiness, and the server waits for PostgreSQL and
 Redis readiness. Password reset email is captured by Mailpit instead of being
-sent to a real mailbox.
+sent to a real mailbox. Mailpit is intentionally local-only and is not part of
+hosted Railway environments.
 
 ### Start only infrastructure
 
@@ -178,6 +179,17 @@ editing **NEXT_PUBLIC_API_URL** in the root **.env** has no effect on a plain
 ```bash
 docker compose up --build client
 ```
+
+## Hosted email delivery
+
+Railway development and production environments send password reset email
+through Resend SMTP. Local development continues to use Mailpit, so test
+messages never leave the machine.
+
+Each hosted environment should use its own Resend API key and public client reset
+URL. The sender must belong to a domain verified in Resend. See the
+[server production configuration](server/README.md#production-configuration)
+for the complete environment contract.
 
 ## CI and releases
 

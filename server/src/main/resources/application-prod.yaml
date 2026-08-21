@@ -1,24 +1,3 @@
-spring:
-  datasource:
-    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT:5432}/${POSTGRES_DB}?currentSchema=${POSTGRES_SCHEMA:public}
-  data:
-    redis:
-      host: ${REDIS_HOST}
-  mail:
-    host: ${MAIL_HOST:}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
-    properties:
-      "[mail.smtp.auth]": ${MAIL_SMTP_AUTH:true}
-      "[mail.smtp.starttls.enable]": ${MAIL_SMTP_STARTTLS:true}
-
-cors:
-  allowed-origins: ${CORS_ALLOWED_ORIGINS}
-
-auth:
-  refresh-cookie-secure: true
-
 springdoc:
   api-docs:
     enabled: false

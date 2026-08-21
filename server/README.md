@@ -165,7 +165,7 @@ Refresh tokens have a 30-day lifetime and are returned only through the
 **refresh_token** cookie. The cookie is HttpOnly, SameSite=Lax, scoped to
 **/api/auth**, and Secure by default and always in production.
 
-The development profile disables Secure only for local HTTP. Only a SHA-256
+The local profile disables Secure only for local HTTP. Only a SHA-256
 digest of each refresh token is stored in PostgreSQL. Refreshing revokes the
 current session and creates a replacement in the same transaction. Logout is
 idempotent, and expired or revoked sessions are removed by a scheduled cleanup
@@ -271,7 +271,7 @@ and instructions in the [project README](../README.md#start-the-current-stack).
 
 ## OpenAPI documentation
 
-Documentation is available only with the **dev** profile:
+Documentation is available with the **local** and **dev** profiles:
 
 - Swagger UI: http://localhost:8080/docs
 - OpenAPI JSON: http://localhost:8080/docs/openapi.json
@@ -283,7 +283,7 @@ disabled and unreachable in production.
 
 | Variable                              | Default                 | Notes                                       |
 | ------------------------------------- | ----------------------- | ------------------------------------------- |
-| SPRING_PROFILES_ACTIVE                | none                    | Use dev locally or prod when deployed       |
+| SPRING_PROFILES_ACTIVE                | none                    | local, dev, or prod                          |
 | POSTGRES_HOST                         | localhost outside prod  | Required explicitly in prod                 |
 | POSTGRES_PORT                         | 5432                    | PostgreSQL port                             |
 | POSTGRES_DB                           | none                    | Required database name                      |
@@ -306,21 +306,18 @@ disabled and unreachable in production.
 | AUTH_RATE_LIMIT_FORGOT_PASSWORD_REQUESTS | 5                    | Reset email requests per client/window      |
 | AUTH_RATE_LIMIT_RESET_PASSWORD_REQUESTS | 10                    | Password changes per client/window          |
 | AUTH_RATE_LIMIT_TRUSTED_PROXY_CIDRS   | empty                   | Trusted proxy networks                      |
-| PASSWORD_RESET_CLIENT_URL             | local reset page        | Required when SMTP delivery is enabled      |
+| PASSWORD_RESET_CLIENT_URL             | local reset page        | Required HTTPS URL in dev and prod           |
 | PASSWORD_RESET_TOKEN_TTL              | 30m                     | One-time reset token lifetime               |
 | PASSWORD_RESET_CLEANUP_INTERVAL       | 1h                      | Delay between token cleanup runs            |
 | PASSWORD_RESET_CLEANUP_INITIAL_DELAY  | 1h                      | Delay before first token cleanup            |
-| MAIL_HOST                             | localhost outside prod  | Mailpit locally; smtp.resend.com when hosted |
-| MAIL_PORT                             | 1025 outside prod        | Mailpit locally; 587 for Resend              |
-| MAIL_USERNAME                         | empty outside prod       | Literal resend for Resend SMTP               |
-| MAIL_PASSWORD                         | empty outside prod       | Resend API key; never commit                 |
-| MAIL_FROM                             | no-reply@delvex.local    | Verified public sender when hosted           |
-| MAIL_SMTP_AUTH                        | false outside prod       | Must be true for Resend                      |
-| MAIL_SMTP_STARTTLS                    | false outside prod       | Must be true for Resend on port 587          |
+| MAIL_HOST                             | localhost in local       | Local Mailpit host override only             |
+| MAIL_PORT                             | 1025 in local            | Local Mailpit port override only             |
+| RESEND_API_KEY                        | none                    | Required secret in dev and prod              |
+| MAIL_FROM                             | local sender             | Verified public sender in dev and prod       |
 
 There is intentionally no **REFRESH_COOKIE_SECURE** variable. Cookies are
-secure by default, disabled only by the development profile, and enforced in
-production.
+secure by default, disabled only by the local profile, and enforced in hosted
+environments.
 
 ## CORS in production
 
@@ -375,11 +372,23 @@ HTTP 503 instead of silently bypassing rate limiting.
 
 ## Production configuration
 
-Production must use real environment variables rather than a committed or
-deployed dotenv file:
+Spring uses one explicit profile for each runtime:
+
+| Profile   | Runtime               | Mail transport                     |
+| --------- | --------------------- | ---------------------------------- |
+| **local** | IDE or Docker Compose | Mailpit on port 1025               |
+| **dev**   | Railway Development   | Resend through the hosted profile  |
+| **prod**  | Railway Production    | Resend through the hosted profile  |
+
+The **dev** and **prod** profile groups automatically activate the internal
+**hosted** profile. Do not set **hosted** directly and never combine **local**
+with a hosted profile.
+
+Both Railway environments require the normal database, Redis, authentication,
+and CORS variables:
 
 ```dotenv
-SPRING_PROFILES_ACTIVE="prod"
+SPRING_PROFILES_ACTIVE="dev"
 POSTGRES_HOST="database.internal"
 POSTGRES_PORT="5432"
 POSTGRES_DB="delvex"
@@ -391,48 +400,39 @@ REDIS_PORT="6379"
 REDIS_CONNECT_TIMEOUT="2s"
 REDIS_TIMEOUT="2s"
 ACCESS_TOKEN_SECRET="<base64-secret>"
-CORS_ALLOWED_ORIGINS="https://app.example.com"
+CORS_ALLOWED_ORIGINS="https://dev.example.com"
 LOG_LEVEL="INFO"
 ```
 
-SMTP is optional in a deployed environment. Without **MAIL_HOST**, password
-reset tokens are still issued, but email delivery is skipped. Mailpit remains a
-local-only dependency: Compose sets **MAIL_HOST=mailpit** and never reads hosted
-SMTP credentials.
-
-Railway development and production environments use Resend SMTP. Configure the
-following variables on the server service in each environment:
+Set **SPRING_PROFILES_ACTIVE=prod** and production URLs in the production
+environment. Railway Development and Production each supply only three
+email-specific values:
 
 ```dotenv
-PASSWORD_RESET_CLIENT_URL="https://app.example.com/reset-password"
-MAIL_HOST="smtp.resend.com"
-MAIL_PORT="587"
-MAIL_USERNAME="resend"
-MAIL_PASSWORD="<Resend API key>"
+PASSWORD_RESET_CLIENT_URL="https://dev.example.com/reset-password"
+RESEND_API_KEY="<Resend API key>"
 MAIL_FROM="no-reply@example.com"
-MAIL_SMTP_AUTH="true"
-MAIL_SMTP_STARTTLS="true"
 ```
 
-Use a separate Resend API key for each hosted environment. The sender domain
-must be verified in Resend, and **PASSWORD_RESET_CLIENT_URL** must point to the
-matching public client deployment. Never expose **MAIL_PASSWORD** to the client
-service or commit it to an environment file.
+The hosted profile owns the remaining Resend transport settings:
+**smtp.resend.com**, port **587**, username **resend**, SMTP authentication, and
+STARTTLS. They are not deployment variables and cannot accidentally select
+Mailpit. Conversely, the local profile accepts only **localhost**,
+**127.0.0.1**, **::1**, or **mailpit** on port **1025**, so an exported hosted
+SMTP value cannot send a local test message through Resend.
 
-When **MAIL_HOST** is set, production startup validates the complete hosted mail
-contract. Resend additionally requires its SMTP host, port 587, the literal
-username **resend**, authentication, and STARTTLS. The application fails before
-serving traffic when a credential is missing, the reset URL is not public HTTPS,
-or the sender still uses the local development domain.
+Use a separate Resend API key for Railway Development and Production.
+**MAIL_FROM** must belong to a domain verified in Resend, and the reset URL must
+match the public client in the same Railway environment. Never expose
+**RESEND_API_KEY** to the client service or commit it to an environment file.
 
-The application fails fast when production configuration is unsafe:
+The application fails fast when hosted configuration is incomplete or unsafe.
+Production additionally rejects:
 
-- dev and prod are active together;
-- refresh cookies are not secure;
-- Swagger UI or OpenAPI JSON is enabled;
-- CORS origins are missing or unsafe;
-- required database, Redis, or authentication settings are missing or invalid;
-- hosted SMTP is only partially configured or unsafe.
+- the local or dev profile active alongside prod;
+- insecure refresh cookies;
+- enabled Swagger UI or OpenAPI JSON;
+- missing or unsafe CORS origins.
 
 The production image runs as a non-root **delvex** user and exposes port 8080.
 

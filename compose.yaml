@@ -35,7 +35,7 @@ services:
       context: ./server
       dockerfile: Dockerfile
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:?Set SPRING_PROFILES_ACTIVE to dev or prod}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:?Set SPRING_PROFILES_ACTIVE=local for Compose}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER}
@@ -62,9 +62,7 @@ services:
       PASSWORD_RESET_CLEANUP_INITIAL_DELAY: ${PASSWORD_RESET_CLEANUP_INITIAL_DELAY:-1h}
       MAIL_HOST: mailpit
       MAIL_PORT: 1025
-      MAIL_FROM: ${MAIL_FROM:-no-reply@delvex.local}
-      MAIL_SMTP_AUTH: "false"
-      MAIL_SMTP_STARTTLS: "false"
+      MAIL_FROM: no-reply@delvex.local
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?Set CORS_ALLOWED_ORIGINS}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     ports:

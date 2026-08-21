@@ -20,7 +20,7 @@ import {
 } from "@shared/ui";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { type FormEvent, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 
 export function CreatePage() {
   const [step, setStep] = useState(0);
@@ -30,30 +30,37 @@ export function CreatePage() {
   >({});
   const [submitError, setSubmitError] = useState("");
   const [pending, startTransition] = useTransition();
+  const isLastStep = step === shipmentFormSteps.length - 1;
+
   const update = (field: ShipmentFormField, value: string) =>
     setValues((previous) => ({ ...previous, [field]: value }));
+
   const next = () => {
     const nextErrors = shipmentFormErrors(
       values,
       shipmentFormSteps[step].fields,
     );
     setErrors(nextErrors);
-    if (!Object.keys(nextErrors).length) setStep((value) => value + 1);
+
+    if (!Object.keys(nextErrors).length && !isLastStep) {
+      setStep((value) => value + 1);
+    }
   };
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
+
+  const submit = () => {
     const nextErrors = shipmentFormErrors(values);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
     setSubmitError("");
     startTransition(async () => {
-      // A successful create redirects, so this only resolves on failure.
       const result = await createShipmentAction(values);
       setErrors(result.fieldErrors);
       setSubmitError(result.message);
     });
   };
+
   const current = shipmentFormSteps[step];
+
   return (
     <div className="mx-auto max-w-3xl">
       <h1 className="text-3xl font-semibold tracking-tight">Create shipment</h1>
@@ -65,7 +72,9 @@ export function CreatePage() {
         {shipmentFormSteps.map((item, index) => (
           <div
             key={item.title}
-            className={`rounded-lg border px-3 py-2 text-sm ${index === step ? "bg-muted font-medium" : "text-muted-foreground"}`}
+            className={`rounded-lg border px-3 py-2 text-sm ${
+              index === step ? "bg-muted font-medium" : "text-muted-foreground"
+            }`}
           >
             <span className="bg-foreground text-background mr-2 inline-flex size-5 items-center justify-center rounded-full text-[11px]">
               {index + 1}
@@ -74,7 +83,7 @@ export function CreatePage() {
           </div>
         ))}
       </div>
-      <form onSubmit={submit}>
+      <div>
         <Card className="mt-5 gap-0 py-0">
           <CardHeader className="px-5 pt-5">
             <CardTitle>{current.title}</CardTitle>
@@ -112,18 +121,18 @@ export function CreatePage() {
                 <ArrowLeft /> Back
               </Button>
             )}
-            {step < shipmentFormSteps.length - 1 ? (
+            {!isLastStep ? (
               <Button type="button" onClick={next}>
                 Continue
               </Button>
             ) : (
-              <Button type="submit" disabled={pending}>
+              <Button type="button" disabled={pending} onClick={submit}>
                 {pending ? "Creating…" : "Create shipment"}
               </Button>
             )}
           </div>
         </div>
-      </form>
+      </div>
     </div>
   );
 }

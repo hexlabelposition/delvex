@@ -15,6 +15,7 @@ import { Check, Pencil } from "lucide-react";
 import { useState } from "react";
 
 import { updateProfileAction } from "../api/update-profile";
+import { ChangePasswordCard } from "./change-password-card";
 
 export function ProfilePage() {
   const { user } = useSession();
@@ -127,7 +128,6 @@ export function ProfilePage() {
             <dl className="mt-5 grid gap-x-12 gap-y-5 text-sm sm:grid-cols-2">
               <Info label="User ID" value={user.id} mono />
               <Info label="Email" value={user.email} />
-              <Info label="Role" value={user.role} />
               <Info label="First name" value={user.firstName} />
               <Info label="Last name" value={user.lastName} />
               <Info
@@ -144,6 +144,7 @@ export function ProfilePage() {
           )}
         </CardContent>
       </Card>
+      <ChangePasswordCard />
       <Card className="mt-5 gap-0 py-0">
         <CardContent className="flex flex-wrap items-center justify-between gap-4 p-5">
           <div>

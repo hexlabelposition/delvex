@@ -87,7 +87,7 @@ export const shipmentFormSteps: readonly {
   },
   {
     title: "Schedule",
-    hint: "Both dates are optional and can be added later.",
+    hint: "The pickup and estimated delivery dates are optional and can be added later.",
     fields: ["pickupAt", "deliveryAt"],
   },
 ];
@@ -98,7 +98,7 @@ export const shipmentFormFieldLabels: Record<ShipmentFormField, string> = {
   cargoDescription: "Cargo description",
   weightKg: "Weight (kg)",
   pickupAt: "Pickup date and time",
-  deliveryAt: "Delivery date and time",
+  deliveryAt: "Estimated delivery date and time",
 };
 
 export function shipmentFormErrors(

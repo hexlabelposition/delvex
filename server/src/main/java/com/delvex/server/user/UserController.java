@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.delvex.server.user.dto.ChangePasswordRequest;
 import com.delvex.server.user.dto.UpdateUserRequest;
 import com.delvex.server.user.dto.UserResponse;
 
@@ -32,6 +33,13 @@ public class UserController {
             @AuthenticationPrincipal Jwt jwt) {
         return userService.getCurrentUser(
                 UUID.fromString(jwt.getSubject()));
+    }
+
+    @PatchMapping("/me/password")
+    public void changePassword(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        userService.changePassword(UUID.fromString(jwt.getSubject()), request);
     }
 
     @PatchMapping("/me")

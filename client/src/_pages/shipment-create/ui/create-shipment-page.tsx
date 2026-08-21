@@ -20,7 +20,7 @@ import {
 } from "@shared/ui";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { type FormEvent, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 
 export function CreatePage() {
   const [step, setStep] = useState(0);
@@ -47,16 +47,7 @@ export function CreatePage() {
     }
   };
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-
-    // Never create from an intermediate step, even if a browser submits the
-    // form after pressing Enter in one of its fields.
-    if (!isLastStep) {
-      next();
-      return;
-    }
-
+  const submit = () => {
     const nextErrors = shipmentFormErrors(values);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
@@ -92,7 +83,7 @@ export function CreatePage() {
           </div>
         ))}
       </div>
-      <form onSubmit={submit}>
+      <div>
         <Card className="mt-5 gap-0 py-0">
           <CardHeader className="px-5 pt-5">
             <CardTitle>{current.title}</CardTitle>
@@ -135,13 +126,13 @@ export function CreatePage() {
                 Continue
               </Button>
             ) : (
-              <Button type="submit" disabled={pending}>
+              <Button type="button" disabled={pending} onClick={submit}>
                 {pending ? "Creating…" : "Create shipment"}
               </Button>
             )}
           </div>
         </div>
-      </form>
+      </div>
     </div>
   );
 }

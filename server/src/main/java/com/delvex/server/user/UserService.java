@@ -4,9 +4,11 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.delvex.server.user.dto.ChangePasswordRequest;
 import com.delvex.server.user.dto.UpdateUserRequest;
 import com.delvex.server.user.dto.UserResponse;
 
@@ -17,9 +19,11 @@ public class UserService {
             UserService.class);
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional(readOnly = true)
@@ -44,6 +48,18 @@ public class UserService {
         LOGGER.info("user profile updated userId={}", userId);
 
         return UserResponse.from(user);
+    }
+
+    @Transactional
+    public void changePassword(UUID userId, ChangePasswordRequest request) {
+        User user = findUser(userId);
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "Current password is incorrect");
+        }
+        user.changePassword(passwordEncoder.encode(request.newPassword()));
+        LOGGER.info("user password changed userId={}", userId);
     }
 
     private User findUser(UUID userId) {

@@ -73,12 +73,42 @@ test("customer and employee complete the shipment lifecycle", async ({
     await page.locator("tbody tr").first().locator("td").first().textContent()
   )?.trim();
   expect(reference).toBeTruthy();
+
+  const customerLoginResponse = await request.post(
+    `${apiBaseUrl}/api/auth/login`,
+    { data: { email: customerEmail, password: customerPassword } },
+  );
+  expect(customerLoginResponse.ok()).toBe(true);
+  const customerSession = (await customerLoginResponse.json()) as {
+    accessToken: string;
+  };
+  const unrelatedShipmentResponse = await request.post(
+    `${apiBaseUrl}/api/shipments`,
+    {
+      data: {
+        originLocationId: "KRAKOW",
+        destinationLocationId: "GDANSK",
+        cargoDescription: "Branch isolation parcel",
+        weightKg: 1.25,
+        pickupAt: null,
+        deliveryAt: null,
+      },
+      headers: {
+        Authorization: `Bearer ${customerSession.accessToken}`,
+      },
+    },
+  );
+  expect(unrelatedShipmentResponse.ok()).toBe(true);
+  const unrelatedShipment = (await unrelatedShipmentResponse.json()) as {
+    id: string;
+    referenceNumber: string;
+  };
   await page.getByRole("button", { name: "Log out" }).click();
 
   await signIn(page, originEmployeeEmail!, originEmployeePassword!);
   await expect(page).toHaveURL(/\/employee$/);
-  await page.getByLabel("Reference").fill(reference!);
-  await page.getByRole("button", { name: "Apply" }).click();
+  await page.getByLabel("Scan or enter reference").fill(reference!);
+  await page.getByRole("button", { name: "Search" }).click();
   await page.getByText(reference!, { exact: true }).click();
   await expect(page).toHaveURL(/\/employee\/shipments\//);
 
@@ -95,6 +125,20 @@ test("customer and employee complete the shipment lifecycle", async ({
   const employee = (await employeeLoginResponse.json()) as {
     accessToken: string;
   };
+  const hiddenShipmentResponse = await request.get(
+    `${apiBaseUrl}/api/employee/shipments/${unrelatedShipment.id}`,
+    { headers: { Authorization: `Bearer ${employee.accessToken}` } },
+  );
+  expect(hiddenShipmentResponse.status()).toBe(404);
+  const hiddenQueueResponse = await request.get(
+    `${apiBaseUrl}/api/employee/shipments?reference=${unrelatedShipment.referenceNumber}`,
+    { headers: { Authorization: `Bearer ${employee.accessToken}` } },
+  );
+  expect(hiddenQueueResponse.ok()).toBe(true);
+  expect(
+    ((await hiddenQueueResponse.json()) as { totalElements: number })
+      .totalElements,
+  ).toBe(0);
   const shipmentId = page.url().split("/").at(-1);
   expect(shipmentId).toBeTruthy();
   const employeeRecordResponse = await request.get(
@@ -112,8 +156,8 @@ test("customer and employee complete the shipment lifecycle", async ({
 
   await signIn(page, destinationEmployeeEmail!, destinationEmployeePassword!);
   await expect(page).toHaveURL(/\/employee$/);
-  await page.getByLabel("Reference").fill(reference!);
-  await page.getByRole("button", { name: "Apply" }).click();
+  await page.getByLabel("Scan or enter reference").fill(reference!);
+  await page.getByRole("button", { name: "Search" }).click();
   await page.getByText(reference!, { exact: true }).click();
   await changeStatus(page, "Receive at destination", "Arrived at destination");
   await changeStatus(page, "Mark delivered", "Delivered");

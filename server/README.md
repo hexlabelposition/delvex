@@ -468,6 +468,10 @@ From the **server** directory, run the complete Maven suite:
 ./mvnw --batch-mode --no-transfer-progress test
 ```
 
+The suite covers employee branch isolation for queue, direct shipment, and
+status-history access; inactive or missing branch assignments; and the
+origin/destination transition responsibilities returned to the workspace.
+
 Build the executable JAR:
 
 ```bash

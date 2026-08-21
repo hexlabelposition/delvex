@@ -211,7 +211,8 @@ scenario, and build the production server image.
 
 Client changes targeting **dev** or **main** install the locked Bun dependencies,
 verify Prettier formatting, run ESLint, TypeScript, unit, and component tests,
-create the production Next.js build, and build the production client image.
+discover the Playwright suite, create the production Next.js build, and build
+the production client image.
 Server and client workflows use path filters, so unchanged modules do not run
 unnecessary jobs.
 

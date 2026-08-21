@@ -9,8 +9,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -20,51 +18,50 @@ import static org.mockito.BDDMockito.then;
 class PasswordResetMailServiceTest {
 
     @Mock
-    private JavaMailSender mailSender;
+    private PasswordResetEmailSender emailSender;
 
     @Test
-    void shouldSendResetLinkWithoutLoggingOrPersistingRawToken() {
+    void shouldCreateResetEmailWithoutLoggingOrPersistingRawToken() {
         PasswordResetMailService mailService = new PasswordResetMailService(
-                Optional.of(mailSender),
-                new PasswordResetProperties(
-                        URI.create("https://delvex.test/reset-password"),
-                        Duration.ofMinutes(30),
-                        "no-reply@delvex.test",
-                        Duration.ofHours(1),
-                        Duration.ofHours(1)));
+                Optional.of(emailSender),
+                properties());
 
         mailService.send(new PasswordResetRequestedEvent(
                 "john@example.com",
                 "reset-token"));
 
-        ArgumentCaptor<SimpleMailMessage> messageCaptor =
-                ArgumentCaptor.forClass(SimpleMailMessage.class);
-        then(mailSender).should().send(messageCaptor.capture());
+        ArgumentCaptor<PasswordResetEmail> emailCaptor =
+                ArgumentCaptor.forClass(PasswordResetEmail.class);
+        then(emailSender).should().send(emailCaptor.capture());
 
-        SimpleMailMessage message = messageCaptor.getValue();
-        assertThat(message.getFrom()).isEqualTo("no-reply@delvex.test");
-        assertThat(message.getTo()).containsExactly("john@example.com");
-        assertThat(message.getSubject())
+        PasswordResetEmail email = emailCaptor.getValue();
+        assertThat(email.from()).isEqualTo("no-reply@delvex.test");
+        assertThat(email.to()).isEqualTo("john@example.com");
+        assertThat(email.subject())
                 .isEqualTo("Reset your Delvex password");
-        assertThat(message.getText())
+        assertThat(email.text())
                 .contains("https://delvex.test/reset-password?token=reset-token")
                 .contains("30 minutes");
     }
 
     @Test
-    void shouldSkipDeliveryWhenSmtpIsNotConfigured() {
+    void shouldSkipDeliveryWhenTransportIsNotConfigured() {
         PasswordResetMailService mailService = new PasswordResetMailService(
                 Optional.empty(),
-                new PasswordResetProperties(
-                        URI.create("https://delvex.test/reset-password"),
-                        Duration.ofMinutes(30),
-                        "no-reply@delvex.test",
-                        Duration.ofHours(1),
-                        Duration.ofHours(1)));
+                properties());
 
         assertDoesNotThrow(() -> mailService.send(
                 new PasswordResetRequestedEvent(
                         "john@example.com",
                         "reset-token")));
+    }
+
+    private static PasswordResetProperties properties() {
+        return new PasswordResetProperties(
+                URI.create("https://delvex.test/reset-password"),
+                Duration.ofMinutes(30),
+                "no-reply@delvex.test",
+                Duration.ofHours(1),
+                Duration.ofHours(1));
     }
 }

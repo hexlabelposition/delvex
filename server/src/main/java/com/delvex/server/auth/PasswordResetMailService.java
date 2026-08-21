@@ -4,9 +4,6 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.event.TransactionPhase;
@@ -19,22 +16,22 @@ public class PasswordResetMailService {
     private static final Logger LOGGER = LoggerFactory.getLogger(
             PasswordResetMailService.class);
 
-    private final Optional<JavaMailSender> mailSender;
+    private final Optional<PasswordResetEmailSender> emailSender;
     private final PasswordResetProperties properties;
 
     public PasswordResetMailService(
-            Optional<JavaMailSender> mailSender,
+            Optional<PasswordResetEmailSender> emailSender,
             PasswordResetProperties properties) {
-        this.mailSender = mailSender;
+        this.emailSender = emailSender;
         this.properties = properties;
     }
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void send(PasswordResetRequestedEvent event) {
-        if (mailSender.isEmpty()) {
+        if (emailSender.isEmpty()) {
             LOGGER.info(
-                    "password reset email delivery skipped: SMTP is not configured");
+                    "password reset email delivery skipped: transport is not configured");
             return;
         }
 
@@ -45,11 +42,11 @@ public class PasswordResetMailService {
                 .encode()
                 .toUriString();
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(properties.mailFrom());
-        message.setTo(event.email());
-        message.setSubject("Reset your Delvex password");
-        message.setText("""
+        PasswordResetEmail email = new PasswordResetEmail(
+                properties.mailFrom(),
+                event.email(),
+                "Reset your Delvex password",
+                """
                 We received a request to reset your Delvex password.
 
                 Use this link to choose a new password:
@@ -61,8 +58,8 @@ public class PasswordResetMailService {
                         properties.tokenTtl().toMinutes()));
 
         try {
-            mailSender.orElseThrow().send(message);
-        } catch (MailException exception) {
+            emailSender.orElseThrow().send(email);
+        } catch (EmailDeliveryException exception) {
             LOGGER.error(
                     "password reset email delivery failed",
                     exception);

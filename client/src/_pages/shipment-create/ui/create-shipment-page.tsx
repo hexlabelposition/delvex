@@ -81,7 +81,11 @@ export function CreatePage() {
         {shipmentFormSteps.map((item, index) => (
           <div
             key={item.title}
-            className={`rounded-lg border px-3 py-2 text-sm ${index === step ? "bg-muted font-medium" : "text-muted-foreground"}`}
+            className={`rounded-lg border px-3 py-2 text-sm ${
+              index === step
+                ? "bg-muted font-medium"
+                : "text-muted-foreground"
+            }`}
           >
             <span className="bg-foreground text-background mr-2 inline-flex size-5 items-center justify-center rounded-full text-[11px]">
               {index + 1}
@@ -111,17 +115,27 @@ export function CreatePage() {
           </Alert>
         )}
         <div className="mt-5 flex items-center justify-between">
-          <Button type="button" variant="outline" render={<Link href="/shipments" />}>
+          <Button
+            type="button"
+            variant="outline"
+            render={<Link href="/shipments" />}
+          >
             Cancel
           </Button>
           <div className="flex gap-2">
             {step > 0 && (
-              <Button type="button" variant="outline" onClick={() => setStep((value) => value - 1)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setStep((value) => value - 1)}
+              >
                 <ArrowLeft /> Back
               </Button>
             )}
             {!isLastStep ? (
-              <Button type="button" onClick={next}>Continue</Button>
+              <Button type="button" onClick={next}>
+                Continue
+              </Button>
             ) : (
               <Button type="submit" disabled={pending}>
                 {pending ? "Creating…" : "Create shipment"}

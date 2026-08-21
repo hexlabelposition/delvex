@@ -1,6 +1,7 @@
 package com.delvex.server.shipment;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -64,6 +65,40 @@ class ShipmentBranchWorkflowTest {
                 .isInstanceOf(InvalidShipmentStateException.class)
                 .hasMessage(
                         "Shipment transition is not allowed from this branch");
+    }
+
+    @Test
+    void shouldExposeOnlyTransitionsOwnedByEachBranch() {
+        Branch origin = branch("WARSAW");
+        Branch destination = branch("GDANSK");
+        Shipment shipment = shipment(origin, destination);
+
+        assertThat(shipment.allowedTransitionsFor(origin))
+                .containsExactly(
+                        ShipmentStatus.ACCEPTED_AT_ORIGIN,
+                        ShipmentStatus.CANCELLED);
+        assertThat(shipment.allowedTransitionsFor(destination)).isEmpty();
+
+        shipment.changeStatus(
+                ShipmentStatus.ACCEPTED_AT_ORIGIN,
+                0L,
+                origin);
+        shipment.changeStatus(
+                ShipmentStatus.IN_TRANSIT,
+                0L,
+                origin);
+
+        assertThat(shipment.allowedTransitionsFor(origin)).isEmpty();
+        assertThat(shipment.allowedTransitionsFor(destination))
+                .containsExactly(ShipmentStatus.ARRIVED_AT_DESTINATION);
+
+        shipment.changeStatus(
+                ShipmentStatus.ARRIVED_AT_DESTINATION,
+                0L,
+                destination);
+
+        assertThat(shipment.allowedTransitionsFor(destination))
+                .isEqualTo(List.of(ShipmentStatus.DELIVERED));
     }
 
     private Shipment shipment(Branch origin, Branch destination) {

@@ -242,6 +242,76 @@ class EmployeeShipmentServiceTest {
     }
 
     @Test
+    void shouldRejectEmployeeAssignedToInactiveBranch() {
+        UUID employeeId = UUID.randomUUID();
+        Branch branch = branch("WARSAW", "Warszawa");
+        ReflectionTestUtils.setField(branch, "active", false);
+        given(userRepository.findById(employeeId))
+                .willReturn(Optional.of(user(
+                        employeeId,
+                        UserRole.EMPLOYEE,
+                        branch)));
+
+        assertThatThrownBy(() -> shipmentService.findById(
+                employeeId,
+                UUID.randomUUID()))
+                .isInstanceOf(EmployeeBranchRequiredException.class)
+                .hasMessage("Employee is not assigned to an active branch");
+
+        then(shipmentRepository).shouldHaveNoInteractions();
+    }
+
+    @Test
+    void shouldHideShipmentOutsideEmployeeBranch() {
+        UUID employeeId = UUID.randomUUID();
+        UUID shipmentId = UUID.randomUUID();
+        Branch employeeBranch = branch("KRAKOW", "Kraków");
+
+        given(userRepository.findById(employeeId))
+                .willReturn(Optional.of(user(
+                        employeeId,
+                        UserRole.EMPLOYEE,
+                        employeeBranch)));
+        given(shipmentRepository.findByIdForBranch(
+                shipmentId,
+                employeeBranch.getId()))
+                .willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> shipmentService.findById(
+                employeeId,
+                shipmentId))
+                .isInstanceOf(ShipmentNotFoundException.class);
+
+        then(shipmentRepository).should().findByIdForBranch(
+                shipmentId,
+                employeeBranch.getId());
+    }
+
+    @Test
+    void shouldHideStatusHistoryOutsideEmployeeBranch() {
+        UUID employeeId = UUID.randomUUID();
+        UUID shipmentId = UUID.randomUUID();
+        Branch employeeBranch = branch("KRAKOW", "Kraków");
+
+        given(userRepository.findById(employeeId))
+                .willReturn(Optional.of(user(
+                        employeeId,
+                        UserRole.EMPLOYEE,
+                        employeeBranch)));
+        given(shipmentRepository.findByIdForBranch(
+                shipmentId,
+                employeeBranch.getId()))
+                .willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> shipmentService.findStatusEvents(
+                employeeId,
+                shipmentId))
+                .isInstanceOf(ShipmentNotFoundException.class);
+
+        then(eventRepository).shouldHaveNoInteractions();
+    }
+
+    @Test
     void shouldRejectOriginTransitionFromDestinationBranch() {
         UUID employeeId = UUID.randomUUID();
         Shipment shipment = shipment(user(

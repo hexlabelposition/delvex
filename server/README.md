@@ -28,7 +28,7 @@ PostgreSQL persistence, API documentation, security, and operational health.
 - short-lived HS256 JWT access tokens;
 - rotating refresh tokens stored in an HttpOnly cookie;
 - refresh-session revocation and scheduled cleanup;
-- one-time password reset tokens and SMTP email delivery;
+- one-time password reset tokens with profile-specific email delivery;
 - current-user profile retrieval and update;
 - shipment creation, pagination, retrieval, update, and deletion;
 - CUSTOMER and EMPLOYEE roles carried by signed access tokens;
@@ -179,6 +179,11 @@ default, requesting another link invalidates earlier links, and a successful
 reset revokes every active refresh session for the user. An already issued
 access token can remain valid only until its normal 15-minute expiry.
 
+Email delivery runs asynchronously after the reset-token transaction commits.
+The forgot-password endpoint returning HTTP 202 therefore confirms that the
+request was accepted, not that an email reached the inbox. Transport failures
+are logged without exposing the raw token.
+
 ### Provision an employee
 
 Public registration always creates a CUSTOMER and cannot request another role.
@@ -207,7 +212,7 @@ introduced.
 
 - JDK 21
 - Docker with Docker Compose
-- PostgreSQL and Redis; SMTP is optional outside local Mailpit development
+- PostgreSQL and Redis; SMTP is used only by local Mailpit development
 
 A system Maven installation is not required.
 
@@ -374,11 +379,11 @@ HTTP 503 instead of silently bypassing rate limiting.
 
 Spring uses one explicit profile for each runtime:
 
-| Profile   | Runtime               | Mail transport                     |
-| --------- | --------------------- | ---------------------------------- |
-| **local** | IDE or Docker Compose | Mailpit on port 1025               |
-| **dev**   | Railway Development   | Resend through the hosted profile  |
-| **prod**  | Railway Production    | Resend through the hosted profile  |
+| Profile   | Runtime               | Mail transport                  |
+| --------- | --------------------- | ------------------------------- |
+| **local** | IDE or Docker Compose | Mailpit SMTP on port 1025       |
+| **dev**   | Railway Development   | Resend HTTPS API on port 443    |
+| **prod**  | Railway Production    | Resend HTTPS API on port 443    |
 
 The **dev** and **prod** profile groups automatically activate the internal
 **hosted** profile. Do not set **hosted** directly and never combine **local**
@@ -414,17 +419,30 @@ RESEND_API_KEY="<Resend API key>"
 MAIL_FROM="no-reply@example.com"
 ```
 
-The hosted profile owns the remaining Resend transport settings:
-**smtp.resend.com**, port **587**, username **resend**, SMTP authentication, and
-STARTTLS. They are not deployment variables and cannot accidentally select
-Mailpit. Conversely, the local profile accepts only **localhost**,
-**127.0.0.1**, **::1**, or **mailpit** on port **1025**, so an exported hosted
-SMTP value cannot send a local test message through Resend.
+The hosted profile owns the fixed
+[Resend **POST /emails** endpoint](https://resend.com/docs/api-reference/emails/send-email)
+and authenticates with **RESEND_API_KEY** as a Bearer token. The endpoint URL is
+not configurable, so deployment variables cannot redirect the secret or select
+Mailpit. Hosted delivery intentionally uses HTTPS on port 443 because
+[Railway permits outbound SMTP only on Pro plans and above](https://docs.railway.com/networking/outbound-networking#email-delivery).
+
+Conversely, the local profile uses Spring Mail and accepts only **localhost**,
+**127.0.0.1**, **::1**, or **mailpit** on port **1025**. This prevents an
+exported hosted SMTP value from sending a local test message through Resend.
+The local profile does not create the Resend API client.
 
 Use a separate Resend API key for Railway Development and Production.
-**MAIL_FROM** must belong to a domain verified in Resend, and the reset URL must
-match the public client in the same Railway environment. Never expose
-**RESEND_API_KEY** to the client service or commit it to an environment file.
+**MAIL_FROM** may be either **no-reply@example.com** or a display-name form such
+as **Delvex <no-reply@example.com>**, but its domain must be verified in Resend.
+The reset URL must match the public client in the same Railway environment.
+Never expose **RESEND_API_KEY** to the client service or commit it to an
+environment file.
+
+A successful Resend API response means Resend accepted the message and returns
+an email ID. Use the Resend dashboard and domain DNS status to distinguish
+accepted, delivered, bounced, and rejected messages. Application logs contain
+transport failures, while the forgot-password HTTP response remains 202 to
+avoid account enumeration.
 
 The application fails fast when hosted configuration is incomplete or unsafe.
 Production additionally rejects:

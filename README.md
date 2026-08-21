@@ -50,7 +50,8 @@ supports a complete containerized development stack.
 - **Server:** Java 21, Spring Boot 4.1, Spring Security, Spring Data JPA,
   Flyway, and springdoc OpenAPI
 - **Data:** PostgreSQL 17 for durable data and Redis 8 for rate-limit counters
-- **Development email:** Mailpit captures password reset messages locally
+- **Email:** Mailpit captures password reset messages locally; hosted runtimes
+  deliver them through the Resend HTTPS API
 - **Infrastructure:** Docker and Docker Compose
 - **CI:** GitHub Actions
 
@@ -184,16 +185,17 @@ docker compose up --build client
 
 The Spring profiles map directly to the three execution environments:
 
-| Profile   | Runtime                | Email delivery |
-| --------- | ---------------------- | -------------- |
-| **local** | IDE or Docker Compose  | Mailpit        |
-| **dev**   | Railway Development    | Resend         |
-| **prod**  | Railway Production     | Resend         |
+| Profile   | Runtime                | Email delivery          |
+| --------- | ---------------------- | ----------------------- |
+| **local** | IDE or Docker Compose  | Mailpit over SMTP       |
+| **dev**   | Railway Development    | Resend over HTTPS       |
+| **prod**  | Railway Production     | Resend over HTTPS       |
 
-The hosted profiles share the fixed Resend SMTP transport. Each Railway
-environment supplies only its own **RESEND_API_KEY**, **MAIL_FROM**,
-**PASSWORD_RESET_CLIENT_URL**, and the existing infrastructure variables.
-Local development never reads the Resend secret.
+The hosted profiles call the fixed Resend **POST /emails** API over HTTPS.
+Each Railway environment supplies only its own **RESEND_API_KEY**,
+**MAIL_FROM**, **PASSWORD_RESET_CLIENT_URL**, and the existing infrastructure
+variables. Local development never reads the Resend secret, and the local
+profile rejects non-Mailpit SMTP hosts.
 
 See the
 [server production configuration](server/README.md#production-configuration)

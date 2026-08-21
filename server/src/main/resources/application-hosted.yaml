@@ -4,14 +4,9 @@ spring:
   data:
     redis:
       host: ${REDIS_HOST}
-  mail:
-    host: smtp.resend.com
-    port: 587
-    username: resend
-    password: ${RESEND_API_KEY}
-    properties:
-      "[mail.smtp.auth]": true
-      "[mail.smtp.starttls.enable]": true
+
+resend:
+  api-key: ${RESEND_API_KEY}
 
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS}

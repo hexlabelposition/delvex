@@ -14,6 +14,7 @@ import {
 import { Check, Pencil } from "lucide-react";
 import { useState } from "react";
 
+import { changePasswordAction } from "../api/change-password";
 import { updateProfileAction } from "../api/update-profile";
 
 export function ProfilePage() {
@@ -24,6 +25,9 @@ export function ProfilePage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [passwordMessage, setPasswordMessage] = useState("");
 
   const startEditing = () => {
     setFirstName(user.firstName);
@@ -143,6 +147,7 @@ export function ProfilePage() {
           )}
         </CardContent>
       </Card>
+      <Card className="mt-5 gap-0 py-0"><CardContent className="p-5"><h2 className="font-medium">Change password</h2><div className="mt-3 grid gap-3 sm:grid-cols-2"><Input type="password" placeholder="Current password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} /><Input type="password" placeholder="New password (min. 8 characters)" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} /></div><div className="mt-3 flex items-center gap-3"><Button onClick={() => void changePasswordAction({ currentPassword, newPassword }).then((result) => { setPasswordMessage(result.message); if (result.ok) { setCurrentPassword(""); setNewPassword(""); } })}>Change password</Button>{passwordMessage && <p className="text-sm text-muted-foreground">{passwordMessage}</p>}</div></CardContent></Card>
       <Card className="mt-5 gap-0 py-0">
         <CardContent className="flex flex-wrap items-center justify-between gap-4 p-5">
           <div>

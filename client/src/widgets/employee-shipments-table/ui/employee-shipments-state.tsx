@@ -16,7 +16,7 @@ export function EmployeeShipmentsState({
       <EmptyState
         icon={PackageSearch}
         title="Couldn’t load shipments"
-        description="The server is unavailable. Please try again in a moment."
+        description="The branch queue is unavailable. Please try again in a moment."
       />
     );
   }
@@ -26,7 +26,7 @@ export function EmployeeShipmentsState({
       <EmptyState
         icon={PackageSearch}
         title="No matching shipments"
-        description="Try changing the reference or status filter."
+        description="Scan another reference or change the queue filter."
       />
     );
   }

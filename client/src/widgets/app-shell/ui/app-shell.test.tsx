@@ -7,7 +7,6 @@ const mocks = vi.hoisted(() => ({
   useSession: vi.fn(),
 }));
 
-// Role routing stays real; only the session and the server action are stubbed.
 vi.mock("@features/auth", () => ({
   logoutAction: mocks.logoutAction,
   useSession: mocks.useSession,
@@ -16,45 +15,30 @@ vi.mock("next/navigation", () => ({ usePathname: mocks.usePathname }));
 
 import { AppShell } from "./app-shell";
 
-const baseUser = {
-  id: "user-id",
-  email: "user@example.com",
-  firstName: "Ada",
-  lastName: "Lovelace",
-};
-
-describe("AppShell role navigation", () => {
+describe("AppShell customer navigation", () => {
   beforeEach(() => {
     mocks.usePathname.mockReturnValue("/dashboard");
+    mocks.useSession.mockReturnValue({
+      user: {
+        id: "customer-id",
+        email: "customer@example.com",
+        firstName: "Ada",
+        lastName: "Lovelace",
+        role: "CUSTOMER",
+      },
+    });
   });
 
-  it("shows customer navigation only to customers", () => {
-    mocks.useSession.mockReturnValue({
-      user: { ...baseUser, role: "CUSTOMER" },
-    });
-
+  it("keeps customer navigation separate from operations", () => {
     render(<AppShell>content</AppShell>);
+
+    expect(screen.getByRole("link", { name: "Dashboard" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Shipments" })).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Create shipment" }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("link", { name: "Operations" }),
+      screen.queryByRole("link", { name: "Shipment queue" }),
     ).not.toBeInTheDocument();
-  });
-
-  it("shows employee navigation only to employees", () => {
-    mocks.useSession.mockReturnValue({
-      user: { ...baseUser, role: "EMPLOYEE" },
-    });
-
-    render(<AppShell>content</AppShell>);
-    expect(
-      screen.getByRole("link", { name: "Operations" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("link", { name: "Create shipment" }),
-    ).not.toBeInTheDocument();
-    expect(screen.getByText("Employee")).toBeInTheDocument();
   });
 });

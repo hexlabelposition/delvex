@@ -18,6 +18,8 @@ supports a complete containerized development stack.
 - customer and employee roles with server-enforced access boundaries;
 - branch-scoped employee operations with origin and destination lifecycle
   responsibilities and status audit history;
+- separate customer and employee application shells with a scan-first branch
+  operations queue;
 - enforced shipment ownership and optimistic concurrency protection;
 - consistent validation, security, and domain errors;
 - development OpenAPI documentation;

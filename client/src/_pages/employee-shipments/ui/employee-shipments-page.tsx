@@ -1,12 +1,12 @@
 import { getEmployeeShipments } from "@entities/shipment";
 import { requireSession } from "@features/auth/server";
 import type { EmployeeShipmentPage, ShipmentStatus } from "@shared/api";
-import { Button, Card, CardContent, Input, Label } from "@shared/ui";
+import { Button, Input, Label } from "@shared/ui";
 import {
   EmployeeShipmentsState,
   EmployeeShipmentsTable,
 } from "@widgets/employee-shipments-table";
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, ScanLine, Search } from "lucide-react";
 import Link from "next/link";
 
 const statuses: readonly ShipmentStatus[] = [
@@ -16,6 +16,18 @@ const statuses: readonly ShipmentStatus[] = [
   "ARRIVED_AT_DESTINATION",
   "DELIVERED",
   "CANCELLED",
+];
+
+const queueFilters: readonly {
+  label: string;
+  status: ShipmentStatus | "";
+}[] = [
+  { label: "All", status: "" },
+  { label: "New intake", status: "CREATED" },
+  { label: "Accepted", status: "ACCEPTED_AT_ORIGIN" },
+  { label: "Incoming", status: "IN_TRANSIT" },
+  { label: "Ready for delivery", status: "ARRIVED_AT_DESTINATION" },
+  { label: "Completed", status: "DELIVERED" },
 ];
 
 interface EmployeeShipmentsPageProps {
@@ -41,7 +53,7 @@ export async function EmployeePage({
   status,
   reference,
 }: EmployeeShipmentsPageProps) {
-  const { accessToken } = await requireSession();
+  const { accessToken, user } = await requireSession();
 
   let shipments: EmployeeShipmentPage | null = null;
 
@@ -59,84 +71,104 @@ export async function EmployeePage({
   const hasShipments = shipments !== null && shipments.content.length > 0;
 
   return (
-    <div className="mx-auto max-w-7xl">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">
-          Shipment operations
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          Receive customer shipments and move them through the logistics
-          lifecycle.
+    <div className="mx-auto max-w-[1600px]">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+            {user.branch?.code ?? "Unassigned branch"}
+          </p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight">
+            Shipment queue
+          </h1>
+        </div>
+        <p className="text-muted-foreground text-sm">
+          {shipments === null
+            ? "Queue unavailable"
+            : `${shipments.totalElements} matching shipment${shipments.totalElements === 1 ? "" : "s"}`}
         </p>
       </div>
 
-      <Card className="mt-7 gap-0 py-0">
-        <CardContent className="p-5">
-          {/* A plain GET form: the filters live in the URL, so the page they
-              produce is shareable and rendered entirely on the server. */}
-          <form
-            action="/employee"
-            method="get"
-            className="grid items-end gap-4 md:grid-cols-[minmax(0,1fr)_220px_auto]"
-          >
-            <div>
-              <Label htmlFor="reference">Reference</Label>
-              <Input
-                id="reference"
-                name="reference"
-                className="mt-2"
-                defaultValue={reference}
-                maxLength={40}
-                placeholder="Search by reference"
-              />
+      <section className="bg-background mt-5 border">
+        <form
+          action="/employee"
+          method="get"
+          className="grid items-end gap-3 border-b p-3 lg:grid-cols-[minmax(320px,1fr)_220px_auto]"
+        >
+          <div>
+            <div className="flex items-center justify-between gap-3">
+              <Label htmlFor="reference">Scan or enter reference</Label>
+              <span className="text-muted-foreground hidden items-center gap-1 text-xs sm:flex">
+                <ScanLine className="size-3" /> Scanner ready · Enter to search
+              </span>
             </div>
-            <div>
-              <Label htmlFor="status">Status</Label>
-              <select
-                id="status"
-                name="status"
-                className="border-input mt-2 h-8 w-full rounded-lg border bg-transparent px-2.5 text-sm"
-                defaultValue={status}
+            <Input
+              id="reference"
+              name="reference"
+              className="mt-1.5 h-10 font-mono"
+              defaultValue={reference}
+              maxLength={40}
+              placeholder="DLX-…"
+              autoComplete="off"
+              autoFocus
+            />
+          </div>
+          <div>
+            <Label htmlFor="status">Exact status</Label>
+            <select
+              id="status"
+              name="status"
+              className="border-input mt-1.5 h-10 w-full rounded-lg border bg-transparent px-2.5 text-sm"
+              defaultValue={status}
+            >
+              <option value="">All statuses</option>
+              {statuses.map((option) => (
+                <option key={option} value={option}>
+                  {option.replaceAll("_", " ")}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex gap-2">
+            <Button type="submit" className="h-10 px-4">
+              <Search /> Search
+            </Button>
+            {(status || reference) && (
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10"
+                render={<Link href="/employee" />}
               >
-                <option value="">All statuses</option>
-                {statuses.map((option) => (
-                  <option key={option} value={option}>
-                    {option.replaceAll("_", " ")}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex gap-2">
-              <Button type="submit">
-                <Search /> Apply
+                Clear
               </Button>
-              {(status || reference) && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  render={<Link href="/employee" />}
-                >
-                  Clear
-                </Button>
-              )}
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+            )}
+          </div>
+        </form>
 
-      <div className="mt-6">
+        <nav
+          aria-label="Shipment queues"
+          className="flex gap-1 overflow-x-auto px-3 py-2"
+        >
+          {queueFilters.map((queue) => (
+            <Button
+              key={queue.label}
+              size="sm"
+              variant={status === queue.status ? "secondary" : "ghost"}
+              render={<Link href={pageHref(0, queue.status, reference)} />}
+            >
+              {queue.label}
+            </Button>
+          ))}
+        </nav>
+      </section>
+
+      <div className="mt-4">
         <EmployeeShipmentsState
           error={shipments === null}
           hasShipments={hasShipments}
         >
           {shipments !== null && hasShipments ? (
             <>
-              <div className="mb-3 flex items-center justify-between gap-4">
-                <p className="text-muted-foreground text-sm">
-                  {shipments.totalElements} shipment
-                  {shipments.totalElements === 1 ? "" : "s"}
-                </p>
-              </div>
               <EmployeeShipmentsTable shipments={shipments.content} />
               <div className="mt-4 flex items-center justify-between gap-4">
                 <p className="text-muted-foreground text-sm">

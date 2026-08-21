@@ -4,14 +4,15 @@ import { createPageMetadata } from "@shared/config/site-metadata";
 
 export const metadata = createPageMetadata({
   title: "Employee operations",
-  description: "Receive shipments and manage their logistics lifecycle.",
+  description: "Process shipments assigned to the current branch.",
   path: "/employee",
 });
 
-const statuses: readonly string[] = [
+const statuses: readonly ShipmentStatus[] = [
   "CREATED",
-  "ACCEPTED",
+  "ACCEPTED_AT_ORIGIN",
   "IN_TRANSIT",
+  "ARRIVED_AT_DESTINATION",
   "DELIVERED",
   "CANCELLED",
 ];
@@ -23,7 +24,7 @@ interface PageProps {
 export default async function Page({ searchParams }: PageProps) {
   const { page, reference, status } = await searchParams;
   const selectedStatus =
-    typeof status === "string" && statuses.includes(status)
+    typeof status === "string" && statuses.includes(status as ShipmentStatus)
       ? (status as ShipmentStatus)
       : "";
 

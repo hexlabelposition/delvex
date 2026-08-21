@@ -83,7 +83,7 @@ docker compose up --build server
 | **/dashboard**       | CUSTOMER  | Review customer shipment activity and recent records         |
 | **/shipments**       | CUSTOMER  | Browse and manage owned shipments                            |
 | **/create**          | CUSTOMER  | Create a shipment                                            |
-| **/employee**        | EMPLOYEE  | Manage shipments connected to the assigned branch            |
+| **/employee**        | EMPLOYEE  | Operate the assigned branch queue with scan-first search     |
 | **/profile**         | Signed in | Review and update the current profile                        |
 
 Authentication routing is enforced in **src/proxy.ts**. Guests can open the
@@ -115,12 +115,26 @@ and server-field-error mapping. Keep shipment-specific behavior in that feature
 module so later customer and employee surfaces can reuse it without duplicating
 validation or API contracts.
 
+Customer pages and employee operations share the session provider but render
+through separate shells. **AppShell** keeps the customer dashboard navigation,
+while **EmployeeShell** exposes the assigned branch, a compact operations
+navigation, and a denser desktop/tablet-first work area. This keeps the two
+business processes visually separate without duplicating authentication.
+
+The employee queue keeps filters in the URL and is rendered on the server. Its
+reference input receives initial focus so a keyboard-wedge barcode scanner can
+submit a shipment reference with Enter without a scanner SDK. Exact-status queue
+shortcuts, branch context, and row-level actions reduce navigation during normal
+counter work. The detail page remains available for the complete customer,
+route, cargo, schedule, and audit context.
+
 The employee workspace uses the version returned with each shipment when it
 updates a status. The server derives the employee branch from the authenticated
-account and returns only branch-allowed actions in **allowedStatuses**. A
-conflict response means another employee changed the record; reload the shipment
-before retrying. Every successful transition is displayed from the immutable
-server status history.
+account and returns only branch-allowed actions in **allowedStatuses**; the
+client never derives authorization from the selected queue. A conflict response
+means another employee changed the record; reload the shipment before retrying.
+Every successful transition is displayed from the immutable server status
+history, including the acting branch when it is available.
 
 ## UI components
 

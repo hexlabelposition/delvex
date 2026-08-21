@@ -9,6 +9,7 @@ import { requireSession } from "@features/auth/server";
 import { ShipmentStatusControls } from "@features/shipment-status";
 import {
   ApiClientError,
+  type BranchSummary,
   type EmployeeShipment,
   type ShipmentStatusEvent,
 } from "@shared/api";
@@ -35,24 +36,35 @@ function AddressCard({
   city,
   postalCode,
   address,
+  branch,
 }: {
   title: string;
   country: string;
   city: string;
   postalCode: string;
   address: string;
+  branch?: BranchSummary;
 }) {
   return (
-    <Card className="gap-0 py-0">
-      <CardHeader className="px-5 pt-5">
-        <CardDescription>{title}</CardDescription>
-        <CardTitle className="mt-1 text-lg">
-          {city}, {country}
+    <Card className="gap-0 rounded-none py-0 shadow-none">
+      <CardHeader className="px-4 pt-4">
+        <CardDescription className="flex items-center justify-between gap-2">
+          {title}
+          {branch && (
+            <span className="font-mono text-xs font-semibold">
+              {branch.code}
+            </span>
+          )}
+        </CardDescription>
+        <CardTitle className="mt-1 text-base">
+          {branch?.name ?? `${city}, ${country}`}
         </CardTitle>
       </CardHeader>
-      <CardContent className="text-muted-foreground px-5 pt-3 pb-5 text-sm">
+      <CardContent className="text-muted-foreground px-4 pt-2 pb-4 text-sm">
         <p>{address}</p>
-        <p className="mt-1">{postalCode}</p>
+        <p className="mt-1">
+          {postalCode} {city}, {country}
+        </p>
       </CardContent>
     </Card>
   );
@@ -60,14 +72,14 @@ function AddressCard({
 
 function StatusHistory({ events }: { events: ShipmentStatusEvent[] }) {
   return (
-    <Card className="mt-5 gap-0 py-0">
-      <CardHeader className="px-5 pt-5">
+    <Card className="mt-4 gap-0 rounded-none py-0 shadow-none">
+      <CardHeader className="px-4 pt-4">
         <CardDescription>Audit trail</CardDescription>
         <CardTitle className="mt-1 flex items-center gap-2 text-lg">
           <History className="size-4" /> Status history
         </CardTitle>
       </CardHeader>
-      <CardContent className="px-5 pt-3 pb-5">
+      <CardContent className="px-4 pt-3 pb-4">
         {events.length === 0 ? (
           <p className="text-muted-foreground text-sm">
             No employee status changes have been recorded yet.
@@ -87,6 +99,7 @@ function StatusHistory({ events }: { events: ShipmentStatusEvent[] }) {
                   <p className="text-muted-foreground mt-1 text-xs">
                     {event.changedByFirstName} {event.changedByLastName} ·{" "}
                     {event.changedByRole.toLowerCase()}
+                    {event.branch ? ` · ${event.branch.code}` : ""}
                   </p>
                 </div>
                 <time className="text-muted-foreground font-mono text-xs">
@@ -123,11 +136,11 @@ export async function EmployeeShipmentPage({
   }
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto max-w-[1400px]">
       <Button variant="ghost" size="sm" render={<Link href="/employee" />}>
         <ArrowLeft /> Back to operations
       </Button>
-      <div className="mt-5">
+      <div className="mt-4">
         {loadError === "not-found" ? (
           <EmptyState
             icon={PackageOpen}
@@ -152,14 +165,17 @@ export async function EmployeeShipmentPage({
           />
         ) : (
           <>
-            <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="bg-background flex flex-wrap items-center justify-between gap-4 border p-4">
               <div>
-                <p className="text-muted-foreground font-mono text-sm">
-                  {record.shipment.referenceNumber}
+                <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+                  Shipment record
                 </p>
-                <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-                  Employee shipment view
+                <h1 className="mt-1 font-mono text-xl font-semibold tracking-tight">
+                  {record.shipment.referenceNumber}
                 </h1>
+                <p className="text-muted-foreground mt-1 text-xs">
+                  Current branch: {record.currentBranch?.name ?? "In transit"}
+                </p>
               </div>
               <div className="flex flex-wrap items-center justify-end gap-2">
                 <StatusBadge status={record.shipment.status} />
@@ -172,15 +188,15 @@ export async function EmployeeShipmentPage({
               </div>
             </div>
 
-            <div className="mt-7 grid gap-3 md:grid-cols-3">
-              <Card className="gap-0 py-0 md:col-span-1">
-                <CardHeader className="px-5 pt-5">
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              <Card className="gap-0 rounded-none py-0 shadow-none md:col-span-1">
+                <CardHeader className="px-4 pt-4">
                   <CardDescription>Customer</CardDescription>
-                  <CardTitle className="mt-1 text-lg">
+                  <CardTitle className="mt-1 text-base">
                     {record.customer.firstName} {record.customer.lastName}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="text-muted-foreground px-5 pt-3 pb-5 text-sm">
+                <CardContent className="text-muted-foreground px-4 pt-2 pb-4 text-sm">
                   <p>{record.customer.email}</p>
                   <p className="mt-2 font-mono text-xs break-all">
                     {record.customer.id}
@@ -194,6 +210,7 @@ export async function EmployeeShipmentPage({
                   city={record.shipment.originCity}
                   postalCode={record.shipment.originPostalCode}
                   address={record.shipment.originAddress}
+                  branch={record.originBranch}
                 />
                 <AddressCard
                   title="Destination"
@@ -201,33 +218,34 @@ export async function EmployeeShipmentPage({
                   city={record.shipment.destinationCity}
                   postalCode={record.shipment.destinationPostalCode}
                   address={record.shipment.destinationAddress}
+                  branch={record.destinationBranch}
                 />
               </div>
             </div>
 
-            <div className="mt-5 grid gap-3 md:grid-cols-2">
-              <Card className="gap-0 py-0">
-                <CardHeader className="px-5 pt-5">
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+              <Card className="gap-0 rounded-none py-0 shadow-none">
+                <CardHeader className="px-4 pt-4">
                   <CardDescription>Cargo</CardDescription>
-                  <CardTitle className="mt-1 text-lg">
+                  <CardTitle className="mt-1 text-base">
                     Cargo information
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="px-5 pt-3 pb-5 text-sm">
+                <CardContent className="px-4 pt-2 pb-4 text-sm">
                   <p>{record.shipment.cargoDescription}</p>
                   <p className="text-muted-foreground mt-3">
                     Weight: {formatWeight(record.shipment.weightKg)}
                   </p>
                 </CardContent>
               </Card>
-              <Card className="gap-0 py-0">
-                <CardHeader className="px-5 pt-5">
+              <Card className="gap-0 rounded-none py-0 shadow-none">
+                <CardHeader className="px-4 pt-4">
                   <CardDescription>Schedule</CardDescription>
-                  <CardTitle className="mt-1 text-lg">
+                  <CardTitle className="mt-1 text-base">
                     Pickup and delivery
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="text-muted-foreground grid gap-3 px-5 pt-3 pb-5 text-sm">
+                <CardContent className="text-muted-foreground grid gap-2 px-4 pt-2 pb-4 text-sm">
                   <p>
                     <span className="text-foreground font-medium">
                       Pickup:{" "}

@@ -22,7 +22,7 @@ class ProductionConfigurationValidatorTest {
     }
 
     @Test
-    void shouldRejectDevelopmentProfileInProduction() {
+    void shouldRejectConflictingProfileInProduction() {
         assertInvalid(true, "https://app.example.com", true, false, false);
     }
 
@@ -50,7 +50,7 @@ class ProductionConfigurationValidatorTest {
     }
 
     private void assertInvalid(
-            boolean devProfileActive,
+            boolean conflictingProfileActive,
             String allowedOrigins,
             boolean secureCookie,
             boolean apiDocsEnabled,
@@ -58,7 +58,7 @@ class ProductionConfigurationValidatorTest {
         assertThrows(
                 IllegalStateException.class,
                 () -> ProductionConfigurationValidator.validate(
-                        devProfileActive,
+                        conflictingProfileActive,
                         allowedOrigins,
                         secureCookie,
                         apiDocsEnabled,

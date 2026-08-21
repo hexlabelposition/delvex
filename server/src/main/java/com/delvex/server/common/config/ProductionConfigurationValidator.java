@@ -26,7 +26,7 @@ public class ProductionConfigurationValidator {
             @Value("${springdoc.api-docs.enabled}") boolean apiDocsEnabled,
             @Value("${springdoc.swagger-ui.enabled}") boolean swaggerUiEnabled) {
         validate(
-                environment.acceptsProfiles(Profiles.of("dev")),
+                environment.acceptsProfiles(Profiles.of("local", "dev")),
                 corsProperties.allowedOrigins(),
                 authProperties.refreshCookieSecure(),
                 apiDocsEnabled,
@@ -34,14 +34,14 @@ public class ProductionConfigurationValidator {
     }
 
     static void validate(
-            boolean devProfileActive,
+            boolean conflictingProfileActive,
             String allowedOrigins,
             boolean secureCookie,
             boolean apiDocsEnabled,
             boolean swaggerUiEnabled) {
-        if (devProfileActive) {
+        if (conflictingProfileActive) {
             throw new IllegalStateException(
-                    "The dev and prod profiles cannot be active together");
+                    "The prod profile cannot be combined with local or dev");
         }
 
         if (!secureCookie) {

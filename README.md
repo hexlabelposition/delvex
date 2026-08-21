@@ -93,7 +93,7 @@ for that instead.
 cp .env.example .env
 ```
 
-Choose **dev** as the local server profile, replace the database credentials,
+The template selects the **local** server profile. Replace the database credentials,
 set the browser-reachable API URL, and generate an access-token secret:
 
 ```bash
@@ -118,7 +118,8 @@ The services are available at:
 
 The client waits for server readiness, and the server waits for PostgreSQL and
 Redis readiness. Password reset email is captured by Mailpit instead of being
-sent to a real mailbox.
+sent to a real mailbox. Mailpit is intentionally local-only and is not part of
+hosted Railway environments.
 
 ### Start only infrastructure
 
@@ -178,6 +179,25 @@ editing **NEXT_PUBLIC_API_URL** in the root **.env** has no effect on a plain
 ```bash
 docker compose up --build client
 ```
+
+## Runtime environments
+
+The Spring profiles map directly to the three execution environments:
+
+| Profile   | Runtime                | Email delivery |
+| --------- | ---------------------- | -------------- |
+| **local** | IDE or Docker Compose  | Mailpit        |
+| **dev**   | Railway Development    | Resend         |
+| **prod**  | Railway Production     | Resend         |
+
+The hosted profiles share the fixed Resend SMTP transport. Each Railway
+environment supplies only its own **RESEND_API_KEY**, **MAIL_FROM**,
+**PASSWORD_RESET_CLIENT_URL**, and the existing infrastructure variables.
+Local development never reads the Resend secret.
+
+See the
+[server production configuration](server/README.md#production-configuration)
+for the complete hosted environment contract.
 
 ## CI and releases
 

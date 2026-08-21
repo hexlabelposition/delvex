@@ -5,7 +5,7 @@ spring:
     redis:
       host: ${REDIS_HOST}
   mail:
-    host: ${MAIL_HOST}
+    host: ${MAIL_HOST:}
     port: ${MAIL_PORT:587}
     username: ${MAIL_USERNAME}
     password: ${MAIL_PASSWORD}
@@ -21,7 +21,7 @@ auth:
 
 password-reset:
   client-url: ${PASSWORD_RESET_CLIENT_URL}
-  mail-from: ${MAIL_FROM}
+  mail-from: ${MAIL_FROM:no-reply@delvex.local}
 
 springdoc:
   api-docs:

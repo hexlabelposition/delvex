@@ -9,13 +9,20 @@ export async function changePasswordAction(payload: {
   newPassword: string;
 }) {
   const { accessToken } = await requireSession();
+
   try {
     await changePassword(payload, accessToken);
-    return { ok: true, message: "Password changed.", fieldErrors: {} as Record<string, string> };
+
+    return {
+      ok: true,
+      message: "Password changed.",
+      fieldErrors: {} as Record<string, string>,
+    };
   } catch (error) {
     return {
       ok: false,
-      message: error instanceof Error ? error.message : "Could not change password.",
+      message:
+        error instanceof Error ? error.message : "Could not change password.",
       fieldErrors: error instanceof ApiClientError ? error.fieldErrors : {},
     };
   }

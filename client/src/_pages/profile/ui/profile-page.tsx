@@ -14,8 +14,8 @@ import {
 import { Check, Pencil } from "lucide-react";
 import { useState } from "react";
 
-import { ChangePasswordCard } from "./change-password-card";
 import { updateProfileAction } from "../api/update-profile";
+import { ChangePasswordCard } from "./change-password-card";
 
 export function ProfilePage() {
   const { user } = useSession();

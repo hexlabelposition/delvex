@@ -1,5 +1,7 @@
 package com.delvex.server.auth;
 
+import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.mail.MailException;
@@ -17,11 +19,11 @@ public class PasswordResetMailService {
     private static final Logger LOGGER = LoggerFactory.getLogger(
             PasswordResetMailService.class);
 
-    private final JavaMailSender mailSender;
+    private final Optional<JavaMailSender> mailSender;
     private final PasswordResetProperties properties;
 
     public PasswordResetMailService(
-            JavaMailSender mailSender,
+            Optional<JavaMailSender> mailSender,
             PasswordResetProperties properties) {
         this.mailSender = mailSender;
         this.properties = properties;
@@ -30,6 +32,12 @@ public class PasswordResetMailService {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void send(PasswordResetRequestedEvent event) {
+        if (mailSender.isEmpty()) {
+            LOGGER.info(
+                    "password reset email delivery skipped: SMTP is not configured");
+            return;
+        }
+
         String resetUrl = UriComponentsBuilder
                 .fromUri(properties.clientUrl())
                 .queryParam("token", event.token())
@@ -53,7 +61,7 @@ public class PasswordResetMailService {
                         properties.tokenTtl().toMinutes()));
 
         try {
-            mailSender.send(message);
+            mailSender.orElseThrow().send(message);
         } catch (MailException exception) {
             LOGGER.error(
                     "password reset email delivery failed",

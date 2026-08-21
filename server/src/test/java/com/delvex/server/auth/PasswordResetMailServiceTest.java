@@ -2,6 +2,7 @@ package com.delvex.server.auth;
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,6 +13,7 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.BDDMockito.then;
 
 @ExtendWith(MockitoExtension.class)
@@ -23,7 +25,7 @@ class PasswordResetMailServiceTest {
     @Test
     void shouldSendResetLinkWithoutLoggingOrPersistingRawToken() {
         PasswordResetMailService mailService = new PasswordResetMailService(
-                mailSender,
+                Optional.of(mailSender),
                 new PasswordResetProperties(
                         URI.create("https://delvex.test/reset-password"),
                         Duration.ofMinutes(30),
@@ -47,5 +49,22 @@ class PasswordResetMailServiceTest {
         assertThat(message.getText())
                 .contains("https://delvex.test/reset-password?token=reset-token")
                 .contains("30 minutes");
+    }
+
+    @Test
+    void shouldSkipDeliveryWhenSmtpIsNotConfigured() {
+        PasswordResetMailService mailService = new PasswordResetMailService(
+                Optional.empty(),
+                new PasswordResetProperties(
+                        URI.create("https://delvex.test/reset-password"),
+                        Duration.ofMinutes(30),
+                        "no-reply@delvex.test",
+                        Duration.ofHours(1),
+                        Duration.ofHours(1)));
+
+        assertDoesNotThrow(() -> mailService.send(
+                new PasswordResetRequestedEvent(
+                        "john@example.com",
+                        "reset-token")));
     }
 }

@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.delvex.server.branch.Branch;
 import com.delvex.server.user.User;
 
 import jakarta.persistence.Column;
@@ -64,6 +65,14 @@ public class Shipment {
     @Column(name = "destination_address", nullable = false, length = 255)
     private String destinationAddress;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "origin_branch_id", nullable = false)
+    private Branch originBranch;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "destination_branch_id", nullable = false)
+    private Branch destinationBranch;
+
     @Column(name = "cargo_description", nullable = false, length = 500)
     private String cargoDescription;
 
@@ -92,8 +101,8 @@ public class Shipment {
     public Shipment(
             User user,
             String referenceNumber,
-            ShipmentLocation originLocation,
-            ShipmentLocation destinationLocation,
+            Branch originBranch,
+            Branch destinationBranch,
             String cargoDescription,
             BigDecimal weightKg,
             Instant pickupAt,
@@ -103,8 +112,8 @@ public class Shipment {
         this.user = user;
         this.referenceNumber = referenceNumber;
         this.status = ShipmentStatus.CREATED;
-        applyOriginLocation(originLocation);
-        applyDestinationLocation(destinationLocation);
+        applyOriginBranch(originBranch);
+        applyDestinationBranch(destinationBranch);
         this.cargoDescription = cargoDescription;
         this.weightKg = weightKg;
         this.pickupAt = pickupAt;
@@ -124,8 +133,8 @@ public class Shipment {
     }
 
     public void update(
-            ShipmentLocation originLocation,
-            ShipmentLocation destinationLocation,
+            Branch originBranch,
+            Branch destinationBranch,
             String cargoDescription,
             BigDecimal weightKg,
             Instant pickupAt,
@@ -137,8 +146,12 @@ public class Shipment {
 
         validateSchedule(updatedPickupAt, updatedDeliveryAt);
 
-        if (originLocation != null) applyOriginLocation(originLocation);
-        if (destinationLocation != null) applyDestinationLocation(destinationLocation);
+        if (originBranch != null) {
+            applyOriginBranch(originBranch);
+        }
+        if (destinationBranch != null) {
+            applyDestinationBranch(destinationBranch);
+        }
         this.cargoDescription = valueOrCurrent(cargoDescription, this.cargoDescription);
         this.weightKg = valueOrCurrent(weightKg, this.weightKg);
         this.pickupAt = updatedPickupAt;
@@ -159,18 +172,20 @@ public class Shipment {
         }
     }
 
-    private void applyOriginLocation(ShipmentLocation location) {
-        originCountry = location.country();
-        originCity = location.city();
-        originPostalCode = location.postalCode();
-        originAddress = location.address();
+    private void applyOriginBranch(Branch branch) {
+        originBranch = branch;
+        originCountry = branch.getCountry();
+        originCity = branch.getCity();
+        originPostalCode = branch.getPostalCode();
+        originAddress = branch.getAddress();
     }
 
-    private void applyDestinationLocation(ShipmentLocation location) {
-        destinationCountry = location.country();
-        destinationCity = location.city();
-        destinationPostalCode = location.postalCode();
-        destinationAddress = location.address();
+    private void applyDestinationBranch(Branch branch) {
+        destinationBranch = branch;
+        destinationCountry = branch.getCountry();
+        destinationCity = branch.getCity();
+        destinationPostalCode = branch.getPostalCode();
+        destinationAddress = branch.getAddress();
     }
 
     private void validateSchedule(Instant pickupAt, Instant deliveryAt) {
@@ -229,6 +244,14 @@ public class Shipment {
 
     public String getDestinationAddress() {
         return destinationAddress;
+    }
+
+    public Branch getOriginBranch() {
+        return originBranch;
+    }
+
+    public Branch getDestinationBranch() {
+        return destinationBranch;
     }
 
     public String getCargoDescription() {

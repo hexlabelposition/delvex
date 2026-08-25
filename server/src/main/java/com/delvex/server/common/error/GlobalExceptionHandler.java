@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -22,12 +21,10 @@ import com.delvex.server.auth.EmailAlreadyExistsException;
 import com.delvex.server.auth.InvalidCredentialsException;
 import com.delvex.server.auth.InvalidPasswordResetTokenException;
 import com.delvex.server.auth.InvalidRefreshTokenException;
-import com.delvex.server.branch.EmployeeBranchRequiredException;
 import com.delvex.server.shipment.InvalidShipmentScheduleException;
 import com.delvex.server.shipment.InvalidShipmentLocationException;
 import com.delvex.server.shipment.InvalidShipmentStateException;
 import com.delvex.server.shipment.ShipmentNotFoundException;
-import com.delvex.server.shipment.StaleShipmentVersionException;
 import com.delvex.server.user.UserNotFoundException;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -153,25 +150,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(error);
     }
 
-    @ExceptionHandler(EmployeeBranchRequiredException.class)
-    public ResponseEntity<ApiError> handleEmployeeBranchRequired(
-            EmployeeBranchRequiredException exception,
-            HttpServletRequest request) {
-        HttpStatus status = HttpStatus.FORBIDDEN;
-
-        logHandledException(status, exception, request);
-
-        ApiError error = new ApiError(
-                Instant.now(),
-                status.value(),
-                status.getReasonPhrase(),
-                exception.getMessage(),
-                request.getRequestURI(),
-                Map.of());
-
-        return ResponseEntity.status(status).body(error);
-    }
-
     @ExceptionHandler(InvalidShipmentScheduleException.class)
     public ResponseEntity<ApiError> handleInvalidShipmentSchedule(
             InvalidShipmentScheduleException exception,
@@ -215,28 +193,6 @@ public class GlobalExceptionHandler {
                 status.value(),
                 status.getReasonPhrase(),
                 exception.getMessage(),
-                request.getRequestURI(),
-                Map.of());
-
-        return ResponseEntity.status(status).body(error);
-    }
-
-    @ExceptionHandler({
-            StaleShipmentVersionException.class,
-            ObjectOptimisticLockingFailureException.class
-    })
-    public ResponseEntity<ApiError> handleConcurrentShipmentUpdate(
-            RuntimeException exception,
-            HttpServletRequest request) {
-        HttpStatus status = HttpStatus.CONFLICT;
-
-        logHandledException(status, exception, request);
-
-        ApiError error = new ApiError(
-                Instant.now(),
-                status.value(),
-                status.getReasonPhrase(),
-                "Shipment was changed by another request; reload it and try again",
                 request.getRequestURI(),
                 Map.of());
 

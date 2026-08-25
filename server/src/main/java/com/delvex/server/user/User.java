@@ -3,18 +3,11 @@ package com.delvex.server.user;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.delvex.server.branch.Branch;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -39,14 +32,6 @@ public class User {
     @Column(name = "last_name", nullable = false, length = 50)
     private String lastName;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private UserRole role;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "branch_id")
-    private Branch branch;
-
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -61,7 +46,6 @@ public class User {
         this.passwordHash = passwordHash;
         this.firstName = firstName;
         this.lastName = lastName;
-        this.role = UserRole.CUSTOMER;
     }
 
     @PrePersist
@@ -108,14 +92,6 @@ public class User {
 
     public String getLastName() {
         return lastName;
-    }
-
-    public UserRole getRole() {
-        return role;
-    }
-
-    public Branch getBranch() {
-        return branch;
     }
 
     public Instant getCreatedAt() {

@@ -16,7 +16,6 @@ import com.delvex.server.auth.dto.LoginResponse;
 import com.delvex.server.auth.dto.RefreshResponse;
 import com.delvex.server.auth.dto.RegisterRequest;
 import com.delvex.server.auth.dto.RegisterResponse;
-import com.delvex.server.user.UserRole;
 
 import jakarta.servlet.http.Cookie;
 
@@ -64,7 +63,6 @@ class AuthControllerTest {
                         "john@example.com",
                         "John",
                         "Doe",
-                        UserRole.CUSTOMER,
                         "access-token",
                         "refresh-token"));
         given(refreshCookieService.create("refresh-token"))
@@ -88,7 +86,6 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.email").value("john@example.com"))
                 .andExpect(jsonPath("$.firstName").value("John"))
                 .andExpect(jsonPath("$.lastName").value("Doe"))
-                .andExpect(jsonPath("$.role").value("CUSTOMER"))
                 .andExpect(jsonPath("$.accessToken").value("access-token"))
                 .andExpect(jsonPath("$.refreshToken").doesNotExist());
     }
@@ -142,7 +139,6 @@ class AuthControllerTest {
                         "john@example.com",
                         "John",
                         "Doe",
-                        UserRole.EMPLOYEE,
                         "access-token",
                         "refresh-token"));
         given(refreshCookieService.create("refresh-token"))
@@ -164,7 +160,6 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.email").value("john@example.com"))
                 .andExpect(jsonPath("$.firstName").value("John"))
                 .andExpect(jsonPath("$.lastName").value("Doe"))
-                .andExpect(jsonPath("$.role").value("EMPLOYEE"))
                 .andExpect(jsonPath("$.accessToken").value("access-token"))
                 .andExpect(jsonPath("$.refreshToken").doesNotExist());
     }

@@ -10,8 +10,6 @@ import javax.crypto.spec.SecretKeySpec;
 import java.time.Duration;
 import java.util.UUID;
 
-import com.delvex.server.user.UserRole;
-
 import static com.delvex.server.auth.TestAuthProperties.authProperties;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,9 +34,7 @@ class TokenServiceTest {
 
         UUID userId = UUID.randomUUID();
 
-        String tokenValue = tokenService.createAccessToken(
-                userId,
-                UserRole.EMPLOYEE);
+        String tokenValue = tokenService.createAccessToken(userId);
         Jwt decodedToken = jwtDecoder.decode(tokenValue);
 
         assertThat(tokenValue).isNotBlank();
@@ -48,8 +44,7 @@ class TokenServiceTest {
                 .isEqualTo("delvex");
         assertThat(decodedToken.getClaimAsString("type"))
                 .isEqualTo("access");
-        assertThat(decodedToken.getClaimAsString("role"))
-                .isEqualTo("EMPLOYEE");
+        assertThat(decodedToken.getClaims()).doesNotContainKey("role");
         assertThat(decodedToken.getIssuedAt()).isNotNull();
         assertThat(decodedToken.getExpiresAt()).isNotNull();
 

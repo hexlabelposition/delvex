@@ -32,7 +32,7 @@ PostgreSQL persistence, API documentation, security, and operational health.
 - current-user profile retrieval and update;
 - shipment creation, pagination, retrieval, update, and deletion;
 - ownership checks and optimistic locking for shipment operations;
-- fixed Polish shipment locations persisted as address snapshots;
+- persisted origin and destination branches with shipment address snapshots;
 - consistent JSON errors for validation, malformed JSON, security, and domain
   failures;
 - configurable CORS and application logging;
@@ -461,7 +461,8 @@ release checklist.
   the server creates one and returns it in the response.
 - All routes are authenticated by default. Only explicitly listed health and
   authentication routes are public.
-- Flyway migration V7 removes the deferred employee workflow, user roles, and
-  branch tables while preserving shipment address snapshots.
+- Flyway migration V7 removes the deferred employee workflow, user roles,
+  employee branch assignments, and current-branch tracking while preserving
+  shipment origin and destination branches.
 - Raw refresh tokens are never returned in JSON.
 - Database changes belong in a new Flyway migration.

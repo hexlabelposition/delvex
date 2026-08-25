@@ -15,6 +15,7 @@ supports a complete containerized development stack.
 - user registration, login, password recovery, token refresh, and logout;
 - current-user profile management;
 - shipment creation, pagination, retrieval, update, and deletion;
+- persisted origin and destination branches with shipment address snapshots;
 - enforced shipment ownership and optimistic locking;
 - consistent validation, security, and domain errors;
 - development OpenAPI documentation;

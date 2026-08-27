@@ -9,8 +9,6 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
 
-import com.delvex.server.user.UserRole;
-
 @Service
 public class TokenService {
 
@@ -26,9 +24,7 @@ public class TokenService {
         this.accessTokenTtl = properties.accessTokenTtl();
     }
 
-    public String createAccessToken(
-            UUID userId,
-            UserRole role) {
+    public String createAccessToken(UUID userId) {
         Instant issuedAt = Instant.now();
 
         JwtClaimsSet claims = JwtClaimsSet.builder()
@@ -37,7 +33,6 @@ public class TokenService {
                 .issuedAt(issuedAt)
                 .expiresAt(issuedAt.plus(accessTokenTtl))
                 .claim("type", "access")
-                .claim("role", role.name())
                 .build();
 
         return jwtEncoder

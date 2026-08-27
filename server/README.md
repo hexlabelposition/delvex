@@ -31,11 +31,8 @@ PostgreSQL persistence, API documentation, security, and operational health.
 - one-time password reset tokens with profile-specific email delivery;
 - current-user profile retrieval and update;
 - shipment creation, pagination, retrieval, update, and deletion;
-- CUSTOMER and EMPLOYEE roles carried by signed access tokens;
-- ownership checks for customer shipment operations;
-- branch-scoped employee shipment listing, filtering, retrieval, and status
-  updates;
-- auditable shipment status history and optimistic concurrency protection;
+- ownership checks and optimistic locking for shipment operations;
+- persisted origin and destination branches with shipment address snapshots;
 - consistent JSON errors for validation, malformed JSON, security, and domain
   failures;
 - configurable CORS and application logging;
@@ -100,29 +97,6 @@ modifies the production schema.
 | PATCH  | **/api/shipments/{shipmentId}**   | Update an owned shipment   |
 | DELETE | **/api/shipments/{shipmentId}**   | Delete an allowed shipment |
 
-### Employee endpoints
-
-Every endpoint under **/api/employee/** requires the EMPLOYEE role and an
-active branch assignment. A regular authenticated customer or an employee
-without an active branch receives HTTP 403.
-
-| Method | Path                                                   | Purpose                            |
-| ------ | ------------------------------------------------------ | ---------------------------------- |
-| GET    | **/api/employee/shipments**                            | List branch shipments               |
-| GET    | **/api/employee/shipments/{shipmentId}**               | Read branch shipment and customer   |
-| GET    | **/api/employee/shipments/{shipmentId}/status-events** | Read branch shipment history        |
-| PATCH  | **/api/employee/shipments/{shipmentId}/status**        | Perform an allowed branch action    |
-
-The employee list accepts the same **page** and **size** parameters as the
-customer list. It can also filter by an exact **status** and a case-insensitive
-partial **reference**.
-
-The API derives the branch from the authenticated employee record. It never
-accepts a client-provided branch ID. A shipment belongs to both its origin and
-destination branches, but each response exposes only the transitions the
-current employee may perform through **allowedStatuses**. Direct access to a
-shipment outside the employee branch returns HTTP 404.
-
 Send an access token as:
 
 ```http
@@ -133,33 +107,15 @@ The shipment list is zero-based, defaults to 20 entries, accepts a maximum
 size of 100, and returns **content**, **page**, **size**, **totalElements**, and
 **totalPages**. Results are ordered by creation time descending.
 
-### Shipment lifecycle
+### Shipment restrictions
 
-| Current status         | Allowed next status           | Responsible branch |
-| ---------------------- | ----------------------------- | ------------------ |
-| CREATED                | ACCEPTED_AT_ORIGIN, CANCELLED | Origin             |
-| ACCEPTED_AT_ORIGIN     | IN_TRANSIT, CANCELLED         | Origin             |
-| IN_TRANSIT             | ARRIVED_AT_DESTINATION        | Destination        |
-| ARRIVED_AT_DESTINATION | DELIVERED                     | Destination        |
-| DELIVERED              | none                          | —                  |
-| CANCELLED              | none                          | —                  |
-
-Customers can edit and delete only CREATED shipments; they cannot change
-status. Employees perform every lifecycle transition. Sending the current
-status again is idempotent and does not create an audit event.
-
-Every employee status request includes the shipment **version** returned by the
-API. A stale version returns HTTP 409 instead of silently overwriting a change
-made by another employee. Successful transitions append an immutable
-**shipment_status_events** record containing the previous and new status,
-employee, branch, and timestamp. The shipment **currentBranch** is the origin
-before dispatch, null while in transit, and the destination after arrival.
+Owned shipments can be updated or deleted only while they remain in the
+**CREATED** status.
 
 ## Authentication
 
 Access tokens are HS256 JWTs with a 15-minute lifetime. The API returns the
-access token in the response body. Tokens include a signed **role** claim,
-which Spring Security maps to CUSTOMER or EMPLOYEE authority.
+access token in the response body.
 
 Refresh tokens have a 30-day lifetime and are returned only through the
 **refresh_token** cookie. The cookie is HttpOnly, SameSite=Lax, scoped to
@@ -183,30 +139,6 @@ Email delivery runs asynchronously after the reset-token transaction commits.
 The forgot-password endpoint returning HTTP 202 therefore confirms that the
 request was accepted, not that an email reached the inbox. Transport failures
 are logged without exposing the raw token.
-
-### Provision an employee
-
-Public registration always creates a CUSTOMER and cannot request another role.
-For the first release, employee provisioning is an explicit database
-administration operation:
-
-```sql
-UPDATE users
-SET role = 'EMPLOYEE',
-    branch_id = (
-        SELECT id
-        FROM branches
-        WHERE code = 'WROCLAW'
-    )
-WHERE email = 'employee@example.com';
-```
-
-The seeded branch codes are **WARSAW**, **KRAKOW**, **WROCLAW**, and
-**GDANSK**. The user must sign in again after promotion so a new access token
-contains the EMPLOYEE role. Branch authorization is always loaded from the
-database rather than trusted from the JWT. This keeps privilege and branch
-assignment outside the public API until a future administrative workflow is
-introduced.
 
 ## Requirements
 
@@ -468,10 +400,6 @@ From the **server** directory, run the complete Maven suite:
 ./mvnw --batch-mode --no-transfer-progress test
 ```
 
-The suite covers employee branch isolation for queue, direct shipment, and
-status-history access; inactive or missing branch assignments; and the
-origin/destination transition responsibilities returned to the workspace.
-
 Build the executable JAR:
 
 ```bash
@@ -533,12 +461,8 @@ release checklist.
   the server creates one and returns it in the response.
 - All routes are authenticated by default. Only explicitly listed health and
   authentication routes are public.
-- Public registration never grants the EMPLOYEE role.
-- Existing status history begins with the first transition after Flyway
-  migration V4; the migration does not invent events for older shipments.
-- Flyway migration V6 creates branches, connects existing shipments to their
-  matching seeded origin and destination branches, and renames ACCEPTED to
-  ACCEPTED_AT_ORIGIN. Historical status events keep a null branch because V6
-  does not invent their execution location.
+- Flyway migration V7 removes the deferred employee workflow, user roles,
+  employee branch assignments, and current-branch tracking while preserving
+  shipment origin and destination branches.
 - Raw refresh tokens are never returned in JSON.
 - Database changes belong in a new Flyway migration.

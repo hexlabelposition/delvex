@@ -67,5 +67,9 @@ class SecurityConfigurationTest {
         mockMvc.perform(get("/api/not-public")
                 .with(jwt()))
                 .andExpect(status().isNotFound());
+
+        mockMvc.perform(get("/api/employee/shipments")
+                .with(jwt()))
+                .andExpect(status().isNotFound());
     }
 }

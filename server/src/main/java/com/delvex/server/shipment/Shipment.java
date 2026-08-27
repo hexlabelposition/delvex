@@ -2,8 +2,6 @@ package com.delvex.server.shipment;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
 
 import com.delvex.server.branch.Branch;
@@ -75,10 +73,6 @@ public class Shipment {
     @JoinColumn(name = "destination_branch_id", nullable = false)
     private Branch destinationBranch;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "current_branch_id")
-    private Branch currentBranch;
-
     @Column(name = "cargo_description", nullable = false, length = 500)
     private String cargoDescription;
 
@@ -120,7 +114,6 @@ public class Shipment {
         this.status = ShipmentStatus.CREATED;
         applyOriginBranch(originBranch);
         applyDestinationBranch(destinationBranch);
-        this.currentBranch = originBranch;
         this.cargoDescription = cargoDescription;
         this.weightKg = weightKg;
         this.pickupAt = pickupAt;
@@ -155,7 +148,6 @@ public class Shipment {
 
         if (originBranch != null) {
             applyOriginBranch(originBranch);
-            currentBranch = originBranch;
         }
         if (destinationBranch != null) {
             applyDestinationBranch(destinationBranch);
@@ -173,82 +165,11 @@ public class Shipment {
         }
     }
 
-    public ShipmentStatus changeStatus(
-            ShipmentStatus target,
-            long expectedVersion,
-            Branch employeeBranch) {
-        if (version != expectedVersion) {
-            throw new StaleShipmentVersionException();
-        }
-
-        if (status == target) {
-            return null;
-        }
-
-        if (!status.canTransitionTo(target)) {
-            throw new InvalidShipmentStateException(
-                    status + " shipments cannot transition to " + target);
-        }
-
-        validateBranchTransition(target, employeeBranch);
-
-        ShipmentStatus previousStatus = status;
-        status = target;
-        currentBranch = switch (target) {
-            case IN_TRANSIT -> null;
-            case ARRIVED_AT_DESTINATION, DELIVERED -> destinationBranch;
-            default -> currentBranch;
-        };
-
-        return previousStatus;
-    }
-
     private void validateUpdate() {
         if (status != ShipmentStatus.CREATED) {
             throw new InvalidShipmentStateException(
                     status + " shipments cannot be updated");
         }
-    }
-
-    public boolean belongsTo(Branch branch) {
-        return sameBranch(originBranch, branch)
-                || sameBranch(destinationBranch, branch);
-    }
-
-    public List<ShipmentStatus> allowedTransitionsFor(Branch employeeBranch) {
-        return Arrays.stream(ShipmentStatus.values())
-                .filter(target -> target != status)
-                .filter(status::canTransitionTo)
-                .filter(target -> sameBranch(
-                        requiredBranchFor(target),
-                        employeeBranch))
-                .toList();
-    }
-
-    private void validateBranchTransition(
-            ShipmentStatus target,
-            Branch employeeBranch) {
-        Branch requiredBranch = requiredBranchFor(target);
-
-        if (requiredBranch != null
-                && !sameBranch(requiredBranch, employeeBranch)) {
-            throw new InvalidShipmentStateException(
-                    "Shipment transition is not allowed from this branch");
-        }
-    }
-
-    private Branch requiredBranchFor(ShipmentStatus target) {
-        return switch (target) {
-            case ACCEPTED_AT_ORIGIN, IN_TRANSIT, CANCELLED -> originBranch;
-            case ARRIVED_AT_DESTINATION, DELIVERED -> destinationBranch;
-            case CREATED -> null;
-        };
-    }
-
-    private boolean sameBranch(Branch first, Branch second) {
-        return first != null
-                && second != null
-                && first.getId().equals(second.getId());
     }
 
     private void applyOriginBranch(Branch branch) {
@@ -331,10 +252,6 @@ public class Shipment {
 
     public Branch getDestinationBranch() {
         return destinationBranch;
-    }
-
-    public Branch getCurrentBranch() {
-        return currentBranch;
     }
 
     public String getCargoDescription() {

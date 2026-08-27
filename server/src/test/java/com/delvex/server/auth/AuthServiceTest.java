@@ -7,7 +7,6 @@ import com.delvex.server.auth.dto.RegisterRequest;
 import com.delvex.server.auth.dto.RegisterResponse;
 import com.delvex.server.user.User;
 import com.delvex.server.user.UserRepository;
-import com.delvex.server.user.UserRole;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -68,9 +67,8 @@ class AuthServiceTest {
         given(savedUser.getEmail()).willReturn("john@example.com");
         given(savedUser.getFirstName()).willReturn("John");
         given(savedUser.getLastName()).willReturn("Doe");
-        given(savedUser.getRole()).willReturn(UserRole.CUSTOMER);
 
-        given(tokenService.createAccessToken(userId, UserRole.CUSTOMER))
+        given(tokenService.createAccessToken(userId))
                 .willReturn("access-token");
         given(refreshTokenService.issue(userId))
                 .willReturn("refresh-token");
@@ -81,7 +79,6 @@ class AuthServiceTest {
         assertThat(response.email()).isEqualTo("john@example.com");
         assertThat(response.firstName()).isEqualTo("John");
         assertThat(response.lastName()).isEqualTo("Doe");
-        assertThat(response.role()).isEqualTo(UserRole.CUSTOMER);
         assertThat(response.accessToken()).isEqualTo("access-token");
         assertThat(response.refreshToken()).isEqualTo("refresh-token");
 
@@ -98,7 +95,6 @@ class AuthServiceTest {
                 .isEqualTo("{bcrypt}encoded-password");
         assertThat(userToSave.getFirstName()).isEqualTo("John");
         assertThat(userToSave.getLastName()).isEqualTo("Doe");
-        assertThat(userToSave.getRole()).isEqualTo(UserRole.CUSTOMER);
     }
 
     @Test
@@ -173,8 +169,7 @@ class AuthServiceTest {
         given(user.getEmail()).willReturn("john@example.com");
         given(user.getFirstName()).willReturn("John");
         given(user.getLastName()).willReturn("Doe");
-        given(user.getRole()).willReturn(UserRole.CUSTOMER);
-        given(tokenService.createAccessToken(userId, UserRole.CUSTOMER))
+        given(tokenService.createAccessToken(userId))
                 .willReturn("access-token");
         given(refreshTokenService.issue(userId))
                 .willReturn("refresh-token");
@@ -185,7 +180,6 @@ class AuthServiceTest {
         assertThat(response.email()).isEqualTo("john@example.com");
         assertThat(response.firstName()).isEqualTo("John");
         assertThat(response.lastName()).isEqualTo("Doe");
-        assertThat(response.role()).isEqualTo(UserRole.CUSTOMER);
         assertThat(response.accessToken()).isEqualTo("access-token");
         assertThat(response.refreshToken()).isEqualTo("refresh-token");
     }
@@ -237,17 +231,15 @@ class AuthServiceTest {
                 .willReturn(new RefreshTokenService.RotatedRefreshToken(
                         userId,
                         "new-refresh-token"));
-        User user = org.mockito.Mockito.mock(User.class);
-        given(userRepository.findById(userId)).willReturn(Optional.of(user));
-        given(user.getId()).willReturn(userId);
-        given(user.getRole()).willReturn(UserRole.EMPLOYEE);
-        given(tokenService.createAccessToken(userId, UserRole.EMPLOYEE))
+        given(tokenService.createAccessToken(userId))
                 .willReturn("new-access-token");
 
         RefreshResponse response = authService.refresh("refresh-token");
 
         assertThat(response.accessToken()).isEqualTo("new-access-token");
         assertThat(response.refreshToken()).isEqualTo("new-refresh-token");
+
+        then(userRepository).shouldHaveNoInteractions();
     }
 
     @Test

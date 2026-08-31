@@ -1,7 +1,10 @@
-import { cn } from "@shared/lib";
-import type { ComponentProps } from "react";
+import type { ComponentPropsWithoutRef } from "react";
+import { cn } from "tailwind-variants";
 
-function Label({ className, ...props }: ComponentProps<"label">) {
+export function Label({
+  className,
+  ...props
+}: ComponentPropsWithoutRef<"label">) {
   return (
     <label
       data-slot="label"
@@ -13,5 +16,3 @@ function Label({ className, ...props }: ComponentProps<"label">) {
     />
   );
 }
-
-export { Label };

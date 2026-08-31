@@ -101,7 +101,6 @@ jobs:
 
     env:
       API_URL: https://api.example.com
-      NEXT_PUBLIC_API_URL: https://api.example.com
       NEXT_PUBLIC_SITE_URL: https://app.example.com
 
     steps:
@@ -163,7 +162,6 @@ jobs:
           push: false
           tags: delvex-client:ci
           build-args: |
-            NEXT_PUBLIC_API_URL=https://api.example.com
             NEXT_PUBLIC_SITE_URL=https://app.example.com
           cache-from: type=gha,scope=client-production-image
           cache-to: type=gha,mode=max,scope=client-production-image

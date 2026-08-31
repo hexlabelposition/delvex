@@ -1,7 +1,7 @@
-import type { ShipmentStatus } from "@shared/api";
-import { cn } from "@shared/lib";
+import { Badge } from "@shared/ui";
 
 import { statusLabel } from "../lib/format";
+import type { ShipmentStatus } from "../model/schema";
 
 const styles: Record<ShipmentStatus, string> = {
   CREATED: "bg-muted text-muted-foreground",
@@ -15,16 +15,15 @@ const styles: Record<ShipmentStatus, string> = {
   CANCELLED: "bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300",
 };
 
-export function StatusBadge({ status }: { status: ShipmentStatus }) {
+interface ShipmentStatusBadgeProps {
+  status: ShipmentStatus;
+}
+
+export function ShipmentStatusBadge({ status }: ShipmentStatusBadgeProps) {
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium",
-        styles[status],
-      )}
-    >
-      <span className="size-1.5 rounded-full bg-current" />
+    <Badge variant="secondary" className={styles[status]}>
+      <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
       {statusLabel(status)}
-    </span>
+    </Badge>
   );
 }

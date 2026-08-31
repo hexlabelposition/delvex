@@ -1,2 +1,2 @@
-export { changePassword } from "./api/change-password";
-export { updateProfile } from "./api/user-api";
+export type { User } from "./model/schema";
+export { UserEntity } from "./model/entity";

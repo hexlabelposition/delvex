@@ -11,7 +11,7 @@
 	</parent>
 	<groupId>com.delvex</groupId>
 	<artifactId>server</artifactId>
-	<version>1.0.0</version>
+	<version>1.0.1</version>
 	<name>Delvex Server</name>
 	<description>Production-oriented logistics API for users and shipments</description>
 	<url>https://github.com/hexlabelposition/delvex</url>

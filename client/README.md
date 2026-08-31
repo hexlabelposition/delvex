@@ -32,25 +32,22 @@ cp .env.example .env.local
 | Variable             | Required | Purpose                                                                 |
 | -------------------- | -------- | ----------------------------------------------------------------------- |
 | API_URL              | yes      | Server URL used by Server Actions without a trailing slash              |
-| NEXT_PUBLIC_API_URL  | yes      | Browser-reachable Delvex server URL without a trailing slash            |
 | NEXT_PUBLIC_SITE_URL | yes      | Client origin for canonical, Open Graph, Twitter, and manifest metadata |
 
-The default local values are **http://localhost:8080** for the API and
-**http://localhost:3000** for the client.
+The default local values are <http://localhost:8080> for the API and
+<http://localhost:3000> for the client.
 
-For standalone development, both variables point to **http://localhost:8080**.
-Compose overrides **API_URL** with **http://server:8080** so Server Actions can
-reach Spring Boot through the internal network, while the public URL remains
-browser-reachable.
+Every request to the Delvex server is made server-side, from Server Components
+and Server Actions, so only the Next.js process needs to reach the API. Compose
+overrides **API_URL** with <http://server:8080> to use the internal network;
+the browser never talks to the API directly and therefore needs no public API
+address. Should browser-side requests appear later, they would need a public
+URL of their own again.
 
 Variables prefixed with **NEXT_PUBLIC_** are exposed to browser code. Never put
 credentials, tokens, or other secrets in them. Next.js embeds public variables
-during the production build, so changing **NEXT_PUBLIC_API_URL** or
-**NEXT_PUBLIC_SITE_URL** requires a new client build or Docker image.
-
-When the complete stack runs in Compose, the browser still connects through
-**localhost:8080**. Do not use the internal Docker service name **server** in
-this variable because it cannot be resolved by the user's browser.
+during the production build, so changing **NEXT_PUBLIC_SITE_URL** requires a new
+client build or Docker image.
 
 ## Local development
 
@@ -61,7 +58,7 @@ bun install --frozen-lockfile
 bun run dev
 ```
 
-Open http://localhost:3000. The API must be available at the URL configured in
+Open <http://localhost:3000>. The API must be available at the URL configured in
 **.env.local**.
 
 To run only PostgreSQL and the API through Compose while keeping Next.js on the
@@ -210,12 +207,11 @@ the production image.
 
 ## Docker image
 
-The public API URL must be supplied while building because it becomes part of
+The public site URL must be supplied while building because it becomes part of
 the browser bundle:
 
 ```bash
 docker build \
-  --build-arg NEXT_PUBLIC_API_URL=http://localhost:8080 \
   --build-arg NEXT_PUBLIC_SITE_URL=http://localhost:3000 \
   --tag delvex-client \
   .
@@ -245,13 +241,13 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Compose builds the client with **NEXT_PUBLIC_API_URL** and
-**NEXT_PUBLIC_SITE_URL**, waits for the server readiness check, and exposes the
-dashboard at http://localhost:3000.
+Compose builds the client with **NEXT_PUBLIC_SITE_URL**, waits for the server
+readiness check, and exposes the dashboard at <http://localhost:3000>.
 
-Change the root environment value and rebuild the client whenever the public API
-address changes. Compose reuses an existing image even when a build argument
-differs, so **docker compose up** alone keeps serving the previous address:
+Change the root environment value and rebuild the client whenever the public
+site address changes. Compose reuses an existing image even when a build
+argument differs, so **docker compose up** alone keeps serving the previous
+address:
 
 ```bash
 docker compose build client

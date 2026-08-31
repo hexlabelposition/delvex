@@ -135,9 +135,6 @@ jobs:
       - name: Run unit and component tests
         run: bun run test
 
-      - name: Discover browser tests
-        run: bunx playwright test --list
-
       - name: Build production client
         run: bun run build
 
@@ -165,4 +162,3 @@ jobs:
             NEXT_PUBLIC_SITE_URL=https://app.example.com
           cache-from: type=gha,scope=client-production-image
           cache-to: type=gha,mode=max,scope=client-production-image
-

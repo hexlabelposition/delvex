@@ -409,7 +409,7 @@ Build the executable JAR:
 
 ```bash
 ./mvnw --batch-mode --no-transfer-progress -DskipTests package
-java -jar target/server-1.0.0.jar
+java -jar target/server-1.0.1.jar
 ```
 
 Flyway migrations run automatically at startup. Startup fails if PostgreSQL is

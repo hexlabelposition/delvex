@@ -3,7 +3,7 @@ spring:
     url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT:5432}/${POSTGRES_DB}?currentSchema=${POSTGRES_SCHEMA:public}
   data:
     redis:
-      host: ${REDIS_HOST}
+      url: ${REDIS_URL}
 
 resend:
   api-key: ${RESEND_API_KEY}

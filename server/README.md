@@ -227,8 +227,7 @@ disabled and unreachable in production.
 | POSTGRES_SCHEMA                       | public                  | JDBC current schema                         |
 | POSTGRES_USER                         | none                    | Required database user                      |
 | POSTGRES_PASSWORD                     | none                    | Required database password                  |
-| REDIS_HOST                            | localhost outside prod  | Required explicitly in prod                 |
-| REDIS_PORT                            | 6379                    | Redis port                                  |
+| REDIS_URL                             | redis://localhost:6379   | Required explicitly in dev and prod         |
 | REDIS_CONNECT_TIMEOUT                 | 2s                      | Redis connection timeout                    |
 | REDIS_TIMEOUT                         | 2s                      | Redis command timeout                       |
 | ACCESS_TOKEN_SECRET                   | none                    | Base64 value with at least 32 decoded bytes |
@@ -332,8 +331,7 @@ POSTGRES_DB="delvex"
 POSTGRES_SCHEMA="public"
 POSTGRES_USER="delvex"
 POSTGRES_PASSWORD="<secret>"
-REDIS_HOST="redis.internal"
-REDIS_PORT="6379"
+REDIS_URL="redis://<user>:<password>@redis.internal:6379"
 REDIS_CONNECT_TIMEOUT="2s"
 REDIS_TIMEOUT="2s"
 ACCESS_TOKEN_SECRET="<base64-secret>"

@@ -1,18 +1,32 @@
-import { EditShipmentPage } from "@pages/shipment-edit";
-import { createPageMetadata } from "@shared/config/site-metadata";
+import { notFound } from "next/navigation";
+import { findShipmentById } from "@entities/shipment/server";
+import { routes } from "@shared/config";
+import { createMetadata, type Params } from "@shared/lib";
+import { ShipmentEditView } from "@views/shipment-edit";
 
-export const metadata = createPageMetadata({
-  title: "Edit shipment",
-  description: "Update shipment addresses, cargo details, and schedule.",
-  path: "/shipments",
-});
-
-interface PageProps {
-  params: Promise<{ shipmentId: string }>;
+interface ShipmentEditPageProps {
+  params: Promise<Params<{ shipmentId: string }>>;
 }
 
-export default async function Page({ params }: PageProps) {
+export async function generateMetadata({ params }: ShipmentEditPageProps) {
   const { shipmentId } = await params;
 
-  return <EditShipmentPage shipmentId={shipmentId} />;
+  return createMetadata({
+    title: "Edit shipment",
+    description: "Update shipment addresses, cargo details, and schedule.",
+    path: routes.editShipment(shipmentId),
+  });
+}
+
+export default async function ShipmentEditPage({
+  params,
+}: ShipmentEditPageProps) {
+  const { shipmentId } = await params;
+  const shipment = await findShipmentById(shipmentId);
+
+  if (!shipment) {
+    notFound();
+  }
+
+  return <ShipmentEditView shipment={shipment} />;
 }

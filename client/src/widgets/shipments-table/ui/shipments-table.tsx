@@ -1,81 +1,70 @@
 "use client";
 
-import { formatWeight, StatusBadge } from "@entities/shipment";
-import type { Shipment } from "@shared/api";
-import { formatDate } from "@shared/lib";
-import { useRouter } from "next/navigation";
+import { useTable } from "@tanstack/react-table";
+import { cn } from "tailwind-variants";
+import type { Shipment } from "@entities/shipment";
+import { Card, Table, Tooltip } from "@shared/ui";
 
-export function ShipmentsTable({
-  shipments,
-  compact = false,
-}: {
+import { shipmentColumns, shipmentTableFeatures } from "../model/columns";
+
+interface ShipmentsTableProps {
   shipments: Shipment[];
-  compact?: boolean;
-}) {
-  const router = useRouter();
+}
 
-  const openShipment = (shipmentId: string) => {
-    router.push(`/shipments/${shipmentId}`);
-  };
+export function ShipmentsTable({ shipments }: ShipmentsTableProps) {
+  const table = useTable({
+    features: shipmentTableFeatures,
+    columns: shipmentColumns,
+    data: shipments,
+    getRowId: (shipment) => shipment.id,
+  });
 
   return (
-    <div className="overflow-x-auto rounded-xl border">
-      <table className="w-full min-w-[760px] text-left text-sm">
-        <thead className="bg-muted/30 text-muted-foreground text-xs">
-          <tr>
-            <th className="px-4 py-3 font-medium">Reference</th>
-            <th className="px-4 py-3 font-medium">Route</th>
-            <th className="px-4 py-3 font-medium">Status</th>
-            {!compact && <th className="px-4 py-3 font-medium">Weight</th>}
-            <th className="px-4 py-3 font-medium">Pickup</th>
-            <th className="px-4 py-3 font-medium">Delivery</th>
-            {!compact && <th className="px-4 py-3 font-medium">Created</th>}
-          </tr>
-        </thead>
-        <tbody className="divide-y">
-          {shipments.map((shipment) => (
-            <tr
-              key={shipment.id}
-              className="hover:bg-muted/30 focus-visible:ring-ring cursor-pointer transition-colors focus-visible:ring-2 focus-visible:outline-none"
-              tabIndex={0}
-              onClick={() => openShipment(shipment.id)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  openShipment(shipment.id);
-                }
-              }}
-            >
-              <td className="px-4 py-3 font-mono text-xs">
-                {shipment.referenceNumber}
-              </td>
-              <td className="px-4 py-3">
-                {shipment.originCity}, {shipment.originCountry} →{" "}
-                {shipment.destinationCity}, {shipment.destinationCountry}
-              </td>
-              <td className="px-4 py-3">
-                <StatusBadge status={shipment.status} />
-              </td>
-              {!compact && (
-                <td className="px-4 py-3 font-mono text-xs">
-                  {formatWeight(shipment.weightKg)}
-                </td>
-              )}
-              <td className="text-muted-foreground px-4 py-3 font-mono text-xs">
-                {formatDate(shipment.pickupAt)}
-              </td>
-              <td className="text-muted-foreground px-4 py-3 font-mono text-xs">
-                {formatDate(shipment.deliveryAt)}
-              </td>
-              {!compact && (
-                <td className="text-muted-foreground px-4 py-3 font-mono text-xs">
-                  {formatDate(shipment.createdAt)}
-                </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Tooltip.Provider>
+      <Card.Root className="gap-0 overflow-hidden py-0">
+        <Table.Root>
+          <Table.Header className="bg-muted/40">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <Table.Row key={headerGroup.id} className="hover:bg-transparent">
+                {headerGroup.headers.map((header) => (
+                  <Table.Head
+                    key={header.id}
+                    className={cn(
+                      "text-muted-foreground px-4 text-xs font-medium",
+                      header.column.columnDef.meta?.className,
+                    )}
+                  >
+                    {header.isPlaceholder ? null : (
+                      <table.FlexRender header={header} />
+                    )}
+                  </Table.Head>
+                ))}
+              </Table.Row>
+            ))}
+          </Table.Header>
+
+          <Table.Body>
+            {table.getRowModel().rows.map((row) => (
+              <Table.Row
+                key={row.id}
+                className="focus-within:bg-muted/50 relative"
+              >
+                {row.getAllCells().map((cell) => (
+                  <Table.Cell
+                    key={cell.id}
+                    className={cn(
+                      "px-4 py-3",
+                      cell.column.columnDef.meta?.className,
+                    )}
+                  >
+                    <table.FlexRender cell={cell} />
+                  </Table.Cell>
+                ))}
+              </Table.Row>
+            ))}
+          </Table.Body>
+        </Table.Root>
+      </Card.Root>
+    </Tooltip.Provider>
   );
 }

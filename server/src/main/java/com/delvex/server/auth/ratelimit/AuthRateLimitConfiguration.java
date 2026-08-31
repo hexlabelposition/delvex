@@ -27,7 +27,8 @@ public class AuthRateLimitConfiguration implements WebMvcConfigurer {
                         properties.getWindow()),
                 properties,
                 new ClientIpResolver(
-                        properties.getTrustedProxyCidrs()),
+                        properties.getTrustedProxyCidrs(),
+                        properties.getProxySecret()),
                 new ApiErrorResponseWriter(jsonMapper));
     }
 

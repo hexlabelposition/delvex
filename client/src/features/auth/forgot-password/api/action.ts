@@ -2,7 +2,7 @@
 
 import { parseWithZod } from "@conform-to/zod/v4";
 import { ForgotPasswordSchema } from "../model/schema";
-import { createServerClient } from "@shared/api/server";
+import { createRequestServerClient } from "@shared/api/server";
 import type { SubmissionResponse } from "@shared/model";
 
 export async function forgotPasswordAction(
@@ -22,7 +22,7 @@ export async function forgotPasswordAction(
   }
 
   try {
-    const client = createServerClient();
+    const client = await createRequestServerClient();
 
     await client.post({
       path: "/auth/forgot-password",

@@ -17,3 +17,7 @@ auth:
 password-reset:
   client-url: ${PASSWORD_RESET_CLIENT_URL}
   mail-from: ${MAIL_FROM}
+
+rate-limit:
+  auth:
+    proxy-secret: ${AUTH_RATE_LIMIT_PROXY_SECRET}

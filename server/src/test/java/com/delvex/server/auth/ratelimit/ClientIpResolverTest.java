@@ -11,6 +11,47 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ClientIpResolverTest {
 
+    private static final String PROXY_SECRET =
+            "0123456789abcdef0123456789abcdef";
+
+    @Test
+    void shouldResolveClientFromAuthenticatedInternalProxy() {
+        ClientIpResolver resolver = new ClientIpResolver(
+                List.of(),
+                PROXY_SECRET);
+        MockHttpServletRequest request = requestFrom(
+                "10.0.0.3");
+        request.addHeader(
+                "X-Delvex-Client-IP",
+                "198.51.100.25");
+        request.addHeader(
+                "X-Delvex-Proxy-Secret",
+                PROXY_SECRET);
+
+        assertEquals(
+                "198.51.100.25",
+                resolver.resolve(request));
+    }
+
+    @Test
+    void shouldIgnoreInternalClientIpWithInvalidSecret() {
+        ClientIpResolver resolver = new ClientIpResolver(
+                List.of(),
+                PROXY_SECRET);
+        MockHttpServletRequest request = requestFrom(
+                "10.0.0.3");
+        request.addHeader(
+                "X-Delvex-Client-IP",
+                "198.51.100.25");
+        request.addHeader(
+                "X-Delvex-Proxy-Secret",
+                "wrong-secret");
+
+        assertEquals(
+                "10.0.0.3",
+                resolver.resolve(request));
+    }
+
     @Test
     void shouldIgnoreForwardedHeadersFromUntrustedPeer() {
         ClientIpResolver resolver = new ClientIpResolver(

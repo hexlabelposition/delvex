@@ -4,7 +4,7 @@ import { z } from "zod/v4";
 import { cookies } from "next/headers";
 import { decodeJwt } from "jose";
 import { parseSetCookie } from "cookie";
-import { createServerClient } from "./server.client";
+import { createServerClient, getClientIp } from "./server.client";
 import { NextResponse, type NextRequest } from "next/server";
 import { isAuthRoute, isProtectedRoute, routes } from "@shared/config";
 
@@ -141,8 +141,9 @@ interface RefreshResponse {
 
 async function refreshSession(
   refreshToken: string,
+  clientIp: string | undefined,
 ): Promise<RefreshResponse | null> {
-  const client = createServerClient();
+  const client = createServerClient({ clientIp });
 
   try {
     const response = await client.post({
@@ -209,7 +210,10 @@ export async function updateSession(
     return createRouteResponse(request, null);
   }
 
-  const refreshedSession = await refreshSession(refreshToken);
+  const refreshedSession = await refreshSession(
+    refreshToken,
+    getClientIp(request.headers),
+  );
 
   if (!refreshedSession) {
     return createRouteResponse(request, null);

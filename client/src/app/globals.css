@@ -4,6 +4,17 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+  /* Slow drift along the dashed routes in the auth illustration. */
+  --animate-route: delvex-route-dash 9s linear infinite;
+
+  @keyframes delvex-route-dash {
+    to {
+      stroke-dashoffset: -48;
+    }
+  }
+}
+
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: var(--font-sans);

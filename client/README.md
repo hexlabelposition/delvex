@@ -2,9 +2,9 @@
 
 [Back to project overview](../README.md)
 
-The Delvex client is the browser application for the logistics dashboard. It is
-built with Next.js and communicates with the Spring Boot API provided by the
-server module.
+The Delvex client is the Next.js application for the Delvex shipment workspace.
+It renders the browser UI and acts as a server-side boundary in front of the
+Spring Boot API provided by the server module.
 
 ## Technology stack
 
@@ -12,7 +12,7 @@ server module.
 - React 19
 - TypeScript
 - Tailwind CSS 4
-- shadcn/ui with Base UI and Lucide icons
+- Base UI primitives, Tailwind Variants, and Lucide icons
 - Bun 1.3.14
 - Docker
 
@@ -31,26 +31,23 @@ cp .env.example .env.local
 
 | Variable             | Required | Purpose                                                                 |
 | -------------------- | -------- | ----------------------------------------------------------------------- |
-| API_URL              | yes      | Server URL used by Server Actions without a trailing slash              |
-| NEXT_PUBLIC_API_URL  | yes      | Browser-reachable Delvex server URL without a trailing slash            |
+| API_URL              | yes      | Server URL used by the Next.js server without a trailing slash          |
 | NEXT_PUBLIC_SITE_URL | yes      | Client origin for canonical, Open Graph, Twitter, and manifest metadata |
 
-The default local values are **http://localhost:8080** for the API and
-**http://localhost:3000** for the client.
+The default local values are <http://localhost:8080> for the API and
+<http://localhost:3000> for the client.
 
-For standalone development, both variables point to **http://localhost:8080**.
-Compose overrides **API_URL** with **http://server:8080** so Server Actions can
-reach Spring Boot through the internal network, while the public URL remains
-browser-reachable.
+Every request to the Delvex server is made server-side, from Server Components
+and Server Actions, so only the Next.js process needs to reach the API. Compose
+overrides **API_URL** with <http://server:8080> to use the internal network;
+the browser never talks to the API directly and therefore needs no public API
+address. Should browser-side requests appear later, they would need a public
+URL of their own again.
 
 Variables prefixed with **NEXT_PUBLIC_** are exposed to browser code. Never put
 credentials, tokens, or other secrets in them. Next.js embeds public variables
-during the production build, so changing **NEXT_PUBLIC_API_URL** or
-**NEXT_PUBLIC_SITE_URL** requires a new client build or Docker image.
-
-When the complete stack runs in Compose, the browser still connects through
-**localhost:8080**. Do not use the internal Docker service name **server** in
-this variable because it cannot be resolved by the user's browser.
+during the production build, so changing **NEXT_PUBLIC_SITE_URL** requires a new
+client build or Docker image.
 
 ## Local development
 
@@ -61,7 +58,7 @@ bun install --frozen-lockfile
 bun run dev
 ```
 
-Open http://localhost:3000. The API must be available at the URL configured in
+Open <http://localhost:3000>. The API must be available at the URL configured in
 **.env.local**.
 
 To run only PostgreSQL and the API through Compose while keeping Next.js on the
@@ -73,85 +70,82 @@ docker compose up --build server
 
 ## Application routes
 
-| Route                | Access    | Purpose                                                      |
-| -------------------- | --------- | ------------------------------------------------------------ |
-| **/**                | Public    | Product landing page; active sessions continue to their home |
-| **/login**           | Guests    | Sign in to an existing account                               |
-| **/register**        | Guests    | Create a customer account                                    |
-| **/forgot-password** | Guests    | Request a password reset email                               |
-| **/reset-password**  | Guests    | Choose a new password from a one-time link                   |
-| **/dashboard**       | CUSTOMER  | Review customer shipment activity and recent records         |
-| **/shipments**       | CUSTOMER  | Browse and manage owned shipments                            |
-| **/create**          | CUSTOMER  | Create a shipment                                            |
-| **/employee**        | EMPLOYEE  | Operate the assigned branch queue with scan-first search     |
-| **/profile**         | Signed in | Review and update the current profile                        |
+| Route                            | Access    | Purpose                                       |
+| -------------------------------- | --------- | --------------------------------------------- |
+| **/**                            | Public    | Product landing page                          |
+| **/login**                       | Guests    | Sign in to an existing account                |
+| **/register**                    | Guests    | Create an account                             |
+| **/forgot-password**             | Guests    | Request a password reset email                |
+| **/reset-password**              | Guests    | Choose a new password from a one-time link    |
+| **/dashboard**                   | Signed in | Review shipment activity and recent records   |
+| **/shipments**                   | Signed in | Browse owned shipments with pagination        |
+| **/shipments/create**            | Signed in | Create a shipment                             |
+| **/shipments/[shipmentId]**      | Signed in | Review shipment details and delivery progress |
+| **/shipments/[shipmentId]/edit** | Signed in | Edit a shipment that can still be changed     |
+| **/profile**                     | Signed in | Update profile and password settings          |
 
-Authentication routing is enforced in **src/proxy.ts**. Guests can open the
-landing page, login, registration, and password recovery routes. An active
-refresh session sends guest-only auth routes into the application, while
-protected routes send guests to login. After session refresh, role-aware routing
-sends customers to **/dashboard** and employees to **/employee**. The server
-remains the authorization boundary and returns HTTP 403 when a token has the
-wrong role.
+Session routing is enforced in **src/proxy.ts**. Protected routes redirect
+anonymous visitors to **/login**, while an active session redirects guest-only
+authentication routes to **/dashboard**. The landing page remains public. The
+Spring Boot server remains the authorization boundary for every account and
+shipment operation.
+
+## Server-side request model
+
+The browser does not call the Spring Boot API directly. Server Components load
+page data, and forms invoke Server Actions for authentication, profile changes,
+and shipment mutations. Both use the server-only API client under
+**src/shared/api**.
+
+Login and registration store the access and refresh tokens in HTTP-only,
+same-site cookies. The proxy refreshes a session when the access cookie is
+missing, persists rotated tokens, and makes the refreshed session available to
+the current server render. Logout attempts to revoke the refresh session and
+clears both cookies even when the API is unavailable.
+
+API response bodies are treated as unknown data and parsed at the entity or
+feature boundary with Zod. Shipment reads explicitly bypass the fetch cache;
+successful mutations invalidate the affected Next.js routes before returning or
+redirecting.
 
 ## Feature organization
 
-Route files in **src/app** coordinate navigation, session state, and page-level
-loading or error handling. Domain code lives next to the feature that owns it:
+The source tree follows feature-sliced boundaries:
 
-- **src/features/shipments** contains shipment API calls, form validation and
-  fields, table and status components, display formatting, and location data.
-- **src/features/employee** contains the branch shipment queue, lifecycle
-  actions, and status-history integration used by logistics employees.
-- **src/features/profile** contains profile-specific API calls.
-- **src/features/auth** owns authentication, password recovery, session
-  management, and auth forms.
-- **src/components** contains reusable application and UI primitives.
-- **src/lib** contains cross-feature API infrastructure, shared types, and
-  generic formatting helpers.
+- **src/app** defines App Router pages, layouts, metadata, and server-side page
+  composition.
+- **src/views** contains page-level dashboard, profile, shipment list, create,
+  detail, and edit views.
+- **src/widgets** contains larger reusable compositions such as the application
+  shell, authentication shell, sidebar, and shipments table.
+- **src/features** owns user actions and their forms: authentication, profile
+  updates, password changes, shipment creation, editing, and deletion.
+- **src/entities** owns user and shipment contracts, Zod schemas, formatting,
+  domain calculations, UI representations, and server-only API operations.
+- **src/shared** contains the API/session infrastructure, route configuration,
+  common schemas and utilities, and the UI kit.
 
-The create and edit routes use the same shipment form schema, field renderer,
-and server-field-error mapping. Keep shipment-specific behavior in that feature
-module so later customer and employee surfaces can reuse it without duplicating
-validation or API contracts.
+Import public APIs through each slice's **index.ts**. Server-only entity and
+shared exports are exposed separately through **server.ts** so browser bundles
+cannot accidentally import API credentials or cookie operations.
 
-Customer pages and employee operations share the session provider but render
-through separate shells. **AppShell** keeps the customer dashboard navigation,
-while **EmployeeShell** exposes the assigned branch, a compact operations
-navigation, and a denser desktop/tablet-first work area. This keeps the two
-business processes visually separate without duplicating authentication.
-
-The employee queue keeps filters in the URL and is rendered on the server. Its
-reference input receives initial focus so a keyboard-wedge barcode scanner can
-submit a shipment reference with Enter without a scanner SDK. Exact-status queue
-shortcuts, branch context, and row-level actions reduce navigation during normal
-counter work. The detail page remains available for the complete customer,
-route, cargo, schedule, and audit context.
-
-The employee workspace uses the version returned with each shipment when it
-updates a status. The server derives the employee branch from the authenticated
-account and returns only branch-allowed actions in **allowedStatuses**; the
-client never derives authorization from the selected queue. A conflict response
-means another employee changed the record; reload the shipment before retrying.
-Every successful transition is displayed from the immutable server status
-history, including the acting branch when it is available.
+The shipment list keeps its page and page size in the URL and requests only the
+corresponding server page. Creation and editing share the same validated form
+schema and fields. New-shipment drafts are stored locally as a convenience; the
+server remains the source of truth. Delivery is estimated automatically as five
+business days after pickup.
 
 ## UI components
 
-The client uses shadcn/ui with the compact **Nova** style, **Base UI**
-primitives, an **olive** base color, Lucide icons, and CSS variables for
-theming. These choices are recorded in **components.json** so the CLI generates
-components that match the existing UI foundation.
+Reusable primitives live in **src/shared/ui/src/kit** and are exported through
+**src/shared/ui/index.ts**. The kit uses Base UI for accessible behavior,
+Tailwind CSS for styling, Tailwind Variants for component variants, and Lucide
+for icons. Component-specific variants live in
+**src/shared/ui/src/variants**.
 
-Run the shadcn CLI from the **client** directory to add a component:
-
-```bash
-bunx shadcn@latest add input
-```
-
-Generated components are placed in **src/components/ui**. Add components only
-when a feature needs them so the repository does not accumulate unused UI code.
-The existing **Button** component verifies the configured generation workflow.
+Keep generic primitives in the shared kit. Page composition belongs in
+**views**, reusable application sections belong in **widgets**, and UI tied to a
+user action belongs in the corresponding **feature**.
 
 ## Checks and production build
 
@@ -162,47 +156,15 @@ bun run format:check
 bun run lint
 bun run typecheck
 bun run test
-bunx playwright test --list
 bun run build
 ```
 
 The Client CI workflow runs these checks for client changes targeting **dev**
-and **main**.
-It installs dependencies with `bun install --frozen-lockfile`, uses the Bun
-version declared in **.bun-version**, and then builds the production Docker
-image. Vitest covers shipment form validation, authentication and role routing,
-employee status transitions, API error handling and filters, navigation, and
-critical loading states. CI also discovers the Playwright suite without starting
-the full stack, which catches invalid browser-test imports and configuration
-without adding the cost of a production environment to every client change. Use
-`bun run test:watch` while developing.
-
-The Playwright critical-flow scenario is prepared for a running full stack. It
-requires a clean test environment and a pre-provisioned employee account:
-
-```bash
-PLAYWRIGHT_BASE_URL=http://127.0.0.1:3000 \
-E2E_API_BASE_URL=http://127.0.0.1:8080 \
-E2E_ORIGIN_EMPLOYEE_EMAIL=origin-employee@example.test \
-E2E_ORIGIN_EMPLOYEE_PASSWORD=test-password \
-E2E_DESTINATION_EMPLOYEE_EMAIL=destination-employee@example.test \
-E2E_DESTINATION_EMPLOYEE_PASSWORD=test-password \
-bun run test:e2e
-```
-
-The browser scenario registers a customer, creates branch-related and unrelated
-shipments, proves that the unrelated shipment is hidden from the origin
-employee, completes the primary lifecycle through employees assigned to its
-origin and destination branches, verifies the customer-visible final status,
-and checks both the employee route and API authorization boundary. Start
-PostgreSQL, the production server, and the production client in an isolated test
-environment before invoking it.
-
-When the browser flow uses the prod profile, use generated HTTPS test origins
-because Secure refresh cookies and an explicit HTTPS CORS origin are required.
-Set `PLAYWRIGHT_IGNORE_HTTPS_ERRORS=true` only for an isolated local gateway
-using a disposable self-signed certificate; never disable TLS verification for
-a deployed environment.
+and **main**. It installs dependencies with `bun install --frozen-lockfile`, uses
+the Bun version declared in **.bun-version**, and also builds the production
+Docker image. Vitest covers shipment validation and scheduling, dashboard
+statistics, pagination, draft persistence, the main shipment views, and sidebar
+navigation. Use `bun run test:watch` while developing.
 
 The project enables Next.js **standalone** output. The generated
 **.next/standalone** directory contains the minimal traced runtime required by
@@ -210,12 +172,11 @@ the production image.
 
 ## Docker image
 
-The public API URL must be supplied while building because it becomes part of
+The public site URL must be supplied while building because it becomes part of
 the browser bundle:
 
 ```bash
 docker build \
-  --build-arg NEXT_PUBLIC_API_URL=http://localhost:8080 \
   --build-arg NEXT_PUBLIC_SITE_URL=http://localhost:3000 \
   --tag delvex-client \
   .
@@ -224,8 +185,17 @@ docker build \
 Run the image:
 
 ```bash
-docker run --rm --publish 3000:3000 delvex-client
+docker run --rm \
+  --add-host host.docker.internal:host-gateway \
+  --env API_URL=http://host.docker.internal:8080 \
+  --publish 3000:3000 \
+  delvex-client
 ```
+
+`API_URL` is a runtime variable and must resolve from inside the client
+container. The example reaches an API running on the Docker host. When both
+containers share a Docker network, use the API container's service name
+instead.
 
 The multi-stage image installs dependencies with Bun, builds the standalone
 application, and runs the generated server with Node.js as the non-root
@@ -245,13 +215,13 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Compose builds the client with **NEXT_PUBLIC_API_URL** and
-**NEXT_PUBLIC_SITE_URL**, waits for the server readiness check, and exposes the
-dashboard at http://localhost:3000.
+Compose builds the client with **NEXT_PUBLIC_SITE_URL**, waits for the server
+readiness check, and exposes the dashboard at <http://localhost:3000>.
 
-Change the root environment value and rebuild the client whenever the public API
-address changes. Compose reuses an existing image even when a build argument
-differs, so **docker compose up** alone keeps serving the previous address:
+Change the root environment value and rebuild the client whenever the public
+site address changes. Compose reuses an existing image even when a build
+argument differs, so **docker compose up** alone keeps serving the previous
+address:
 
 ```bash
 docker compose build client

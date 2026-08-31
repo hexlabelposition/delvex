@@ -1,16 +1,14 @@
+export { UpdateShipmentForm } from "./ui/update-shipment-form";
 export {
-  createShipmentAction,
-  type ShipmentFormResult,
-  updateShipmentAction,
-} from "./api/actions";
+  ShipmentCargoFields,
+  ShipmentFormFields,
+  ShipmentRouteFields,
+  ShipmentScheduleFields,
+} from "./ui/shipment-form-fields";
+export { createShipmentAction } from "./api/action";
 export {
-  initialShipmentFormValues,
-  shipmentFormErrors,
-  type ShipmentFormField,
-  shipmentFormFields,
-  shipmentFormSchema,
-  shipmentFormSteps,
-  type ShipmentFormValues,
+  ShipmentFormSchema,
   shipmentToFormValues,
-} from "./model/shipment-form";
-export { ShipmentFormFields } from "./ui/shipment-form-fields";
+  type ShipmentFormPayload,
+  type ShipmentFormValues,
+} from "./model/schema";

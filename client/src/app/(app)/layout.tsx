@@ -1,8 +1,11 @@
-import { SessionProvider } from "@features/auth";
-import { requireSession } from "@features/auth/server";
-import { AppShell } from "@widgets/app-shell";
-import { EmployeeShell } from "@widgets/employee-shell";
 import type { ReactNode } from "react";
+import { getCurrentUser } from "@entities/user/server";
+import { AppShell } from "@widgets/app-shell";
+import { redirect } from "next/navigation";
+import { routes } from "@shared/config";
+import { SIDEBAR_COOKIE_NAME } from "@shared/ui";
+import { cookies } from "next/headers";
+import { UserEntity } from "@entities/user";
 
 interface ApplicationLayoutProps {
   children: ReactNode;
@@ -11,15 +14,20 @@ interface ApplicationLayoutProps {
 export default async function ApplicationLayout({
   children,
 }: ApplicationLayoutProps) {
-  const session = await requireSession();
+  const user = await getCurrentUser();
+
+  if (!user) {
+    redirect(routes.login);
+  }
+
+  const userEntity = new UserEntity(user);
+  const cookieStore = await cookies();
+  const defaultSidebarOpen =
+    cookieStore.get(SIDEBAR_COOKIE_NAME)?.value !== "false";
 
   return (
-    <SessionProvider user={session.user}>
-      {session.user.role === "EMPLOYEE" ? (
-        <EmployeeShell>{children}</EmployeeShell>
-      ) : (
-        <AppShell>{children}</AppShell>
-      )}
-    </SessionProvider>
+    <AppShell user={userEntity} defaultSidebarOpen={defaultSidebarOpen}>
+      {children}
+    </AppShell>
   );
 }

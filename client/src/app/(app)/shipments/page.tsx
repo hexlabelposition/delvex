@@ -1,24 +1,34 @@
-import { ShipmentsPage } from "@pages/shipments";
-import { createPageMetadata } from "@shared/config/site-metadata";
+import {
+  DEFAULT_PAGE_SIZE,
+  normalizePageSize,
+  ShipmentsView,
+} from "@views/shipments";
+import { createMetadata, parseIntegerParam } from "@shared/lib";
+import { routes } from "@shared/config";
+import { getAllShipments } from "@entities/shipment/server";
 
-export const metadata = createPageMetadata({
+export const metadata = createMetadata({
   title: "Shipments",
   description: "Browse and manage your Delvex shipments.",
-  path: "/shipments",
+  path: routes.shipments,
 });
 
-interface PageProps {
+interface ShipmentsPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export default async function Page({ searchParams }: PageProps) {
-  const { created, deleted, page } = await searchParams;
+export default async function ShipmentsPage({
+  searchParams,
+}: ShipmentsPageProps) {
+  const { page: pageParam, size: sizeParam } = await searchParams;
 
-  return (
-    <ShipmentsPage
-      page={Math.max(0, Number(page) || 0)}
-      created={created === "1"}
-      deleted={deleted === "1"}
-    />
+  // The URL is one-based so that ?page=1 is the first page; the API is not.
+  const page = Math.max(parseIntegerParam(pageParam, 1), 1);
+  const size = normalizePageSize(
+    parseIntegerParam(sizeParam, DEFAULT_PAGE_SIZE),
   );
+
+  const shipments = await getAllShipments({ page: page - 1, size });
+
+  return <ShipmentsView shipments={shipments} page={page} size={size} />;
 }

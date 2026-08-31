@@ -1,10 +1,10 @@
 "use client";
 
-import { Alert, AlertDescription, Button, ConfirmDialog } from "@shared/ui";
-import { Trash2 } from "lucide-react";
+import { Trash2Icon } from "lucide-react";
 import { useState, useTransition } from "react";
+import { Alert, AlertDialog, Button } from "@shared/ui";
 
-import { deleteShipmentAction } from "../api/actions";
+import { deleteShipmentAction } from "../api/action";
 
 interface DeleteShipmentButtonProps {
   shipmentId: string;
@@ -17,43 +17,66 @@ export function DeleteShipmentButton({
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
 
-  const confirm = () => {
+  function confirm() {
     setError("");
+
     startTransition(async () => {
-      // A successful delete redirects, so this only ever resolves on failure.
+      // A successful deletion redirects, so reaching this point means the
+      // action came back with something to show.
       const result = await deleteShipmentAction(shipmentId);
+
       setError(result.message);
       setConfirming(false);
     });
-  };
+  }
 
   return (
     <>
-      <Button
-        size="sm"
-        variant="destructive"
-        disabled={pending}
-        onClick={() => setConfirming(true)}
-      >
-        <Trash2 /> Delete
-      </Button>
-      <ConfirmDialog
+      <AlertDialog.Root
         open={confirming}
-        title="Delete shipment?"
-        description="This shipment will be permanently removed."
-        confirmLabel="Delete shipment"
-        confirming={pending}
-        onOpenChange={(open) => {
-          if (!open && !pending) setConfirming(false);
+        onOpenChange={(open: boolean) => {
+          if (!pending) {
+            setConfirming(open);
+          }
         }}
-        onConfirm={confirm}
       >
-        <span />
-      </ConfirmDialog>
-      {error && (
-        <Alert variant="destructive" className="basis-full">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <AlertDialog.Trigger
+          render={<Button variant="destructive" disabled={pending} />}
+        >
+          <Trash2Icon aria-hidden="true" /> Delete
+        </AlertDialog.Trigger>
+
+        <AlertDialog.Content>
+          <AlertDialog.Header>
+            <AlertDialog.Media>
+              <Trash2Icon aria-hidden="true" />
+            </AlertDialog.Media>
+            <AlertDialog.Title>Delete this shipment?</AlertDialog.Title>
+            <AlertDialog.Description>
+              The shipment and its details are removed for good. This cannot be
+              undone.
+            </AlertDialog.Description>
+          </AlertDialog.Header>
+
+          <AlertDialog.Footer>
+            <AlertDialog.Cancel disabled={pending}>
+              Keep shipment
+            </AlertDialog.Cancel>
+            <AlertDialog.Action
+              variant="destructive"
+              disabled={pending}
+              onClick={confirm}
+            >
+              {pending ? "Deleting…" : "Delete shipment"}
+            </AlertDialog.Action>
+          </AlertDialog.Footer>
+        </AlertDialog.Content>
+      </AlertDialog.Root>
+
+      {error !== "" && (
+        <Alert.Root variant="destructive" className="basis-full">
+          <Alert.Description>{error}</Alert.Description>
+        </Alert.Root>
       )}
     </>
   );

@@ -1,10 +1,28 @@
-import { apiClient } from "@shared/api";
+"use server";
+
+import { createServerClient, getAccessToken } from "@shared/api/server";
+
+export interface ChangePasswordData {
+  currentPassword: string;
+  newPassword: string;
+}
 
 export async function changePassword(
-  payload: { currentPassword: string; newPassword: string },
-  accessToken: string,
-) {
-  await apiClient.patch<void>("/api/users/me/password", payload, {
+  passwords: ChangePasswordData,
+): Promise<void> {
+  const accessToken = await getAccessToken();
+
+  if (!accessToken) {
+    throw new Error("Access token is required to change the password.");
+  }
+
+  const api = createServerClient({
     accessToken,
+  });
+
+  await api.patch<void, ChangePasswordData>({
+    path: "/users/me/password",
+    parse: () => undefined,
+    body: passwords,
   });
 }

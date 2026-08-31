@@ -3,7 +3,10 @@
 import { parseWithZod } from "@conform-to/zod/v4";
 import { changePassword } from "@entities/user/server";
 import { ApiClientError } from "@shared/api";
+import { clearSessionCookies } from "@shared/api/server";
+import { routes } from "@shared/config";
 import type { SubmissionResponse } from "@shared/model";
+import { redirect } from "next/navigation";
 import { ChangePasswordSchema } from "../model/schema";
 
 export async function changePasswordAction(
@@ -61,8 +64,6 @@ export async function changePasswordAction(
     };
   }
 
-  return {
-    status: "success",
-    submission: submission.reply({ resetForm: true }),
-  };
+  await clearSessionCookies();
+  redirect(routes.login);
 }

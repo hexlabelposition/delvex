@@ -29,10 +29,11 @@ Create the local client environment from the committed template:
 cp .env.example .env.local
 ```
 
-| Variable             | Required | Purpose                                                                 |
-| -------------------- | -------- | ----------------------------------------------------------------------- |
-| API_URL              | yes      | Server URL used by the Next.js server without a trailing slash          |
-| NEXT_PUBLIC_SITE_URL | yes      | Client origin for canonical, Open Graph, Twitter, and manifest metadata |
+| Variable                     | Required | Purpose                                                                 |
+| ---------------------------- | -------- | ----------------------------------------------------------------------- |
+| API_URL                      | yes      | Server URL used by the Next.js server without a trailing slash          |
+| AUTH_RATE_LIMIT_PROXY_SECRET | hosted   | Secret shared with the API for authenticated client-IP forwarding       |
+| NEXT_PUBLIC_SITE_URL         | yes      | Client origin for canonical, Open Graph, Twitter, and manifest metadata |
 
 The default local values are <http://localhost:8080> for the API and
 <http://localhost:3000> for the client.
@@ -43,6 +44,11 @@ overrides **API_URL** with <http://server:8080> to use the internal network;
 the browser never talks to the API directly and therefore needs no public API
 address. Should browser-side requests appear later, they would need a public
 URL of their own again.
+
+On hosted environments, the Next.js server forwards Railway's **X-Real-IP** to
+the API in private Delvex headers authenticated with
+**AUTH_RATE_LIMIT_PROXY_SECRET**. Configure the same random value of at least 32
+characters on both services so authentication rate limits remain per client.
 
 Variables prefixed with **NEXT_PUBLIC_** are exposed to browser code. Never put
 credentials, tokens, or other secrets in them. Next.js embeds public variables

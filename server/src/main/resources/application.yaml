@@ -12,8 +12,7 @@ spring:
     driver-class-name: org.postgresql.Driver
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
+      url: ${REDIS_URL:redis://localhost:6379}
       connect-timeout: ${REDIS_CONNECT_TIMEOUT:2s}
       timeout: ${REDIS_TIMEOUT:2s}
       repositories:
@@ -50,6 +49,7 @@ rate-limit:
     forgot-password-requests: ${AUTH_RATE_LIMIT_FORGOT_PASSWORD_REQUESTS:5}
     reset-password-requests: ${AUTH_RATE_LIMIT_RESET_PASSWORD_REQUESTS:10}
     trusted-proxy-cidrs: ${AUTH_RATE_LIMIT_TRUSTED_PROXY_CIDRS:}
+    proxy-secret: ${AUTH_RATE_LIMIT_PROXY_SECRET:}
 
 springdoc:
   api-docs:

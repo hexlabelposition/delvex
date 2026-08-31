@@ -127,10 +127,10 @@ jobs:
       POSTGRES_HOST: localhost
       POSTGRES_DB: delvex_test
       POSTGRES_USER: delvex
-      REDIS_HOST: localhost
-      REDIS_PORT: 6379
+      REDIS_URL: redis://:test-redis-password@localhost:6379
       POSTGRES_PASSWORD: test-password
       ACCESS_TOKEN_SECRET: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+      AUTH_RATE_LIMIT_PROXY_SECRET: 0123456789abcdef0123456789abcdef
       CORS_ALLOWED_ORIGINS: https://app.example.com
       PASSWORD_RESET_CLIENT_URL: https://app.example.com/reset-password
       RESEND_API_KEY: re_ci-not-used
@@ -150,6 +150,9 @@ jobs:
 
       - name: Make Maven Wrapper executable
         run: chmod +x mvnw
+
+      - name: Require Redis authentication
+        run: docker run --rm --network host redis:8-alpine redis-cli CONFIG SET requirepass test-redis-password
 
       - name: Run server tests
         run: ./mvnw --batch-mode --no-transfer-progress test
@@ -203,10 +206,10 @@ jobs:
       POSTGRES_HOST: localhost
       POSTGRES_DB: delvex_prod_smoke
       POSTGRES_USER: delvex
-      REDIS_HOST: localhost
-      REDIS_PORT: 6379
+      REDIS_URL: redis://:test-redis-password@localhost:6379
       POSTGRES_PASSWORD: smoke-password
       ACCESS_TOKEN_SECRET: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+      AUTH_RATE_LIMIT_PROXY_SECRET: 0123456789abcdef0123456789abcdef
       CORS_ALLOWED_ORIGINS: https://app.example.com
       PASSWORD_RESET_CLIENT_URL: https://app.example.com/reset-password
       RESEND_API_KEY: re_ci-not-used
@@ -226,6 +229,9 @@ jobs:
 
       - name: Make Maven Wrapper executable
         run: chmod +x mvnw
+
+      - name: Require Redis authentication
+        run: docker run --rm --network host redis:8-alpine redis-cli CONFIG SET requirepass test-redis-password
 
       - name: Package production JAR
         run: ./mvnw --batch-mode --no-transfer-progress -DskipTests package

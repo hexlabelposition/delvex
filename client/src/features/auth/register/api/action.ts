@@ -10,7 +10,7 @@ import {
 import { routes } from "@shared/config";
 import { redirect } from "next/navigation";
 import {
-  createServerClient,
+  createRequestServerClient,
   createSession,
   getRefreshToken,
   getRefreshCookie,
@@ -35,7 +35,7 @@ export async function registerAction(
   }
 
   try {
-    const client = createServerClient();
+    const client = await createRequestServerClient();
 
     const response = await client.post<RegisterResponse, RegisterBody>({
       path: "/auth/register",

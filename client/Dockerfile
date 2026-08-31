@@ -6,8 +6,9 @@ WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
-# Build stage
-FROM oven/bun:1.3.14-alpine AS builder
+# Build stage. Next.js runs under Node here because Bun 1.3.14 can crash after
+# completing a Turbopack production build on Alpine.
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
@@ -29,7 +30,7 @@ ENV NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
 
 RUN test -n "$NEXT_PUBLIC_SITE_URL" \
     || (echo "NEXT_PUBLIC_SITE_URL build argument is required" >&2; exit 1)
-RUN bun run build
+RUN npm run build
 
 # Run stage
 FROM node:24-alpine AS runner

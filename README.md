@@ -80,6 +80,10 @@ visible in the browser and must never contain secrets. The API is reached only
 from the Next.js server through **API_URL**, so no public API address is
 needed.
 
+**AUTH_RATE_LIMIT_PROXY_SECRET** must be the same random value on the client and
+server. It authenticates the original client IP forwarded by the Next.js BFF;
+never prefix it with **NEXT_PUBLIC_**.
+
 **NODE_ENV** in the root file applies only to the running client container and
 stays **production**. The client image contains a production build, so a
 development value would disable optimizations without providing hot reload.

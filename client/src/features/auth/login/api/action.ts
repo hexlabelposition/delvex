@@ -4,7 +4,7 @@ import { parseWithZod } from "@conform-to/zod/v4";
 import { ApiClientError } from "@shared/api";
 import { redirect } from "next/navigation";
 import { routes } from "@shared/config";
-import { createServerClient, createSession } from "@shared/api/server";
+import { createRequestServerClient, createSession } from "@shared/api/server";
 import { LoginResponseSchema, LoginSchema } from "../model/schema";
 import type { SubmissionResponse } from "@shared/model";
 
@@ -26,7 +26,7 @@ export async function loginAction(
   }
 
   try {
-    const api = createServerClient();
+    const api = await createRequestServerClient();
 
     const response = await api.post({
       path: "/auth/login",

@@ -3,7 +3,7 @@ spring:
     url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT:5432}/${POSTGRES_DB}?currentSchema=${POSTGRES_SCHEMA:public}
   data:
     redis:
-      host: ${REDIS_HOST}
+      url: ${REDIS_URL}
 
 resend:
   api-key: ${RESEND_API_KEY}
@@ -17,3 +17,7 @@ auth:
 password-reset:
   client-url: ${PASSWORD_RESET_CLIENT_URL}
   mail-from: ${MAIL_FROM}
+
+rate-limit:
+  auth:
+    proxy-secret: ${AUTH_RATE_LIMIT_PROXY_SECRET}

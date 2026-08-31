@@ -1,5 +1,6 @@
 package com.delvex.server.user;
 
+import java.time.Clock;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -8,6 +9,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.delvex.server.auth.RefreshSessionRepository;
 import com.delvex.server.user.dto.ChangePasswordRequest;
 import com.delvex.server.user.dto.UpdateUserRequest;
 import com.delvex.server.user.dto.UserResponse;
@@ -19,11 +21,19 @@ public class UserService {
             UserService.class);
 
     private final UserRepository userRepository;
+    private final RefreshSessionRepository refreshSessionRepository;
     private final PasswordEncoder passwordEncoder;
+    private final Clock clock;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(
+            UserRepository userRepository,
+            RefreshSessionRepository refreshSessionRepository,
+            PasswordEncoder passwordEncoder,
+            Clock clock) {
         this.userRepository = userRepository;
+        this.refreshSessionRepository = refreshSessionRepository;
         this.passwordEncoder = passwordEncoder;
+        this.clock = clock;
     }
 
     @Transactional(readOnly = true)
@@ -53,12 +63,17 @@ public class UserService {
     @Transactional
     public void changePassword(UUID userId, ChangePasswordRequest request) {
         User user = findUser(userId);
-        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+        if (!passwordEncoder.matches(
+                request.currentPassword(),
+                user.getPasswordHash())) {
             throw new org.springframework.web.server.ResponseStatusException(
                     org.springframework.http.HttpStatus.BAD_REQUEST,
                     "Current password is incorrect");
         }
         user.changePassword(passwordEncoder.encode(request.newPassword()));
+        refreshSessionRepository.revokeActiveByUserId(
+                userId,
+                clock.instant());
         LOGGER.info("user password changed userId={}", userId);
     }
 

@@ -35,6 +35,8 @@ public class AuthRateLimitProperties {
     @NotNull
     private List<String> trustedProxyCidrs = List.of();
 
+    private String proxySecret = "";
+
     public Duration getWindow() {
         return window;
     }
@@ -91,10 +93,25 @@ public class AuthRateLimitProperties {
         this.trustedProxyCidrs = trustedProxyCidrs;
     }
 
+    public String getProxySecret() {
+        return proxySecret;
+    }
+
+    public void setProxySecret(String proxySecret) {
+        this.proxySecret = proxySecret;
+    }
+
     @AssertTrue(message = "Rate limit window must be positive")
     public boolean isWindowPositive() {
         return window != null
                 && !window.isZero()
                 && !window.isNegative();
+    }
+
+    @AssertTrue(message = "Rate limit proxy secret must contain at least 32 characters")
+    public boolean isProxySecretStrongOrAbsent() {
+        return proxySecret == null
+                || proxySecret.isBlank()
+                || proxySecret.length() >= 32;
     }
 }

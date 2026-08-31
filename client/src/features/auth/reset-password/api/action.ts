@@ -1,7 +1,7 @@
 "use server";
 
 import { parseWithZod } from "@conform-to/zod/v4";
-import { createServerClient } from "@shared/api/server";
+import { createRequestServerClient } from "@shared/api/server";
 import { routes } from "@shared/config";
 import { redirect } from "next/navigation";
 import { ResetPasswordSchema } from "../model/schema";
@@ -37,7 +37,7 @@ export async function resetPasswordAction(
   };
 
   try {
-    const api = createServerClient();
+    const api = await createRequestServerClient();
 
     await api.post<void, ResetPasswordPayload>({
       path: "/auth/reset-password",

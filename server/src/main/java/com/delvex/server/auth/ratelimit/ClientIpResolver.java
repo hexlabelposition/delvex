@@ -2,6 +2,8 @@ package com.delvex.server.auth.ratelimit;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -13,17 +15,38 @@ public class ClientIpResolver {
 
     private static final String FORWARDED_HEADER = "Forwarded";
     private static final String X_FORWARDED_FOR_HEADER = "X-Forwarded-For";
+    private static final String INTERNAL_CLIENT_IP_HEADER =
+            "X-Delvex-Client-IP";
+    private static final String INTERNAL_PROXY_SECRET_HEADER =
+            "X-Delvex-Proxy-Secret";
 
     private final List<IpSubnet> trustedProxies;
+    private final byte[] proxySecret;
 
     public ClientIpResolver(List<String> trustedProxyCidrs) {
+        this(trustedProxyCidrs, "");
+    }
+
+    public ClientIpResolver(
+            List<String> trustedProxyCidrs,
+            String proxySecret) {
         this.trustedProxies = trustedProxyCidrs.stream()
                 .filter(cidr -> !cidr.isBlank())
                 .map(IpSubnet::parse)
                 .toList();
+        this.proxySecret = proxySecret == null
+                ? new byte[0]
+                : proxySecret.getBytes(StandardCharsets.UTF_8);
     }
 
     public String resolve(HttpServletRequest request) {
+        InetAddress internalClientAddress =
+                resolveInternalClientAddress(request);
+
+        if (internalClientAddress != null) {
+            return internalClientAddress.getHostAddress();
+        }
+
         String remoteAddress = request.getRemoteAddr();
         InetAddress peer = parseAddress(remoteAddress);
 
@@ -62,6 +85,26 @@ public class ClientIpResolver {
         }
 
         return forwardedAddresses.get(0).getHostAddress();
+    }
+
+    private InetAddress resolveInternalClientAddress(
+            HttpServletRequest request) {
+        if (proxySecret.length == 0) {
+            return null;
+        }
+
+        String suppliedSecret = request.getHeader(
+                INTERNAL_PROXY_SECRET_HEADER);
+
+        if (suppliedSecret == null
+                || !MessageDigest.isEqual(
+                        proxySecret,
+                        suppliedSecret.getBytes(StandardCharsets.UTF_8))) {
+            return null;
+        }
+
+        return parseAddressToken(request.getHeader(
+                INTERNAL_CLIENT_IP_HEADER));
     }
 
     private List<InetAddress> parseForwarded(
@@ -156,6 +199,10 @@ public class ClientIpResolver {
     }
 
     private InetAddress parseAddressToken(String value) {
+        if (value == null) {
+            return null;
+        }
+
         String token = unquote(value.trim());
 
         if (token.isBlank()

@@ -227,8 +227,7 @@ disabled and unreachable in production.
 | POSTGRES_SCHEMA                       | public                  | JDBC current schema                         |
 | POSTGRES_USER                         | none                    | Required database user                      |
 | POSTGRES_PASSWORD                     | none                    | Required database password                  |
-| REDIS_HOST                            | localhost outside prod  | Required explicitly in prod                 |
-| REDIS_PORT                            | 6379                    | Redis port                                  |
+| REDIS_URL                             | redis://localhost:6379   | Required explicitly in dev and prod         |
 | REDIS_CONNECT_TIMEOUT                 | 2s                      | Redis connection timeout                    |
 | REDIS_TIMEOUT                         | 2s                      | Redis command timeout                       |
 | ACCESS_TOKEN_SECRET                   | none                    | Base64 value with at least 32 decoded bytes |
@@ -242,6 +241,7 @@ disabled and unreachable in production.
 | AUTH_RATE_LIMIT_REFRESH_REQUESTS      | 30                      | Refresh attempts per client/window          |
 | AUTH_RATE_LIMIT_FORGOT_PASSWORD_REQUESTS | 5                    | Reset email requests per client/window      |
 | AUTH_RATE_LIMIT_RESET_PASSWORD_REQUESTS | 10                    | Password changes per client/window          |
+| AUTH_RATE_LIMIT_PROXY_SECRET          | empty locally           | Shared BFF secret; required in dev and prod  |
 | AUTH_RATE_LIMIT_TRUSTED_PROXY_CIDRS   | empty                   | Trusted proxy networks                      |
 | PASSWORD_RESET_CLIENT_URL             | local reset page        | Required HTTPS URL in dev and prod           |
 | PASSWORD_RESET_TOKEN_TTL              | 30m                     | One-time reset token lifetime               |
@@ -296,6 +296,11 @@ left and selects the first untrusted address.
 Do not use **0.0.0.0/0** or **::/0** when the application can also be reached
 directly.
 
+The Next.js BFF additionally forwards Railway's **X-Real-IP** in a private
+header authenticated by **AUTH_RATE_LIMIT_PROXY_SECRET**. Use the same random
+value of at least 32 characters on the client and server. Requests without the
+correct secret cannot select their own rate-limit identity.
+
 Rate-limit counters are stored in Redis and shared by every server instance.
 Each key contains the endpoint, a SHA-256 digest of the resolved client address,
 and the fixed-window start time. A Lua script increments the counter and assigns
@@ -332,10 +337,10 @@ POSTGRES_DB="delvex"
 POSTGRES_SCHEMA="public"
 POSTGRES_USER="delvex"
 POSTGRES_PASSWORD="<secret>"
-REDIS_HOST="redis.internal"
-REDIS_PORT="6379"
+REDIS_URL="redis://<user>:<password>@redis.internal:6379"
 REDIS_CONNECT_TIMEOUT="2s"
 REDIS_TIMEOUT="2s"
+AUTH_RATE_LIMIT_PROXY_SECRET="<shared-random-secret-at-least-32-characters>"
 ACCESS_TOKEN_SECRET="<base64-secret>"
 CORS_ALLOWED_ORIGINS="https://dev.example.com"
 LOG_LEVEL="INFO"

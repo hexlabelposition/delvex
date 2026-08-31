@@ -1,4 +1,7 @@
-export { createServerClient } from "./src/server.client";
+export {
+  createRequestServerClient,
+  createServerClient,
+} from "./src/server.client";
 export {
   createSession,
   updateSession,

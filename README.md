@@ -232,3 +232,7 @@ standalone output, and container usage.
 See [server/README.md](server/README.md) for API routes, authentication,
 configuration variables, OpenAPI, database migrations, testing, production
 startup, security, and operational behavior.
+
+## License
+
+Delvex is licensed under the [MIT License](LICENSE).

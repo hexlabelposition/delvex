@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import com.delvex.server.shipment.Shipment;
 import com.delvex.server.shipment.ShipmentStatus;
+import com.delvex.server.payment.dto.PaymentResponse;
 
 public record ShipmentResponse(
         UUID id,
@@ -23,6 +24,7 @@ public record ShipmentResponse(
         BigDecimal weightKg,
         Instant pickupAt,
         Instant deliveryAt,
+        PaymentResponse payment,
         long version,
         Instant createdAt,
         Instant updatedAt) {
@@ -44,6 +46,7 @@ public record ShipmentResponse(
                 shipment.getWeightKg(),
                 shipment.getPickupAt(),
                 shipment.getDeliveryAt(),
+                PaymentResponse.from(shipment.getPayment()),
                 shipment.getVersion(),
                 shipment.getCreatedAt(),
                 shipment.getUpdatedAt());

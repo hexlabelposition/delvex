@@ -2,6 +2,7 @@ import "server-only";
 
 import { createServerClient, getAccessToken } from "@shared/api/server";
 import { ShipmentSchema, type Shipment } from "../model/schema";
+import type { PaymentMethod } from "../model/schema";
 
 export interface CreateShipmentData {
   originLocationId: string;
@@ -10,6 +11,7 @@ export interface CreateShipmentData {
   weightKg: number;
   pickupAt: string | null;
   deliveryAt: string | null;
+  paymentMethod: PaymentMethod;
 }
 
 export async function createShipment(

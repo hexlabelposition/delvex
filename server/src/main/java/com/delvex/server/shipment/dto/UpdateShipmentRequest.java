@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -22,6 +23,7 @@ public record UpdateShipmentRequest(
         @Pattern(regexp = "(?s).*\\S.*", message = "Cargo description must not be blank")
         String cargoDescription,
         @DecimalMin(value = "0.01", message = "Weight must be at least 0.01 kg")
+        @DecimalMax(value = "50", message = "Weight must not exceed 50 kg")
         @Digits(integer = 8, fraction = 2, message = "Weight must contain at most 8 integer and 2 decimal digits")
         BigDecimal weightKg,
         Instant pickupAt,

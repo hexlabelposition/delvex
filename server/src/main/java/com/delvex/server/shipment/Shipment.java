@@ -5,9 +5,12 @@ import java.time.Instant;
 import java.util.UUID;
 
 import com.delvex.server.branch.Branch;
+import com.delvex.server.payment.Payment;
+import com.delvex.server.payment.PaymentMethod;
 import com.delvex.server.user.User;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -17,6 +20,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -85,6 +89,10 @@ public class Shipment {
     @Column(name = "delivery_at")
     private Instant deliveryAt;
 
+    @OneToOne(mappedBy = "shipment", cascade = CascadeType.ALL,
+            orphanRemoval = true, fetch = FetchType.LAZY)
+    private Payment payment;
+
     @Version
     @Column(nullable = false)
     private long version;
@@ -106,7 +114,9 @@ public class Shipment {
             String cargoDescription,
             BigDecimal weightKg,
             Instant pickupAt,
-            Instant deliveryAt) {
+            Instant deliveryAt,
+            PaymentMethod paymentMethod,
+            BigDecimal price) {
         validateSchedule(pickupAt, deliveryAt);
 
         this.user = user;
@@ -118,6 +128,7 @@ public class Shipment {
         this.weightKg = weightKg;
         this.pickupAt = pickupAt;
         this.deliveryAt = deliveryAt;
+        this.payment = new Payment(this, paymentMethod, price, "PLN");
     }
 
     @PrePersist
@@ -138,7 +149,8 @@ public class Shipment {
             String cargoDescription,
             BigDecimal weightKg,
             Instant pickupAt,
-            Instant deliveryAt) {
+            Instant deliveryAt,
+            BigDecimal price) {
         validateUpdate();
 
         Instant updatedPickupAt = pickupAt != null ? pickupAt : this.pickupAt;
@@ -154,6 +166,9 @@ public class Shipment {
         }
         this.cargoDescription = valueOrCurrent(cargoDescription, this.cargoDescription);
         this.weightKg = valueOrCurrent(weightKg, this.weightKg);
+        if (weightKg != null) {
+            payment.updateAmount(price);
+        }
         this.pickupAt = updatedPickupAt;
         this.deliveryAt = updatedDeliveryAt;
     }
@@ -163,6 +178,7 @@ public class Shipment {
             throw new InvalidShipmentStateException(
                     status + " shipments cannot be deleted");
         }
+        payment.validateShipmentDeletion();
     }
 
     private void validateUpdate() {
@@ -268,6 +284,10 @@ public class Shipment {
 
     public Instant getDeliveryAt() {
         return deliveryAt;
+    }
+
+    public Payment getPayment() {
+        return payment;
     }
 
     public long getVersion() {

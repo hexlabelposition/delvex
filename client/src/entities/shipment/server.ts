@@ -1,5 +1,6 @@
 export { createShipment } from "./api/create-shipment";
 export type { CreateShipmentData } from "./api/create-shipment";
+export { createPaymentCheckout } from "./api/create-payment-checkout";
 
 export { getAllShipments } from "./api/get-all-shipments";
 export { getShipmentById } from "./api/get-shipment-by-id";

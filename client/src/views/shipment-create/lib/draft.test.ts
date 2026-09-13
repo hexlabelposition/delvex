@@ -23,6 +23,7 @@ const values: ShipmentFormValues = {
   cargoDescription: "Documents",
   weightKg: "10",
   pickupAt: "",
+  paymentMethod: "AT_BRANCH",
 };
 
 beforeEach(() => {
@@ -47,6 +48,7 @@ describe("shipment draft", () => {
       cargoDescription: "",
       weightKg: "",
       pickupAt: "",
+      paymentMethod: "",
     });
 
     expect(readDraft()).toBeNull();

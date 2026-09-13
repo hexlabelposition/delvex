@@ -10,6 +10,24 @@ export const ShipmentStatusSchema = z.enum([
   "CANCELLED",
 ]);
 
+export const PaymentMethodSchema = z.enum(["CARD", "AT_BRANCH"]);
+export const PaymentStatusSchema = z.enum([
+  "UNPAID",
+  "PROCESSING",
+  "PAID",
+  "FAILED",
+  "REFUNDED",
+]);
+
+export const PaymentSchema = z.object({
+  id: IdSchema,
+  method: PaymentMethodSchema,
+  status: PaymentStatusSchema,
+  amount: z.number().positive(),
+  currency: z.string().length(3),
+  paidAt: InstantSchema.nullable(),
+});
+
 export const ShipmentSchema = z.object({
   id: IdSchema,
   referenceNumber: z.string(),
@@ -26,6 +44,7 @@ export const ShipmentSchema = z.object({
   weightKg: z.number().positive(),
   pickupAt: InstantSchema.nullable(),
   deliveryAt: InstantSchema.nullable(),
+  payment: PaymentSchema,
   version: z.number().int().nonnegative(),
   createdAt: InstantSchema,
   updatedAt: InstantSchema,
@@ -40,5 +59,8 @@ export const ShipmentPageSchema = z.object({
 });
 
 export type ShipmentStatus = z.infer<typeof ShipmentStatusSchema>;
+export type PaymentMethod = z.infer<typeof PaymentMethodSchema>;
+export type PaymentStatus = z.infer<typeof PaymentStatusSchema>;
+export type Payment = z.infer<typeof PaymentSchema>;
 export type Shipment = z.infer<typeof ShipmentSchema>;
 export type ShipmentPage = z.infer<typeof ShipmentPageSchema>;

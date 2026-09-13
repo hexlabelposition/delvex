@@ -135,6 +135,9 @@ jobs:
       PASSWORD_RESET_CLIENT_URL: https://app.example.com/reset-password
       RESEND_API_KEY: re_ci-not-used
       MAIL_FROM: no-reply@example.com
+      STRIPE_SECRET_KEY: sk_test_ci-not-used
+      STRIPE_WEBHOOK_SECRET: whsec_ci-not-used
+      PAYMENT_CLIENT_URL: https://app.example.com
 
     steps:
       - name: Check out repository
@@ -214,6 +217,9 @@ jobs:
       PASSWORD_RESET_CLIENT_URL: https://app.example.com/reset-password
       RESEND_API_KEY: re_ci-not-used
       MAIL_FROM: no-reply@example.com
+      STRIPE_SECRET_KEY: sk_test_ci-not-used
+      STRIPE_WEBHOOK_SECRET: whsec_ci-not-used
+      PAYMENT_CLIENT_URL: https://app.example.com
 
     steps:
       - name: Check out repository
@@ -259,4 +265,3 @@ jobs:
           name: server-production-smoke-log
           path: server/target/production-smoke.log
           if-no-files-found: ignore
-

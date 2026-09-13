@@ -7,7 +7,11 @@ import {
   toDateValue,
   toShipmentInstant,
 } from "@entities/shipment";
-import { createShipment, updateShipment } from "@entities/shipment/server";
+import {
+  createPaymentCheckout,
+  createShipment,
+  updateShipment,
+} from "@entities/shipment/server";
 import { ApiClientError } from "@shared/api";
 import { routes } from "@shared/config";
 import type { SubmissionResponse } from "@shared/model";
@@ -111,6 +115,7 @@ export async function createShipmentAction(
   const values = submission.value;
   const schedule = resolveSchedule(values.pickupAt);
   let shipmentId: string;
+  let destination: string;
 
   try {
     const shipment = await createShipment({
@@ -120,9 +125,11 @@ export async function createShipmentAction(
       weightKg: values.weightKg,
       pickupAt: schedule.pickupAt,
       deliveryAt: schedule.deliveryAt,
+      paymentMethod: values.paymentMethod,
     });
 
     shipmentId = shipment.id;
+    destination = routes.shipmentDetails(shipment.id);
   } catch (error) {
     console.error("Shipment creation failed:", error);
 
@@ -137,6 +144,15 @@ export async function createShipmentAction(
     };
   }
 
+  if (values.paymentMethod === "CARD") {
+    try {
+      destination = await createPaymentCheckout(shipmentId);
+    } catch (error) {
+      console.error("Payment checkout creation failed:", error);
+      destination = `${routes.shipmentDetails(shipmentId)}?payment=unavailable`;
+    }
+  }
+
   revalidatePath(routes.shipments);
-  redirect(routes.shipmentDetails(shipmentId));
+  redirect(destination);
 }

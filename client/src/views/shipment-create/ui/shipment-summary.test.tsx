@@ -9,6 +9,7 @@ const empty: ShipmentFormValues = {
   cargoDescription: "",
   weightKg: "",
   pickupAt: "",
+  paymentMethod: "AT_BRANCH",
 };
 
 describe("ShipmentSummary", () => {

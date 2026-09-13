@@ -4,6 +4,7 @@ export {
   ShipmentFormFields,
   ShipmentRouteFields,
   ShipmentScheduleFields,
+  ShipmentPaymentFields,
 } from "./ui/shipment-form-fields";
 export { createShipmentAction } from "./api/action";
 export {

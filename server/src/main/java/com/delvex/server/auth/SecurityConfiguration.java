@@ -69,6 +69,10 @@ public class SecurityConfiguration {
                             "/api/auth/forgot-password",
                             "/api/auth/reset-password")
                             .permitAll();
+                    authorize.requestMatchers(
+                            HttpMethod.POST,
+                            "/api/payments/webhooks/stripe")
+                            .permitAll();
 
                     // Documentation becomes public only in the profile that
                     // also enables springdoc generation (currently dev).

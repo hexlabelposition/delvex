@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.delvex.server.branch.Branch;
 import com.delvex.server.branch.BranchRepository;
+import com.delvex.server.payment.ShipmentPriceCalculator;
 import com.delvex.server.shipment.dto.CreateShipmentRequest;
 import com.delvex.server.shipment.dto.ShipmentPageResponse;
 import com.delvex.server.shipment.dto.ShipmentResponse;
@@ -31,14 +32,17 @@ public class ShipmentService {
     private final ShipmentRepository shipmentRepository;
     private final UserRepository userRepository;
     private final BranchRepository branchRepository;
+    private final ShipmentPriceCalculator priceCalculator;
 
     public ShipmentService(
             ShipmentRepository shipmentRepository,
             UserRepository userRepository,
-            BranchRepository branchRepository) {
+            BranchRepository branchRepository,
+            ShipmentPriceCalculator priceCalculator) {
         this.shipmentRepository = shipmentRepository;
         this.userRepository = userRepository;
         this.branchRepository = branchRepository;
+        this.priceCalculator = priceCalculator;
     }
 
     @Transactional
@@ -56,7 +60,9 @@ public class ShipmentService {
                 strip(request.cargoDescription()),
                 request.weightKg(),
                 request.pickupAt(),
-                request.deliveryAt());
+                request.deliveryAt(),
+                request.paymentMethod(),
+                priceCalculator.calculate(request.weightKg()));
 
         Shipment savedShipment = shipmentRepository.saveAndFlush(shipment);
 
@@ -125,7 +131,9 @@ public class ShipmentService {
                 strip(request.cargoDescription()),
                 request.weightKg(),
                 request.pickupAt(),
-                request.deliveryAt());
+                request.deliveryAt(),
+                request.weightKg() == null
+                        ? null : priceCalculator.calculate(request.weightKg()));
 
         LOGGER.info(
                 "shipment updated userId={} shipmentId={}",

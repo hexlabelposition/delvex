@@ -15,6 +15,7 @@ supports a complete containerized development stack.
 - user registration, login, password recovery, token refresh, and logout;
 - current-user profile management;
 - shipment creation, pagination, retrieval, update, and deletion;
+- server-priced shipments with branch payment or Stripe Sandbox checkout;
 - persisted origin and destination branches with shipment address snapshots;
 - enforced shipment ownership and optimistic locking;
 - consistent validation, security, and domain errors;
@@ -83,6 +84,11 @@ needed.
 **AUTH_RATE_LIMIT_PROXY_SECRET** must be the same random value on the client and
 server. It authenticates the original client IP forwarded by the Next.js BFF;
 never prefix it with **NEXT_PUBLIC_**.
+
+Stripe card checkout always runs in Sandbox. Configure a `sk_test_` secret and
+the matching webhook signing secret on the server; live `sk_live_` keys are
+rejected at startup. The secrets remain server-only and must never use a
+`NEXT_PUBLIC_` prefix.
 
 **NODE_ENV** in the root file applies only to the running client container and
 stays **production**. The client image contains a production build, so a

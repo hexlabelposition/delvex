@@ -4,9 +4,9 @@
  * stored value meaningful and lets the UI map it back to the band it came from.
  */
 export const SHIPMENT_WEIGHT_OPTIONS = [
-  { value: "10", label: "Up to 10 kg" },
-  { value: "20", label: "10–20 kg" },
-  { value: "50", label: "20–50 kg" },
+  { value: "10", label: "Up to 10 kg", price: 29 },
+  { value: "20", label: "10–20 kg", price: 49 },
+  { value: "50", label: "20–50 kg", price: 79 },
 ] as const;
 
 export type ShipmentWeightValue =
@@ -23,4 +23,11 @@ export function getShipmentWeightValue(weightKg: number): string {
   );
 
   return match?.value ?? "";
+}
+
+export function getShipmentPrice(weightKg: string): number | null {
+  return (
+    SHIPMENT_WEIGHT_OPTIONS.find((option) => option.value === weightKg)
+      ?.price ?? null
+  );
 }

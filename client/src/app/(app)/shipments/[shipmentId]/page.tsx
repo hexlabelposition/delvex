@@ -6,6 +6,7 @@ import { ShipmentDetailsView } from "@views/shipment-details";
 
 interface ShipmentDetailsPageProps {
   params: Promise<Params<{ shipmentId: string }>>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 export async function generateMetadata({ params }: ShipmentDetailsPageProps) {
@@ -20,13 +21,20 @@ export async function generateMetadata({ params }: ShipmentDetailsPageProps) {
 
 export default async function ShipmentDetailsPage({
   params,
+  searchParams,
 }: ShipmentDetailsPageProps) {
   const { shipmentId } = await params;
+  const query = await searchParams;
+  const paymentResult = Array.isArray(query.payment)
+    ? query.payment[0]
+    : query.payment;
   const shipment = await findShipmentById(shipmentId);
 
   if (!shipment) {
     notFound();
   }
 
-  return <ShipmentDetailsView shipment={shipment} />;
+  return (
+    <ShipmentDetailsView shipment={shipment} paymentResult={paymentResult} />
+  );
 }

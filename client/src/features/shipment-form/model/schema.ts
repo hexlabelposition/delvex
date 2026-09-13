@@ -6,6 +6,7 @@ import {
   shipmentLocationIds,
   toDateValue,
   type Shipment,
+  PaymentMethodSchema,
 } from "@entities/shipment";
 
 const LocationIdSchema = z.enum(shipmentLocationIds, {
@@ -31,6 +32,7 @@ export const ShipmentFormSchema = z.object({
     .string()
     .trim()
     .refine((value) => value === "" || datePattern.test(value), "Pick a date"),
+  paymentMethod: PaymentMethodSchema.default("AT_BRANCH"),
 });
 
 /** What the schema produces once the string form values are parsed. */
@@ -46,6 +48,7 @@ export interface ShipmentFormValues {
   cargoDescription: string;
   weightKg: string;
   pickupAt: string;
+  paymentMethod: string;
 }
 
 export function shipmentToFormValues(shipment: Shipment): ShipmentFormValues {
@@ -58,5 +61,6 @@ export function shipmentToFormValues(shipment: Shipment): ShipmentFormValues {
       shipment.pickupAt === null
         ? ""
         : toDateValue(new Date(shipment.pickupAt)),
+    paymentMethod: shipment.payment.method,
   };
 }

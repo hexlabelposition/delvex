@@ -19,6 +19,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.springframework.stereotype.Component;
 
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -89,7 +90,7 @@ public class StripePaymentGateway implements PaymentGateway {
             String id = requiredText(body, "id");
             String url = requiredText(body, "url");
             return new HostedCheckout(id, url);
-        } catch (IOException exception) {
+        } catch (IOException | JacksonException exception) {
             throw new PaymentProviderException(
                     "Unable to create Stripe Checkout session", exception);
         } catch (InterruptedException exception) {
@@ -113,7 +114,7 @@ public class StripePaymentGateway implements PaymentGateway {
                     textOrNull(object, "id"),
                     textOrNull(object, "payment_status"),
                     textOrNull(object, "payment_intent"));
-        } catch (IOException exception) {
+        } catch (JacksonException exception) {
             throw new InvalidPaymentStateException(
                     "Malformed Stripe webhook payload");
         }

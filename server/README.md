@@ -33,6 +33,7 @@ PostgreSQL persistence, API documentation, security, and operational health.
 - shipment creation, pagination, retrieval, update, and deletion;
 - ownership checks and optimistic locking for shipment operations;
 - persisted origin and destination branches with shipment address snapshots;
+- server-side weight-band pricing, branch payments, and Stripe Sandbox checkout;
 - consistent JSON errors for validation, malformed JSON, security, and domain
   failures;
 - configurable CORS and application logging;
@@ -96,6 +97,7 @@ modifies the production schema.
 | GET    | **/api/shipments/{shipmentId}**   | Read an owned shipment     |
 | PATCH  | **/api/shipments/{shipmentId}**   | Update an owned shipment   |
 | DELETE | **/api/shipments/{shipmentId}**   | Delete an allowed shipment |
+| POST   | **/api/shipments/{shipmentId}/payment/checkout** | Start test card checkout |
 
 Send an access token as:
 
@@ -111,6 +113,19 @@ size of 100, and returns **content**, **page**, **size**, **totalElements**, and
 
 Owned shipments can be updated or deleted only while they remain in the
 **CREATED** status.
+
+### Payments
+
+Shipment prices are calculated by the server from the selected weight band and
+stored in PLN. A shipment can be paid at its origin branch or through a
+Stripe-hosted Checkout page. Card checkout is deliberately restricted to
+Stripe Sandbox: application startup rejects every `sk_live_` key, and the
+client labels the flow as a demo that never charges real money.
+
+Stripe confirms payment asynchronously through
+`POST /api/payments/webhooks/stripe`. This endpoint is public so Stripe can
+reach it, but every payload must pass `Stripe-Signature` verification before a
+payment can become `PAID`. Browser redirects never confirm a payment.
 
 ## Authentication
 
@@ -247,6 +262,9 @@ disabled and unreachable in production.
 | PASSWORD_RESET_TOKEN_TTL              | 30m                     | One-time reset token lifetime               |
 | PASSWORD_RESET_CLEANUP_INTERVAL       | 1h                      | Delay between token cleanup runs            |
 | PASSWORD_RESET_CLEANUP_INITIAL_DELAY  | 1h                      | Delay before first token cleanup            |
+| STRIPE_SECRET_KEY                     | sk_test_configure_me    | Stripe Sandbox key; live keys are rejected  |
+| STRIPE_WEBHOOK_SECRET                 | whsec_configure_me      | Stripe webhook signing secret               |
+| PAYMENT_CLIENT_URL                    | http://localhost:3000   | Checkout return origin                      |
 | MAIL_HOST                             | localhost in local       | Local Mailpit host override only             |
 | MAIL_PORT                             | 1025 in local            | Local Mailpit port override only             |
 | RESEND_API_KEY                        | none                    | Required secret in dev and prod              |

@@ -40,6 +40,12 @@ password-reset:
   cleanup-interval: ${PASSWORD_RESET_CLEANUP_INTERVAL:1h}
   cleanup-initial-delay: ${PASSWORD_RESET_CLEANUP_INITIAL_DELAY:1h}
 
+# Delvex is a portfolio application and deliberately accepts sandbox keys only.
+payment:
+  stripe-secret-key: ${STRIPE_SECRET_KEY:sk_test_configure_me}
+  stripe-webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_configure_me}
+  client-url: ${PAYMENT_CLIENT_URL:http://localhost:3000}
+
 rate-limit:
   auth:
     window: ${AUTH_RATE_LIMIT_WINDOW:1m}

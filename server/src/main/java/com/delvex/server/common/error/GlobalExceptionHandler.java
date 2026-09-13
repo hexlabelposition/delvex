@@ -25,6 +25,10 @@ import com.delvex.server.shipment.InvalidShipmentScheduleException;
 import com.delvex.server.shipment.InvalidShipmentLocationException;
 import com.delvex.server.shipment.InvalidShipmentStateException;
 import com.delvex.server.shipment.ShipmentNotFoundException;
+import com.delvex.server.payment.InvalidPaymentStateException;
+import com.delvex.server.payment.InvalidWebhookSignatureException;
+import com.delvex.server.payment.PaymentNotFoundException;
+import com.delvex.server.payment.PaymentProviderException;
 import com.delvex.server.user.UserNotFoundException;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -197,6 +201,66 @@ public class GlobalExceptionHandler {
                 Map.of());
 
         return ResponseEntity.status(status).body(error);
+    }
+
+    @ExceptionHandler(InvalidPaymentStateException.class)
+    public ResponseEntity<ApiError> handleInvalidPaymentState(
+            InvalidPaymentStateException exception,
+            HttpServletRequest request) {
+        HttpStatus status = HttpStatus.CONFLICT;
+
+        logHandledException(status, exception, request);
+
+        return ResponseEntity.status(status).body(new ApiError(
+                Instant.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                exception.getMessage(),
+                request.getRequestURI(),
+                Map.of()));
+    }
+
+    @ExceptionHandler(InvalidWebhookSignatureException.class)
+    public ResponseEntity<ApiError> handleInvalidWebhookSignature(
+            InvalidWebhookSignatureException exception,
+            HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        logHandledException(status, exception, request);
+
+        return ResponseEntity.status(status).body(new ApiError(
+                Instant.now(), status.value(), status.getReasonPhrase(),
+                exception.getMessage(), request.getRequestURI(), Map.of()));
+    }
+
+    @ExceptionHandler(PaymentNotFoundException.class)
+    public ResponseEntity<ApiError> handlePaymentNotFound(
+            PaymentNotFoundException exception,
+            HttpServletRequest request) {
+        HttpStatus status = HttpStatus.NOT_FOUND;
+
+        logHandledException(status, exception, request);
+
+        return ResponseEntity.status(status).body(new ApiError(
+                Instant.now(), status.value(), status.getReasonPhrase(),
+                exception.getMessage(), request.getRequestURI(), Map.of()));
+    }
+
+    @ExceptionHandler(PaymentProviderException.class)
+    public ResponseEntity<ApiError> handlePaymentProvider(
+            PaymentProviderException exception,
+            HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_GATEWAY;
+
+        logHandledException(status, exception, request);
+
+        return ResponseEntity.status(status).body(new ApiError(
+                Instant.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                "Payment provider is temporarily unavailable",
+                request.getRequestURI(),
+                Map.of()));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

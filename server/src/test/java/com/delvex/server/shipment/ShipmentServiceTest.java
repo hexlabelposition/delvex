@@ -14,6 +14,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.delvex.server.branch.Branch;
 import com.delvex.server.branch.BranchRepository;
+import com.delvex.server.payment.PaymentMethod;
+import com.delvex.server.payment.ShipmentPriceCalculator;
 import com.delvex.server.shipment.dto.CreateShipmentRequest;
 import com.delvex.server.shipment.dto.UpdateShipmentRequest;
 import com.delvex.server.user.User;
@@ -30,10 +32,12 @@ class ShipmentServiceTest {
     @Mock private ShipmentRepository shipmentRepository;
     @Mock private UserRepository userRepository;
     @Mock private BranchRepository branchRepository;
+    private final ShipmentPriceCalculator priceCalculator =
+            new ShipmentPriceCalculator();
     private ShipmentService shipmentService;
 
     @BeforeEach
-    void setUp() { shipmentService = new ShipmentService(shipmentRepository, userRepository, branchRepository); }
+    void setUp() { shipmentService = new ShipmentService(shipmentRepository, userRepository, branchRepository, priceCalculator); }
 
     @Test
     void shouldCreateShipmentFromFixedLocations() {
@@ -54,6 +58,8 @@ class ShipmentServiceTest {
         assertThat(response.originCountry()).isEqualTo("PL");
         assertThat(response.originCity()).isEqualTo("Warszawa");
         assertThat(response.destinationCity()).isEqualTo("Gdańsk");
+        assertThat(response.payment().method()).isEqualTo(PaymentMethod.CARD);
+        assertThat(response.payment().amount()).isEqualByComparingTo("29.00");
     }
 
     @Test
@@ -61,7 +67,7 @@ class ShipmentServiceTest {
         UUID userId = UUID.randomUUID();
         given(userRepository.findById(userId)).willReturn(Optional.of(user(userId)));
         assertThatThrownBy(() -> shipmentService.create(userId, new CreateShipmentRequest(
-                "UNKNOWN", "GDANSK", "Books", new BigDecimal("1.00"), null, null)))
+                "UNKNOWN", "GDANSK", "Books", new BigDecimal("1.00"), null, null, PaymentMethod.CARD)))
                 .isInstanceOf(InvalidShipmentLocationException.class);
     }
 
@@ -91,9 +97,9 @@ class ShipmentServiceTest {
                 .isInstanceOf(InvalidShipmentStateException.class);
     }
 
-    private CreateShipmentRequest createRequest() { return new CreateShipmentRequest("WARSAW", "GDANSK", "Books", new BigDecimal("1.00"), Instant.parse("2026-08-06T10:00:00Z"), Instant.parse("2026-08-07T10:00:00Z")); }
+    private CreateShipmentRequest createRequest() { return new CreateShipmentRequest("WARSAW", "GDANSK", "Books", new BigDecimal("1.00"), Instant.parse("2026-08-06T10:00:00Z"), Instant.parse("2026-08-07T10:00:00Z"), PaymentMethod.CARD); }
     private User user(UUID id) { User user = new User("john@example.com", "hash", "John", "Doe"); ReflectionTestUtils.setField(user, "id", id); return user; }
-    private Shipment shipment(User user) { Shipment shipment = new Shipment(user, "DLX-11111111-1111-1111-1111-111111111111", branch("WARSAW"), branch("GDANSK"), "Books", new BigDecimal("1.00"), null, null); ReflectionTestUtils.setField(shipment, "id", UUID.randomUUID()); return shipment; }
+    private Shipment shipment(User user) { Shipment shipment = new Shipment(user, "DLX-11111111-1111-1111-1111-111111111111", branch("WARSAW"), branch("GDANSK"), "Books", new BigDecimal("1.00"), null, null, PaymentMethod.AT_BRANCH, new BigDecimal("29.00")); ReflectionTestUtils.setField(shipment, "id", UUID.randomUUID()); return shipment; }
     private Branch branch(String code) {
         String city = switch (code) {
             case "WARSAW" -> "Warszawa";

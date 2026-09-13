@@ -91,7 +91,8 @@ class ProductionSmokeIT {
                   "originLocationId": "WROCLAW",
                   "destinationLocationId": "WARSAW",
                   "cargoDescription": "Production smoke cargo",
-                  "weightKg": 12.50
+                  "weightKg": 12.50,
+                  "paymentMethod": "AT_BRANCH"
                 }
                 """;
         HttpResponse<String> creation = send(

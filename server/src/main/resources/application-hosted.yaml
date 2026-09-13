@@ -18,6 +18,11 @@ password-reset:
   client-url: ${PASSWORD_RESET_CLIENT_URL}
   mail-from: ${MAIL_FROM}
 
+payment:
+  stripe-secret-key: ${STRIPE_SECRET_KEY}
+  stripe-webhook-secret: ${STRIPE_WEBHOOK_SECRET}
+  client-url: ${PAYMENT_CLIENT_URL}
+
 rate-limit:
   auth:
     proxy-secret: ${AUTH_RATE_LIMIT_PROXY_SECRET}

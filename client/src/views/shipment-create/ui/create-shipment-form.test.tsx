@@ -40,7 +40,7 @@ beforeEach(() => {
 });
 
 describe("CreateShipmentForm", () => {
-  it("lays the form out in three sections next to a summary", () => {
+  it("lays the form out in four sections next to a summary", () => {
     render(<CreateShipmentForm />);
 
     expect(
@@ -53,6 +53,11 @@ describe("CreateShipmentForm", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText("Optional — the dates can be added or moved later."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Pay at the origin point or use a sandbox card checkout.",
+      ),
     ).toBeInTheDocument();
     expect(screen.getByText("Summary")).toBeInTheDocument();
     expect(
@@ -95,6 +100,7 @@ describe("CreateShipmentForm", () => {
         cargoDescription: "Documents",
         weightKg: "10",
         pickupAt: "",
+        paymentMethod: "AT_BRANCH",
       }),
     );
 
@@ -124,6 +130,7 @@ describe("CreateShipmentForm", () => {
         cargoDescription: "",
         weightKg: "",
         pickupAt: "",
+        paymentMethod: "AT_BRANCH",
       }),
     );
 

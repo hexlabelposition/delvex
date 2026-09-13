@@ -8,6 +8,7 @@ const validValues = {
   cargoDescription: "Documents",
   weightKg: "20",
   pickupAt: "2026-09-02",
+  paymentMethod: "CARD",
 };
 
 function errorsFor(values: Record<string, string>) {
@@ -29,6 +30,7 @@ describe("ShipmentFormSchema", () => {
       cargoDescription: "Documents",
       weightKg: 20,
       pickupAt: "2026-09-02",
+      paymentMethod: "CARD",
     });
   });
 
@@ -67,6 +69,7 @@ describe("shipmentToFormValues", () => {
       weightKg: 12.5,
       pickupAt: "2026-09-02T10:00:00Z",
       deliveryAt: null,
+      payment: { method: "CARD" },
     } as Shipment);
 
     expect(values).toMatchObject({
@@ -85,6 +88,7 @@ describe("shipmentToFormValues", () => {
       weightKg: 5,
       pickupAt: null,
       deliveryAt: null,
+      payment: { method: "AT_BRANCH" },
     } as Shipment);
 
     expect(values.pickupAt).toBe("");

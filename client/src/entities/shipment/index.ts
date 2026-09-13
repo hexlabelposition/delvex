@@ -2,8 +2,18 @@ export {
   ShipmentPageSchema,
   ShipmentSchema,
   ShipmentStatusSchema,
+  PaymentMethodSchema,
+  PaymentSchema,
+  PaymentStatusSchema,
 } from "./model/schema";
-export type { Shipment, ShipmentPage, ShipmentStatus } from "./model/schema";
+export type {
+  Payment,
+  PaymentMethod,
+  PaymentStatus,
+  Shipment,
+  ShipmentPage,
+  ShipmentStatus,
+} from "./model/schema";
 
 export {
   formatShipmentDate,
@@ -39,6 +49,7 @@ export {
 } from "./lib/schedule";
 export {
   getShipmentWeightValue,
+  getShipmentPrice,
   SHIPMENT_WEIGHT_OPTIONS,
   SHIPMENT_WEIGHT_VALUES,
   type ShipmentWeightValue,

@@ -12,6 +12,8 @@ import {
   MapPinIcon,
   TriangleAlertIcon,
   TruckIcon,
+  Building2Icon,
+  CreditCardIcon,
 } from "lucide-react";
 import {
   fromDateValue,
@@ -238,6 +240,59 @@ export function ShipmentScheduleFields({
         </div>
       </div>
     </Field.Group>
+  );
+}
+
+export function ShipmentPaymentFields({ fields }: SectionProps) {
+  const control = useInputControl(fields.paymentMethod);
+  const selected = control.value ?? "AT_BRANCH";
+  const options = [
+    {
+      value: "AT_BRANCH",
+      title: "Pay at the branch",
+      description: "Payment will be due when the shipment is accepted.",
+      Icon: Building2Icon,
+    },
+    {
+      value: "CARD",
+      title: "Pay by test card",
+      description: "Stripe Sandbox only — no real money is charged.",
+      Icon: CreditCardIcon,
+    },
+  ] as const;
+
+  return (
+    <Field.Root data-invalid={Boolean(fields.paymentMethod.errors)}>
+      <fieldset className="grid gap-3 sm:grid-cols-2">
+        <legend className="sr-only">Payment method</legend>
+        {options.map(({ value, title, description, Icon }) => (
+          <label
+            key={value}
+            className="has-checked:border-primary has-checked:bg-primary/5 flex cursor-pointer gap-3 rounded-lg border p-4 transition-colors"
+          >
+            <input
+              type="radio"
+              name={fields.paymentMethod.name}
+              value={value}
+              checked={selected === value}
+              onChange={() => control.change(value)}
+              className="sr-only"
+            />
+            <Icon
+              className="text-primary mt-0.5 size-5 shrink-0"
+              aria-hidden="true"
+            />
+            <span>
+              <span className="block text-sm font-medium">{title}</span>
+              <span className="text-muted-foreground mt-1 block text-sm">
+                {description}
+              </span>
+            </span>
+          </label>
+        ))}
+      </fieldset>
+      <Field.Error>{fields.paymentMethod.errors?.join(" ")}</Field.Error>
+    </Field.Root>
   );
 }
 

@@ -7,6 +7,10 @@ vi.mock("@features/shipment-delete", () => ({
   DeleteShipmentButton: () => <button type="button">Delete</button>,
 }));
 
+vi.mock("@features/payment-checkout", () => ({
+  startPaymentCheckoutAction: vi.fn(),
+}));
+
 function shipment(status: ShipmentStatus = "CREATED"): Shipment {
   return {
     id: "3f1a0a3e-0f6f-4f2e-8f5a-0f6f4f2e8f5a",
@@ -24,6 +28,14 @@ function shipment(status: ShipmentStatus = "CREATED"): Shipment {
     weightKg: 120.5,
     pickupAt: null,
     deliveryAt: "2026-09-02T08:30:00Z",
+    payment: {
+      id: "2f1a0a3e-0f6f-4f2e-8f5a-0f6f4f2e8f5a",
+      method: "AT_BRANCH",
+      status: "UNPAID",
+      amount: 79,
+      currency: "PLN",
+      paidAt: null,
+    },
     version: 0,
     createdAt: "2026-08-30T10:00:00Z",
     updatedAt: "2026-08-30T10:00:00Z",
@@ -39,6 +51,7 @@ describe("ShipmentDetailsView", () => {
     expect(screen.getByText("Two pallets of books")).toBeInTheDocument();
     expect(screen.getByText("120.5 kg")).toBeInTheDocument();
     expect(screen.getByText("Not scheduled")).toBeInTheDocument();
+    expect(screen.getByText(/Payment is due/)).toBeInTheDocument();
   });
 
   it("offers editing and deleting only while the shipment is created", () => {

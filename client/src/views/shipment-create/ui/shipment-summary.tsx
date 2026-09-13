@@ -5,12 +5,14 @@ import {
   MapPinIcon,
   PackageIcon,
   ScaleIcon,
+  CreditCardIcon,
 } from "lucide-react";
 import {
   fromDateValue,
   getEstimatedDelivery,
   shipmentLocations,
   shipmentWeightLabel,
+  getShipmentPrice,
 } from "@entities/shipment";
 import type { ShipmentFormValues } from "@features/shipment-form";
 import { Card } from "@shared/ui";
@@ -29,6 +31,7 @@ export function ShipmentSummary({ values }: ShipmentSummaryProps) {
   const destination = findLocation(values.destinationLocationId);
   const weight = parseWeight(values.weightKg);
   const pickup = fromDateValue(values.pickupAt);
+  const price = getShipmentPrice(values.weightKg);
 
   const checklist = [
     { label: "Route", done: Boolean(origin && destination) },
@@ -37,6 +40,7 @@ export function ShipmentSummary({ values }: ShipmentSummaryProps) {
       done: values.cargoDescription.trim() !== "" && weight !== null,
     },
     { label: "Schedule", done: pickup !== undefined, optional: true },
+    { label: "Payment", done: values.paymentMethod !== "" },
   ];
 
   return (
@@ -74,6 +78,19 @@ export function ShipmentSummary({ values }: ShipmentSummaryProps) {
             Icon={CalendarIcon}
             value={formatSchedule(pickup)}
             placeholder="Not scheduled"
+          />
+          <SummaryLine
+            Icon={CreditCardIcon}
+            value={
+              price === null
+                ? ""
+                : `${price.toFixed(2)} PLN · ${
+                    values.paymentMethod === "CARD"
+                      ? "test card"
+                      : "pay at branch"
+                  }`
+            }
+            placeholder="No payment method yet"
           />
         </div>
 

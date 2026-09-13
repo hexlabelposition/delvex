@@ -3,6 +3,10 @@ import {
   ArrowLeftIcon,
   ArrowRightIcon,
   CalendarIcon,
+  Building2Icon,
+  CreditCardIcon,
+  FlaskConicalIcon,
+  InfoIcon,
   MapPinIcon,
   PackageIcon,
   PencilIcon,
@@ -18,23 +22,29 @@ import {
   type Shipment,
 } from "@entities/shipment";
 import { DeleteShipmentButton } from "@features/shipment-delete";
+import { startPaymentCheckoutAction } from "@features/payment-checkout";
 import { routes } from "@shared/config";
 import { formatDate } from "@shared/lib";
-import { buttonVariants, Card } from "@shared/ui";
+import { Alert, Button, buttonVariants, Card } from "@shared/ui";
 
 import { CopyReferenceButton } from "./copy-reference-button";
 import { ShipmentTimeline } from "./shipment-timeline";
 
 interface ShipmentDetailsViewProps {
   shipment: Shipment;
+  paymentResult?: string;
 }
 
-export function ShipmentDetailsView({ shipment }: ShipmentDetailsViewProps) {
+export function ShipmentDetailsView({
+  shipment,
+  paymentResult,
+}: ShipmentDetailsViewProps) {
   const editable = isShipmentEditable(shipment.status);
   const deletable = isShipmentDeletable(shipment.status);
 
   return (
     <main className="flex flex-1 flex-col gap-8">
+      {paymentResult && <PaymentResultAlert result={paymentResult} />}
       <div>
         <Link
           href={routes.shipments}
@@ -163,6 +173,8 @@ export function ShipmentDetailsView({ shipment }: ShipmentDetailsViewProps) {
         </Card.Root>
       </section>
 
+      <PaymentCard shipment={shipment} />
+
       <section>
         <Card.Root size="sm">
           <Card.Content className="text-muted-foreground grid gap-4 text-sm sm:grid-cols-3">
@@ -179,6 +191,103 @@ export function ShipmentDetailsView({ shipment }: ShipmentDetailsViewProps) {
         </Card.Root>
       </section>
     </main>
+  );
+}
+
+function PaymentResultAlert({ result }: { result: string }) {
+  const content = {
+    success: {
+      title: "Payment submitted",
+      description:
+        "The payment status updates after Stripe confirms the test transaction.",
+    },
+    cancelled: {
+      title: "Checkout cancelled",
+      description: "No payment was made. You can restart test checkout below.",
+    },
+    unavailable: {
+      title: "Checkout unavailable",
+      description:
+        "Stripe Sandbox could not be reached. The shipment was still created.",
+    },
+  }[result];
+
+  if (!content) {
+    return null;
+  }
+
+  return (
+    <Alert.Root variant={result === "unavailable" ? "destructive" : "default"}>
+      <InfoIcon aria-hidden="true" />
+      <Alert.Title>{content.title}</Alert.Title>
+      <Alert.Description>{content.description}</Alert.Description>
+    </Alert.Root>
+  );
+}
+
+function PaymentCard({ shipment }: { shipment: Shipment }) {
+  const { payment } = shipment;
+  const cardPayment = payment.method === "CARD";
+  const canPay =
+    cardPayment && payment.status !== "PAID" && payment.status !== "REFUNDED";
+  const formatter = new Intl.NumberFormat("en", {
+    style: "currency",
+    currency: payment.currency,
+  });
+
+  return (
+    <section>
+      <Card.Root>
+        <Card.Header>
+          <Card.Description className="flex items-center gap-2">
+            {cardPayment ? (
+              <CreditCardIcon
+                className="text-primary size-4"
+                aria-hidden="true"
+              />
+            ) : (
+              <Building2Icon
+                className="text-primary size-4"
+                aria-hidden="true"
+              />
+            )}
+            Payment
+          </Card.Description>
+          <Card.Title className="flex flex-wrap items-center justify-between gap-3 text-lg">
+            <span>{formatter.format(payment.amount)}</span>
+            <span className="bg-muted rounded-full px-2.5 py-1 text-xs font-medium">
+              {payment.status.toLowerCase()}
+            </span>
+          </Card.Title>
+        </Card.Header>
+        <Card.Content className="flex flex-col gap-4">
+          <p className="text-muted-foreground text-sm">
+            {cardPayment
+              ? "Pay securely on the Stripe-hosted checkout page."
+              : "Payment is due when the shipment is accepted at the origin branch."}
+          </p>
+
+          {cardPayment && payment.status !== "PAID" && (
+            <Alert.Root>
+              <FlaskConicalIcon aria-hidden="true" />
+              <Alert.Title>Demo payment</Alert.Title>
+              <Alert.Description>
+                Stripe Sandbox is enabled. No real money is charged. Use test
+                card 4242 4242 4242 4242, any future date and any CVC.
+              </Alert.Description>
+            </Alert.Root>
+          )}
+
+          {canPay && (
+            <form action={startPaymentCheckoutAction.bind(null, shipment.id)}>
+              <Button type="submit">
+                <CreditCardIcon aria-hidden="true" /> Pay with test card
+              </Button>
+            </form>
+          )}
+        </Card.Content>
+      </Card.Root>
+    </section>
   );
 }
 

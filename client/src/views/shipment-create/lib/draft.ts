@@ -8,6 +8,7 @@ const DRAFT_FIELDS = [
   "cargoDescription",
   "weightKg",
   "pickupAt",
+  "paymentMethod",
 ] as const satisfies readonly (keyof ShipmentFormValues)[];
 
 /**

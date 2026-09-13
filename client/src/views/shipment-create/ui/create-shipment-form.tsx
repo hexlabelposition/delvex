@@ -17,6 +17,7 @@ import {
   ShipmentFormSchema,
   ShipmentRouteFields,
   ShipmentScheduleFields,
+  ShipmentPaymentFields,
   type ShipmentFormValues,
 } from "@features/shipment-form";
 import { routes } from "@shared/config";
@@ -31,6 +32,7 @@ const emptyValues: ShipmentFormValues = {
   cargoDescription: "",
   weightKg: "",
   pickupAt: "",
+  paymentMethod: "AT_BRANCH",
 };
 
 const sections = [
@@ -45,6 +47,10 @@ const sections = [
   {
     title: "Schedule",
     description: "Optional — the dates can be added or moved later.",
+  },
+  {
+    title: "Payment",
+    description: "Pay at the origin point or use a sandbox card checkout.",
   },
 ];
 
@@ -101,6 +107,7 @@ function CreateShipmentFormInstance({ onDiscard }: { onDiscard: () => void }) {
     cargoDescription: String(fields.cargoDescription.value ?? ""),
     weightKg: String(fields.weightKg.value ?? ""),
     pickupAt: String(fields.pickupAt.value ?? ""),
+    paymentMethod: String(fields.paymentMethod.value ?? "AT_BRANCH"),
   };
 
   // The draft is applied after mounting rather than read while rendering, so
@@ -147,6 +154,7 @@ function CreateShipmentFormInstance({ onDiscard }: { onDiscard: () => void }) {
       cargoDescription: read("cargoDescription"),
       weightKg: read("weightKg"),
       pickupAt: read("pickupAt"),
+      paymentMethod: read("paymentMethod"),
     });
   }
 
@@ -204,6 +212,7 @@ function CreateShipmentFormInstance({ onDiscard }: { onDiscard: () => void }) {
               {index === 2 && (
                 <ShipmentScheduleFields fields={fields} quickDates />
               )}
+              {index === 3 && <ShipmentPaymentFields fields={fields} />}
             </Card.Content>
           </Card.Root>
         ))}
